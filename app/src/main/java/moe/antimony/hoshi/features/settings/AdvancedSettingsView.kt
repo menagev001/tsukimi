@@ -10,7 +10,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ShowChart
 import androidx.compose.material.icons.automirrored.rounded.VolumeUp
 import androidx.compose.material.icons.rounded.Cloud
-import androidx.compose.material.icons.rounded.FileDownload
 import androidx.compose.material.icons.rounded.GraphicEq
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Storage
@@ -35,7 +34,6 @@ import moe.antimony.hoshi.R
 import moe.antimony.hoshi.features.anki.AnkiConnectView
 import moe.antimony.hoshi.features.audio.AudioSettingsView
 import moe.antimony.hoshi.features.backup.BackupSettingsView
-import moe.antimony.hoshi.features.migaku.MigakuExportView
 import moe.antimony.hoshi.features.reader.ReaderSettings
 import moe.antimony.hoshi.features.reader.ReaderStatisticsSettingsView
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettingsView
@@ -91,13 +89,6 @@ fun AdvancedSettingsView(
     }
     if (destination == AdvancedDestination.AnkiConnect) {
         AnkiConnectView(
-            onClose = { destination = null },
-            modifier = modifier,
-        )
-        return
-    }
-    if (destination == AdvancedDestination.MigakuExport) {
-        MigakuExportView(
             onClose = { destination = null },
             modifier = modifier,
         )
@@ -163,7 +154,6 @@ internal enum class AdvancedDestination {
     Statistics,
     Sasayaki,
     Backup,
-    MigakuExport,
     Syncing,
     AnkiConnect,
     BookCoverWallpaper,
@@ -177,7 +167,6 @@ internal enum class AdvancedSettingsIcon {
     AnkiConnect,
     ExternalDrive,
     Wallpaper,
-    Export,
 }
 
 internal data class AdvancedSettingsRow(
@@ -245,11 +234,6 @@ internal fun advancedSettingsSections(): List<AdvancedSettingsSection> =
                     destination = AdvancedDestination.Backup,
                     icon = AdvancedSettingsIcon.ExternalDrive,
                 ),
-                AdvancedSettingsRow(
-                    titleRes = R.string.settings_migaku_export,
-                    destination = AdvancedDestination.MigakuExport,
-                    icon = AdvancedSettingsIcon.Export,
-                ),
             ),
         ),
     )
@@ -263,5 +247,4 @@ private fun AdvancedSettingsIcon.imageVector(): ImageVector =
         AdvancedSettingsIcon.AnkiConnect -> Icons.Rounded.Link
         AdvancedSettingsIcon.ExternalDrive -> Icons.Rounded.Storage
         AdvancedSettingsIcon.Wallpaper -> Icons.Rounded.Wallpaper
-        AdvancedSettingsIcon.Export -> Icons.Rounded.FileDownload
     }

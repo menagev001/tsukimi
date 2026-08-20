@@ -45,22 +45,24 @@ class HttpAiTransport : AiTransport {
 
 class AiRequestException(message: String) : RuntimeException(message)
 
-class AiClient @Inject constructor() {
-    private val transport: AiTransport = HttpAiTransport()
+class AiClient @Inject constructor(
+    private val transport: AiTransport,
+) {
     private val timeoutMillis: Int = 30_000
 
-    fun ask(baseUrl: String, model: String, apiKey: String, prompt: String): String {
+    fun ask(baseUrl: String, model: String, apiKey: String, systemPrompt: String, userMessage: String): String {
         val endpoint = baseUrl.trimEnd('/') + "/v1/messages"
         val body = buildJsonObject {
             put("model", model)
             put("max_tokens", 1024)
+            put("system", systemPrompt)
             put(
                 "messages",
                 buildJsonArray {
                     add(
                         buildJsonObject {
                             put("role", "user")
-                            put("content", prompt)
+                            put("content", userMessage)
                         },
                     )
                 },

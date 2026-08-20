@@ -45,6 +45,8 @@ import moe.antimony.hoshi.features.audio.AudioSettingsRepository
 import moe.antimony.hoshi.features.audio.LocalAudioRepository
 import moe.antimony.hoshi.features.audio.WordAudioPlayer
 import moe.antimony.hoshi.features.anki.AnkiViewModel
+import moe.antimony.hoshi.features.export.WordExport
+import moe.antimony.hoshi.features.export.shareWordExport
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeCallbackHolder
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeCallbacks
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeMessage
@@ -455,6 +457,10 @@ private fun ProcessTextLookupOverlay(
                             )
                             )
                     }
+                }
+                is ReaderLookupPopupBridgeMessage.ExportWord -> {
+                    val selection = popupById(message.popupId)?.state?.selection ?: return
+                    context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
                 }
                 is ReaderLookupPopupBridgeMessage.ContentReady,
                 is ReaderLookupPopupBridgeMessage.ScrollState,

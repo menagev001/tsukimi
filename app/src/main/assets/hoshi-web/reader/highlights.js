@@ -31,9 +31,6 @@ window.hoshiHighlights = {
     var fragment = range.cloneContents();
     fragment.querySelectorAll('rt, rp').forEach(function(el) { el.remove(); });
     var text = fragment.textContent || '';
-    var sentence = range.startContainer.nodeType === Node.TEXT_NODE && window.hoshiSelection
-      ? window.hoshiSelection.getSentenceContext(range.startContainer, range.startOffset).sentence
-      : null;
     if (selection) selection.removeAllRanges();
     this.pendingRange = null;
     this.wrapHighlight({ id: id, color: color, offset: rawStart, text: text });
@@ -42,7 +39,7 @@ window.hoshiHighlights = {
       document.body.style.transform = 'translateZ(0)';
       requestAnimationFrame(function() { document.body.style.transform = ''; });
     });
-    return { start: start, offset: rawStart, text: text, sentence: sentence };
+    return { start: start, offset: rawStart, text: text };
   },
   collectSegments: function(offset, length) {
     var end = offset + length;

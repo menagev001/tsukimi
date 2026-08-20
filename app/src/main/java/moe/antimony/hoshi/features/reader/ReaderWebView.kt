@@ -65,6 +65,8 @@ import moe.antimony.hoshi.features.audio.WordAudioPlayer
 import moe.antimony.hoshi.features.ai.AiLookupOverlay
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiViewModel
+import moe.antimony.hoshi.features.export.WordExport
+import moe.antimony.hoshi.features.export.shareWordExport
 import moe.antimony.hoshi.features.dictionary.DictionaryImageRequestHandler
 import moe.antimony.hoshi.features.dictionary.DictionarySettings
 import moe.antimony.hoshi.features.dictionary.LookupPopupAssets
@@ -427,7 +429,6 @@ fun ReaderWebView(
             text = creation.text,
             color = color,
             createdAt = bookRepository.currentAppleReferenceDateSeconds(),
-            sentence = creation.sentence,
         )
         persistHighlights(highlights.orEmpty() + highlight)
     }
@@ -861,7 +862,11 @@ fun ReaderWebView(
             }
             is ReaderLookupPopupBridgeMessage.AskAi -> {
                 val selection = popupById(message.popupId)?.state?.selection ?: return
-                aiLookupViewModel.ask(word = selection.text, sentence = selection.sentence)
+                aiLookupViewModel.askWordNuance(word = selection.text, sentence = selection.sentence)
+            }
+            is ReaderLookupPopupBridgeMessage.ExportWord -> {
+                val selection = popupById(message.popupId)?.state?.selection ?: return
+                context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
             }
         }
     }
@@ -872,7 +877,7 @@ fun ReaderWebView(
         rootSelectionHighlight = null
         setLookupPopups(emptyList())
         if (selection.isSentenceOnly) {
-            aiLookupViewModel.ask(word = null, sentence = selection.sentence)
+            aiLookupViewModel.requestSentenceBreakdown(selection.sentence)
             return@lambda
         }
         val lookup = lookupRootPopup(selection)
@@ -1983,6 +1988,7 @@ fun ReaderWebView(
         }
         AiLookupOverlay(
             state = aiLookupState,
+            onConfirmSentenceBreakdown = aiLookupViewModel::confirmSentenceBreakdown,
             onDismiss = aiLookupViewModel::dismiss,
             onRetry = aiLookupViewModel::retry,
             modifier = Modifier.fillMaxSize(),

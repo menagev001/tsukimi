@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.systemBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -37,6 +38,7 @@ import moe.antimony.hoshi.ui.asString
 @Composable
 fun AiLookupOverlay(
     state: AiLookupState,
+    onConfirmSentenceBreakdown: () -> Unit,
     onDismiss: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
@@ -64,7 +66,7 @@ fun AiLookupOverlay(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     Text(
-                        text = stringResource(R.string.ai_lookup_title),
+                        text = stringResource(state.titleRes()),
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.weight(1f),
                     )
@@ -73,19 +75,18 @@ fun AiLookupOverlay(
                     }
                 }
                 HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                val sentence = when (state) {
-                    is AiLookupState.Loading -> state.sentence
-                    is AiLookupState.Success -> state.sentence
-                    is AiLookupState.Error -> state.sentence
-                    AiLookupState.Hidden -> ""
-                }
                 Text(
-                    text = sentence,
+                    text = state.sentence(),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(bottom = 12.dp),
                 )
                 when (state) {
+                    is AiLookupState.Confirm -> {
+                        Button(onClick = onConfirmSentenceBreakdown, modifier = Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.sentence_breakdown_title))
+                        }
+                    }
                     is AiLookupState.Loading -> {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -126,4 +127,25 @@ fun AiLookupOverlay(
             }
         }
     }
+}
+
+private fun AiLookupState.sentence(): String = when (this) {
+    is AiLookupState.Confirm -> request.sentence
+    is AiLookupState.Loading -> request.sentence
+    is AiLookupState.Success -> request.sentence
+    is AiLookupState.Error -> request.sentence
+    AiLookupState.Hidden -> ""
+}
+
+private fun AiLookupState.titleRes(): Int = when (this) {
+    is AiLookupState.Confirm -> R.string.sentence_breakdown_title
+    is AiLookupState.Loading -> request.titleRes()
+    is AiLookupState.Success -> request.titleRes()
+    is AiLookupState.Error -> request.titleRes()
+    AiLookupState.Hidden -> R.string.ai_lookup_title
+}
+
+private fun AiLookupRequest.titleRes(): Int = when (this) {
+    is AiLookupRequest.WordNuance -> R.string.ai_lookup_title
+    is AiLookupRequest.SentenceBreakdown -> R.string.sentence_breakdown_title
 }

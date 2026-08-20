@@ -190,7 +190,8 @@ internal object LookupPopupHtml {
                             showNotes: { postMessage: function(content) { return window.HoshiAndroidPopup.requestMessage('showNotes', content); } },
                             getEntry: { postMessage: function(index) { return window.HoshiAndroidPopup.requestMessage('getEntry', index); } },
                             lookupRedirect: { postMessage: function(query) { return window.HoshiAndroidPopup.requestMessage('lookupRedirect', query); } },
-                            askAi: { postMessage: function() { window.HoshiAndroidPopup.postMessage('askAi'); } }
+                            askAi: { postMessage: function() { window.HoshiAndroidPopup.postMessage('askAi'); } },
+                            exportWord: { postMessage: function() { window.HoshiAndroidPopup.postMessage('exportWord'); } }
                         }
                     };
                     window.scanNonJapaneseText = ${normalizedSettings.scanNonJapaneseText};

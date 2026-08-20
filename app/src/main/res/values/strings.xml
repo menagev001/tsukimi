@@ -138,7 +138,6 @@
     <string name="settings_diagnostics">Diagnostics</string>
     <string name="settings_about">About</string>
     <string name="settings_backup" comment="Advanced settings row label, intentionally matching the Backup action noun.">Backup</string>
-    <string name="settings_migaku_export" comment="Advanced settings row label, intentionally matching the Migaku Export screen title.">Migaku Export</string>
     <string name="settings_title" comment="Shared label for settings page titles distinct from the main tab key.">Settings</string>
     <string name="settings_language">Language</string>
     <string name="language_follow_system">Follow system</string>
@@ -510,9 +509,6 @@
     <string name="backup_dictionaries_saved">Dictionaries backup saved.</string>
     <string name="backup_dictionaries_save_failed">Unable to save Dictionaries backup.</string>
     <string name="backup_ttu_saved">ッツ bookdata backup saved.</string>
-    <string name="migaku_export_description">Export every highlight across your library as JSON, with surrounding sentence context, for import into Migaku.</string>
-    <string name="migaku_export_success_format">Exported %1$d highlight(s).</string>
-    <string name="migaku_export_error_format">Export failed: %1$s</string>
     <string name="backup_ttu_save_failed">Unable to save ッツ bookdata backup.</string>
     <string name="backup_books_restored">Books restored.</string>
     <string name="backup_books_restore_failed">Unable to restore Books backup.</string>
@@ -632,6 +628,7 @@
     <string name="ai_lookup_loading">Asking AI…</string>
     <string name="ai_lookup_error_format">AI request failed: %1$s</string>
     <string name="ai_lookup_retry">Retry</string>
+    <string name="sentence_breakdown_title" comment="Both the double-tap result overlay title and the button label shown before sending the sentence to AI.">Sentence Breakdown</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

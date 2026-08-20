@@ -308,6 +308,11 @@ internal sealed class ReaderLookupPopupBridgeMessage {
         override val messageId: String?,
     ) : ReaderLookupPopupBridgeMessage()
 
+    data class ExportWord(
+        override val popupId: String,
+        override val messageId: String?,
+    ) : ReaderLookupPopupBridgeMessage()
+
     companion object {
         fun fromJson(message: String): ReaderLookupPopupBridgeMessage? {
             val payload = runCatching { readerPopupJson.parseToJsonElement(message).jsonObject }.getOrNull() ?: return null
@@ -386,6 +391,7 @@ internal sealed class ReaderLookupPopupBridgeMessage {
                 "sasayakiTogglePlayback" -> SasayakiTogglePlayback(popupId, messageId)
                 "sasayakiPlayForward" -> SasayakiPlayForward(popupId, messageId)
                 "askAi" -> AskAi(popupId, messageId)
+                "exportWord" -> ExportWord(popupId, messageId)
                 else -> null
             }
         }

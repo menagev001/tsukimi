@@ -16,6 +16,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import moe.antimony.hoshi.BuildConfig
 import moe.antimony.hoshi.features.ai.AiSettingsRepository
+import moe.antimony.hoshi.features.ai.AiTransport
+import moe.antimony.hoshi.features.ai.HttpAiTransport
 import moe.antimony.hoshi.features.ai.aiSettingsRepository
 import moe.antimony.hoshi.features.anki.AnkiSettingsRepository
 import moe.antimony.hoshi.features.anki.ankiSettingsRepository
@@ -135,6 +137,9 @@ internal object HoshiAppModule {
     @Singleton
     fun provideAiSettingsRepository(@ApplicationContext context: Context): AiSettingsRepository =
         context.aiSettingsRepository()
+
+    @Provides
+    fun provideAiTransport(): AiTransport = HttpAiTransport()
 
     @Provides
     @Singleton

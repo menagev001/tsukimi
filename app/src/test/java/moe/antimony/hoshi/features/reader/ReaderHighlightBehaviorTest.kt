@@ -26,7 +26,7 @@ class ReaderHighlightBehaviorTest {
         )
 
         assertEquals(
-            """[{"id":"first","character":3,"offset":0,"text":"abc","color":"yellow","createdAt":1.0,"sentence":null},{"id":"second","character":7,"offset":3,"text":"def","color":"blue","createdAt":1.0,"sentence":null}]""",
+            """[{"id":"first","character":3,"offset":0,"text":"abc","color":"yellow","createdAt":1.0},{"id":"second","character":7,"offset":3,"text":"def","color":"blue","createdAt":1.0}]""",
             json,
         )
     }

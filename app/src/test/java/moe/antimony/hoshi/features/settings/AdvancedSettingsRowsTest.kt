@@ -16,7 +16,7 @@ class AdvancedSettingsRowsTest {
                 listOf(R.string.advanced_audio, R.string.advanced_statistics, R.string.advanced_sasayaki_audiobooks),
                 listOf(R.string.sync_ttu_sync, R.string.anki_connect_use),
                 listOf(R.string.settings_book_cover_wallpaper),
-                listOf(R.string.settings_backup, R.string.settings_migaku_export),
+                listOf(R.string.settings_backup),
             ),
             sections.map { section -> section.rows.map { it.titleRes } },
         )
@@ -24,9 +24,6 @@ class AdvancedSettingsRowsTest {
         val syncRow = sections.flatMap { it.rows }.single { it.destination == AdvancedDestination.Syncing }
         val ankiConnectRow = sections.flatMap { it.rows }.single { it.destination == AdvancedDestination.AnkiConnect }
         val backupRow = sections.flatMap { it.rows }.single { it.destination == AdvancedDestination.Backup }
-        val migakuExportRow = sections.flatMap { it.rows }.single {
-            it.destination == AdvancedDestination.MigakuExport
-        }
         val wallpaperRow = sections.flatMap { it.rows }.single {
             it.destination == AdvancedDestination.BookCoverWallpaper
         }
@@ -34,7 +31,6 @@ class AdvancedSettingsRowsTest {
         assertEquals(AdvancedSettingsIcon.Cloud, syncRow.icon)
         assertEquals(AdvancedSettingsIcon.AnkiConnect, ankiConnectRow.icon)
         assertEquals(AdvancedSettingsIcon.ExternalDrive, backupRow.icon)
-        assertEquals(AdvancedSettingsIcon.Export, migakuExportRow.icon)
         assertEquals(AdvancedSettingsIcon.Wallpaper, wallpaperRow.icon)
         assertFalse(backupRow.icon == AdvancedSettingsIcon.Cloud)
         assertTrue(sections.indexOfFirst { it.rows.any { row -> row.destination == AdvancedDestination.Syncing } } !=

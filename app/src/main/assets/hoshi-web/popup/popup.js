@@ -1592,7 +1592,14 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
         'data-format-icon': formatIcon
     });
     slot.type = 'button';
-    slot.setAttribute('aria-label', kind === 'audio' ? 'Play audio' : kind === 'notes' ? 'Show Anki notes' : kind === 'ai' ? 'Ask AI' : 'Add to Anki');
+    slot.setAttribute(
+        'aria-label',
+        kind === 'audio' ? 'Play audio'
+            : kind === 'notes' ? 'Show Anki notes'
+            : kind === 'ai' ? 'Ask AI'
+            : kind === 'export' ? 'Export'
+            : 'Add to Anki',
+    );
     slot.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
@@ -1609,6 +1616,8 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
             showNotesAtIndex(entryIndex, formatId);
         } else if (kind === 'ai') {
             webkit.messageHandlers.askAi.postMessage();
+        } else if (kind === 'export') {
+            webkit.messageHandlers.exportWord.postMessage();
         }
     });
     slot.appendChild(el('span', { className: 'button-slot-icon' }));
@@ -1644,6 +1653,7 @@ function applyButtonSlotVisualState(slot) {
         ? (state === 'error' ? 'volume_off' : 'volume_up')
         : kind === 'notes' ? 'search'
         : kind === 'ai' ? 'auto_awesome'
+        : kind === 'export' ? 'share'
         : formatIcon === 'circle' ? (state === 'duplicate' ? 'check_circle' : 'add_circle')
         : formatIcon === 'diamond' ? (state === 'duplicate' ? 'diamond_fill' : 'diamond')
         : (state === 'duplicate' ? 'check_box' : 'add_box');
@@ -1838,6 +1848,7 @@ function createEntryHeader(entry, idx) {
     if (window.aiLookupEnabled) {
         buttonsContainer.appendChild(createButtonSlot('ai', idx));
     }
+    buttonsContainer.appendChild(createButtonSlot('export', idx));
 
     header.appendChild(buttonsContainer);
 

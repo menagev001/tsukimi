@@ -440,9 +440,9 @@ test('popup places Anki formats before audio and keeps each notes action with it
 
     assert.deepEqual(
         buttons.children.map((child) => child.dataset.formatId || child.dataset.kind),
-        ['word', 'sentence', 'audio'],
+        ['word', 'sentence', 'audio', 'export'],
     );
-    const [wordActions, sentenceActions, audioButton] = buttons.children;
+    const [wordActions, sentenceActions, audioButton, exportButton] = buttons.children;
     assert.equal(wordActions.className, 'anki-format-actions');
     assert.deepEqual(wordActions.children.map((child) => child.dataset.kind), ['notes', 'mine']);
     assert.equal(wordActions.children[0].hidden, false);
@@ -451,6 +451,7 @@ test('popup places Anki formats before audio and keeps each notes action with it
     assert.equal(sentenceActions.children[1].dataset.placement, 'above');
     assert.equal(sentenceActions.children[1].hidden, false);
     assert.equal(audioButton.dataset.kind, 'audio');
+    assert.equal(exportButton.dataset.kind, 'export');
 });
 
 test('duplicate refresh updates every format and creates or removes show-notes buttons', async () => {

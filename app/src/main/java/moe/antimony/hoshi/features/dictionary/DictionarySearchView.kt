@@ -82,6 +82,8 @@ import moe.antimony.hoshi.features.audio.AudioSettings
 import moe.antimony.hoshi.features.audio.WordAudioPlayer
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiViewModel
+import moe.antimony.hoshi.features.export.WordExport
+import moe.antimony.hoshi.features.export.shareWordExport
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeCallbackHolder
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeCallbacks
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupBridgeMessage
@@ -556,6 +558,10 @@ fun DictionarySearchView(
                             )
                     }
                 }
+            }
+            is ReaderLookupPopupBridgeMessage.ExportWord -> {
+                val selection = popupById(message.popupId)?.state?.selection ?: return
+                context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
             }
             is ReaderLookupPopupBridgeMessage.SasayakiReplayCue,
             is ReaderLookupPopupBridgeMessage.SasayakiTogglePlayback,

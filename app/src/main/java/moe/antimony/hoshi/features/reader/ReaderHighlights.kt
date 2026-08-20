@@ -106,7 +106,6 @@ internal data class ReaderHighlightCreationResult(
     val start: Int,
     val offset: Int,
     val text: String,
-    val sentence: String? = null,
 ) {
     companion object {
         private val json = Json { ignoreUnknownKeys = true }

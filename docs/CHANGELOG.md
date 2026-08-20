@@ -15,13 +15,15 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   tab instead.
 - Add an "Ask AI" action to the reader lookup popup that sends the looked-up
   word and its sentence to a configurable AI provider (Settings > AI Lookup)
-  and shows the response in a simple result view.
+  and shows a word-nuance explanation in a simple result view.
 - Add a double-tap gesture on reader text (paginated and continuous modes)
-  that sends the surrounding sentence straight to Ask AI, skipping the normal
-  dictionary popup.
-- Add a Migaku JSON export (Settings > Advanced > Migaku Export) that writes
-  every highlight across the library, with its surrounding sentence and book
-  title, to a single JSON file.
+  that offers a "Sentence Breakdown" of the surrounding sentence, skipping
+  the normal dictionary popup; the AI request only sends once that option is
+  tapped.
+- Add an "Export" action to the reader lookup popup, Dictionary tab, and
+  Process Text popup that shares the looked-up word and its sentence as JSON
+  through Android's share sheet, so the destination (Drive, email, clipboard,
+  any app) is picked per export.
 
 ### Fixed
 

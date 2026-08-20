@@ -49,5 +49,4 @@ data class ReaderHighlight(
     val text: String,
     val color: HighlightColor,
     val createdAt: Double,
-    val sentence: String? = null,
 )
