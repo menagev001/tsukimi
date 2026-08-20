@@ -39,6 +39,7 @@ internal object ReaderSelectionBridgePayload {
             ),
             normalizedOffset = payload.normalizedOffset,
             sentenceOffset = payload.sentenceOffset,
+            isSentenceOnly = payload.isSentenceOnly,
         )
     }
 
@@ -68,6 +69,7 @@ internal object ReaderSelectionBridgePayload {
         val rect: Rect,
         val normalizedOffset: Int? = null,
         val sentenceOffset: Int? = null,
+        val isSentenceOnly: Boolean = false,
     )
 
     @Serializable

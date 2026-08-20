@@ -129,6 +129,7 @@
     </plurals>
     <string name="settings_dictionaries" comment="Settings row label, intentionally matching the backup Dictionaries section.">Dictionaries</string>
     <string name="settings_anki">Anki</string>
+    <string name="settings_ai" comment="Settings row label, intentionally matching the AI Lookup screen title.">AI Lookup</string>
     <string name="settings_profiles" comment="Settings row label, intentionally matching the Profiles screen title.">Profiles</string>
     <string name="settings_appearance">Appearance</string>
     <string name="settings_behavior">Behavior</string>
@@ -137,6 +138,7 @@
     <string name="settings_diagnostics">Diagnostics</string>
     <string name="settings_about">About</string>
     <string name="settings_backup" comment="Advanced settings row label, intentionally matching the Backup action noun.">Backup</string>
+    <string name="settings_migaku_export" comment="Advanced settings row label, intentionally matching the Migaku Export screen title.">Migaku Export</string>
     <string name="settings_title" comment="Shared label for settings page titles distinct from the main tab key.">Settings</string>
     <string name="settings_language">Language</string>
     <string name="language_follow_system">Follow system</string>
@@ -508,6 +510,9 @@
     <string name="backup_dictionaries_saved">Dictionaries backup saved.</string>
     <string name="backup_dictionaries_save_failed">Unable to save Dictionaries backup.</string>
     <string name="backup_ttu_saved">ッツ bookdata backup saved.</string>
+    <string name="migaku_export_description">Export every highlight across your library as JSON, with surrounding sentence context, for import into Migaku.</string>
+    <string name="migaku_export_success_format">Exported %1$d highlight(s).</string>
+    <string name="migaku_export_error_format">Export failed: %1$s</string>
     <string name="backup_ttu_save_failed">Unable to save ッツ bookdata backup.</string>
     <string name="backup_books_restored">Books restored.</string>
     <string name="backup_books_restore_failed">Unable to restore Books backup.</string>
@@ -558,7 +563,7 @@
     <string name="anki_open_app_settings">Open App Settings</string>
     <string name="anki_fetching">Fetching</string>
     <string name="anki_deck" comment="Anki deck selector label, intentionally matching duplicate scope deck label.">Deck</string>
-    <string name="anki_model">Model</string>
+    <string name="anki_model" comment="Anki note-type model label, intentionally matching the AI provider settings label.">Model</string>
     <string name="anki_allow_duplicates">Allow Duplicates</string>
     <string name="anki_check_duplicates_all_models">Check for duplicates across all models</string>
     <string name="anki_duplicate_check_scope">Duplicate Check Scope</string>
@@ -594,7 +599,7 @@
     <string name="anki_connect_address">Address</string>
     <string name="anki_connect_url">AnkiConnect URL</string>
     <string name="anki_connect_api_key">API Key (optional)</string>
-    <string name="anki_connect_api_key_configured">Configured</string>
+    <string name="anki_connect_api_key_configured" comment="AnkiConnect API key configured state, intentionally matching the AI API key configured state.">Configured</string>
     <string name="anki_connect_use">Use AnkiConnect</string>
     <string name="anki_connect_use_description">This replaces AnkiDroid requests with AnkiConnect JSON requests.</string>
     <string name="anki_connect_address_help">Use HTTPS for internet hosts. HTTP is accepted only for localhost and private network addresses.</string>
@@ -619,6 +624,14 @@
     <string name="anki_fetch_no_ankidroid_note_types">No AnkiDroid note types were found.</string>
     <string name="anki_fetch_no_ankiconnect_note_types">No AnkiConnect note types were found.</string>
     <string name="anki_connect_invalid_url">Invalid AnkiConnect URL.</string>
+    <string name="ai_base_url">Base URL</string>
+    <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">Model</string>
+    <string name="ai_api_key">API Key</string>
+    <string name="ai_api_key_configured" comment="AI API key configured state, intentionally matching the AnkiConnect API key configured state.">Configured</string>
+    <string name="ai_lookup_title">Ask AI</string>
+    <string name="ai_lookup_loading">Asking AI…</string>
+    <string name="ai_lookup_error_format">AI request failed: %1$s</string>
+    <string name="ai_lookup_retry">Retry</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

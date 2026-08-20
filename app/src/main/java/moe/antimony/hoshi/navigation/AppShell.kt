@@ -32,6 +32,7 @@ import androidx.navigation3.scene.Scene
 import androidx.navigation3.ui.NavDisplay
 import moe.antimony.hoshi.LocalHoshiUiDependencies
 import moe.antimony.hoshi.epub.BookSortOption
+import moe.antimony.hoshi.features.ai.AiSettingsView
 import moe.antimony.hoshi.features.anki.AnkiView
 import moe.antimony.hoshi.features.anki.AnkiAdvancedView
 import moe.antimony.hoshi.features.anki.AnkiCardFormatView
@@ -516,6 +517,10 @@ private fun SettingsDetailDestination(
             onOpenAdvanced = onOpenAnkiAdvanced,
             modifier = Modifier.fillMaxSize(),
         )
+        SettingsDetailSection.Ai -> AiSettingsView(
+            onClose = onClose,
+            modifier = Modifier.fillMaxSize(),
+        )
         SettingsDetailSection.Profiles -> ProfilesView(
             onClose = onClose,
             modifier = Modifier.fillMaxSize(),
@@ -609,6 +614,7 @@ private fun AppRoute.toMainTab(): MainTab = when (this) {
 private fun SettingsDestination.toSection(): SettingsDetailSection = when (this) {
     SettingsDestination.Dictionaries -> SettingsDetailSection.Dictionaries
     SettingsDestination.Anki -> SettingsDetailSection.Anki
+    SettingsDestination.Ai -> SettingsDetailSection.Ai
     SettingsDestination.Profiles -> SettingsDetailSection.Profiles
     SettingsDestination.Appearance -> SettingsDetailSection.Appearance
     SettingsDestination.Behavior -> SettingsDetailSection.Behavior

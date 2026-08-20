@@ -11,5 +11,6 @@
 local.properties
 /testdata
 .codex/
+.claude/
 /.superpowers/
 /docs/superpowers/

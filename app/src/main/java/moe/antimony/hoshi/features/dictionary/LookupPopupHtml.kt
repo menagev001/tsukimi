@@ -77,6 +77,7 @@ internal object LookupPopupHtml {
         fontFaceCss: String = "",
         popupScale: Double = 1.0,
         contentLanguageProfile: ContentLanguageProfile = ContentLanguageProfile.Default,
+        aiLookupEnabled: Boolean = false,
     ): String {
         val normalizedSettings = settings.normalized()
         val collapsedDictionaries = dictionaryNamesJson(normalizedSettings.collapsedDictionaries)
@@ -188,7 +189,8 @@ internal object LookupPopupHtml {
                             duplicateCheck: { postMessage: function(values) { return window.HoshiAndroidPopup.requestMessage('duplicateCheck', values); } },
                             showNotes: { postMessage: function(content) { return window.HoshiAndroidPopup.requestMessage('showNotes', content); } },
                             getEntry: { postMessage: function(index) { return window.HoshiAndroidPopup.requestMessage('getEntry', index); } },
-                            lookupRedirect: { postMessage: function(query) { return window.HoshiAndroidPopup.requestMessage('lookupRedirect', query); } }
+                            lookupRedirect: { postMessage: function(query) { return window.HoshiAndroidPopup.requestMessage('lookupRedirect', query); } },
+                            askAi: { postMessage: function() { window.HoshiAndroidPopup.postMessage('askAi'); } }
                         }
                     };
                     window.scanNonJapaneseText = ${normalizedSettings.scanNonJapaneseText};
@@ -214,6 +216,7 @@ internal object LookupPopupHtml {
                     window.compactGlossariesAnki = ${ankiSettings.compactGlossaries};
                     window.ankiFormats = ${ankiFormatsJson(ankiSettings)};
                     window.ankiBackendAvailable = ${ankiSettings.isBackendAvailable};
+                    window.aiLookupEnabled = $aiLookupEnabled;
                     window.disableShowNotes = ${ankiSettings.disableShowNotes};
                     window.customCSS = ${JsonPrimitive(normalizedSettings.customCSS)};
                     window.swipeThreshold = $effectiveSwipeThreshold;

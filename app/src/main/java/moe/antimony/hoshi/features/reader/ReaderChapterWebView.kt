@@ -16,6 +16,7 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.MeasureSpec
+import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
@@ -271,13 +272,14 @@ internal fun ChapterWebView(
             }
         },
         update = { webView ->
-            fun selectAt(x: Float, y: Float, onBlankTap: () -> Unit) {
+            fun selectAt(x: Float, y: Float, sentenceOnly: Boolean = false, onBlankTap: () -> Unit) {
                 val density = webView.resources.displayMetrics.density
                 webView.evaluateJavascript(
                     ReaderSelectionCommand.SelectText(
                         x = androidPixelsToCssPixels(x, density),
                         y = androidPixelsToCssPixels(y, density),
                         maxLength = selectionScanLength,
+                        sentenceOnly = sentenceOnly,
                     ).source,
                 ) { result ->
                     val selectionResult = ReaderSelectionResult.fromWebViewResult(result)
@@ -305,6 +307,7 @@ internal fun ChapterWebView(
                             settings = readerSettings,
                             shouldIgnoreReaderGesture = ::shouldIgnoreReaderGestureEvent,
                             onTap = { x, y -> selectAt(x, y) { currentOnReaderTapOutside.value() } },
+                            onDoubleTap = { x, y -> selectAt(x, y, sentenceOnly = true) {} },
                             onScrollGesture = currentOnReaderInteraction.value,
                             onNextChapter = {
                                 currentOnReaderInteraction.value()
@@ -376,6 +379,7 @@ internal fun ChapterWebView(
                     webView.setOnTouchListener(
                         object : SwipePageTouchListener(
                             swipeDistance = readerSettings.pageSwipeThresholdPx.toFloat(),
+                            doubleTapEnabled = readerSettings.viewMode == ReaderViewMode.Paginated,
                         ) {
                             override fun shouldIgnoreReaderGesture(event: MotionEvent): Boolean =
                                 shouldIgnoreReaderGestureEvent(event)
@@ -396,6 +400,10 @@ internal fun ChapterWebView(
                                         currentOnReaderTapOutside.value()
                                     }
                                 }
+                            }
+
+                            override fun onDoubleTap(x: Float, y: Float) {
+                                selectAt(x, y, sentenceOnly = true) {}
                             }
 
                             override fun onLeftSwipe() {
@@ -1067,6 +1075,7 @@ private class ContinuousScrollTouchListener(
     private val settings: ReaderSettings,
     private val shouldIgnoreReaderGesture: (MotionEvent) -> Boolean,
     private val onTap: (Float, Float) -> Unit,
+    private val onDoubleTap: (Float, Float) -> Unit,
     private val onScrollGesture: () -> Unit,
     private val onNextChapter: () -> Boolean,
     private val onPreviousChapter: () -> Boolean,
@@ -1076,11 +1085,17 @@ private class ContinuousScrollTouchListener(
     private var downTime = 0L
     private var currentGestureIgnored = false
     private val focusTracker = ReaderContinuousScrollFocusTracker()
+    private val tapDispatcher = ReaderTapDispatcher(
+        doubleTapTimeoutMs = ViewConfiguration.getDoubleTapTimeout().toLong(),
+        onTap = onTap,
+        onDoubleTap = onDoubleTap,
+    )
 
     override fun onTouch(view: View, event: MotionEvent): Boolean {
         val webView = view as? WebView ?: return false
         if (shouldIgnoreReaderGesture(event)) {
             currentGestureIgnored = true
+            tapDispatcher.cancelPending(webView::removeCallbacks)
             return false
         }
         when (event.actionMasked) {
@@ -1114,7 +1129,13 @@ private class ContinuousScrollTouchListener(
                     abs(dx) < CONTINUOUS_READER_TAP_SLOP &&
                     abs(dy) < CONTINUOUS_READER_TAP_SLOP
                 ) {
-                    onTap(event.x, event.y)
+                    tapDispatcher.dispatchTap(
+                        x = event.x,
+                        y = event.y,
+                        eventTimeMs = SystemClock.uptimeMillis(),
+                        postDelayed = webView::postDelayed,
+                        removeCallback = webView::removeCallbacks,
+                    )
                     return false
                 }
                 handleBoundarySwipe(webView, dx, dy)

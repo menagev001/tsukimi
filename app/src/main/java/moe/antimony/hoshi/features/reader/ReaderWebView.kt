@@ -62,6 +62,8 @@ import moe.antimony.hoshi.features.audio.AudioRequestHandler
 import moe.antimony.hoshi.features.audio.AudioSettings
 import moe.antimony.hoshi.features.audio.LocalAudioRepository
 import moe.antimony.hoshi.features.audio.WordAudioPlayer
+import moe.antimony.hoshi.features.ai.AiLookupOverlay
+import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiViewModel
 import moe.antimony.hoshi.features.dictionary.DictionaryImageRequestHandler
 import moe.antimony.hoshi.features.dictionary.DictionarySettings
@@ -218,6 +220,8 @@ fun ReaderWebView(
     var fullscreenImage by remember { mutableStateOf<ReaderFullscreenImage?>(null) }
     val ankiViewModel: AnkiViewModel = hiltViewModel()
     val ankiUiState by ankiViewModel.uiState.collectAsStateWithLifecycle()
+    val aiLookupViewModel: AiLookupViewModel = hiltViewModel()
+    val aiLookupState by aiLookupViewModel.state.collectAsStateWithLifecycle()
     val popupAssets = remember(context) { LookupPopupAssets.load(context) }
     val readerPopupBridgeHolder = remember { ReaderLookupPopupBridgeCallbackHolder() }
     val popupDarkMode = effectiveSettings.usesDarkInterface(systemDarkTheme)
@@ -255,6 +259,7 @@ fun ReaderWebView(
             fontFaceCss = fontManager.popupFontFaceCss(),
             popupScale = effectiveSettings.popupScale,
             contentLanguageProfile = popupContentLanguageProfile,
+            aiLookupEnabled = true,
         )
     }
     val currentReaderPopupIframeDocument = rememberUpdatedState(readerPopupIframeDocument)
@@ -422,6 +427,7 @@ fun ReaderWebView(
             text = creation.text,
             color = color,
             createdAt = bookRepository.currentAppleReferenceDateSeconds(),
+            sentence = creation.sentence,
         )
         persistHighlights(highlights.orEmpty() + highlight)
     }
@@ -853,14 +859,22 @@ fun ReaderWebView(
                     closeLookupPopupsAndSelection()
                 }
             }
+            is ReaderLookupPopupBridgeMessage.AskAi -> {
+                val selection = popupById(message.popupId)?.state?.selection ?: return
+                aiLookupViewModel.ask(word = selection.text, sentence = selection.sentence)
+            }
         }
     }
     readerPopupBridgeHolder.callbacks = ReaderLookupPopupBridgeCallbacks(::handleReaderPopupBridgeMessage)
-    val handleTextSelected: (ReaderSelectionData, (Int, (List<ReaderSelectionRect>) -> Unit) -> Unit) -> Unit = { selection, selectionRects ->
+    val handleTextSelected: (ReaderSelectionData, (Int, (List<ReaderSelectionRect>) -> Unit) -> Unit) -> Unit = lambda@{ selection, selectionRects ->
         cancelSasayakiAutoPage()
         stateHolder.enterFocusModeForReaderInteraction()
         rootSelectionHighlight = null
         setLookupPopups(emptyList())
+        if (selection.isSentenceOnly) {
+            aiLookupViewModel.ask(word = null, sentence = selection.sentence)
+            return@lambda
+        }
         val lookup = lookupRootPopup(selection)
         if (lookup != null) {
             val (popup, highlightCount) = lookup
@@ -1967,6 +1981,12 @@ fun ReaderWebView(
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        AiLookupOverlay(
+            state = aiLookupState,
+            onDismiss = aiLookupViewModel::dismiss,
+            onRetry = aiLookupViewModel::retry,
+            modifier = Modifier.fillMaxSize(),
+        )
         webView?.let { _ -> Unit }
     }
 }

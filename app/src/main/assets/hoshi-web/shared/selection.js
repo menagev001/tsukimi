@@ -556,7 +556,7 @@ window.hoshiSelection = {
         return this.getSentenceContext(startNode, startOffset).sentence;
     },
 
-    selectText(x, y, maxLength, rectX = x, rectY = y) {
+    selectText(x, y, maxLength, rectX = x, rectY = y, sentenceOnly = false) {
         const hitElement = document.elementFromPoint(x, y);
         if (hitElement?.closest('a')) {
             return this.linkTapResult();
@@ -652,7 +652,8 @@ window.hoshiSelection = {
             sentence: sentenceContext.sentence,
             rect: this.getSelectionRect(rectX, rectY),
             normalizedOffset,
-            sentenceOffset: sentenceContext.sentenceOffset
+            sentenceOffset: sentenceContext.sentenceOffset,
+            isSentenceOnly: sentenceOnly
         });
 
         return text;

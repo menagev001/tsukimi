@@ -1,24 +1,33 @@
 package moe.antimony.hoshi.features.reader
 
+import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
+import android.view.ViewConfiguration
 import kotlin.math.abs
 
 abstract class SwipePageTouchListener(
     swipeDistance: Float = DEFAULT_SWIPE_DISTANCE,
+    private val doubleTapEnabled: Boolean = false,
 ) : View.OnTouchListener {
     private val tracker = ReaderSwipeGestureTracker(minDistance = swipeDistance)
+    private val tapDispatcher = ReaderTapDispatcher(
+        doubleTapTimeoutMs = ViewConfiguration.getDoubleTapTimeout().toLong(),
+        onTap = ::onTap,
+        onDoubleTap = ::onDoubleTap,
+    )
 
     override fun onTouch(view: View, event: MotionEvent): Boolean {
         if (shouldIgnoreReaderGesture(event)) {
             tracker.suppressCurrentGesture()
+            tapDispatcher.cancelPending(view::removeCallbacks)
             return false
         }
         when (event.actionMasked) {
             MotionEvent.ACTION_DOWN -> tracker.onDown(event.x, event.y, event.eventTime)
             MotionEvent.ACTION_POINTER_DOWN -> tracker.onAdditionalPointerDown()
-            MotionEvent.ACTION_MOVE -> dispatch(tracker.onMove(event.x, event.y, event.eventTime))
-            MotionEvent.ACTION_UP -> dispatch(tracker.onUp(event.x, event.y, event.eventTime))
+            MotionEvent.ACTION_MOVE -> dispatch(view, tracker.onMove(event.x, event.y, event.eventTime))
+            MotionEvent.ACTION_UP -> dispatch(view, tracker.onUp(event.x, event.y, event.eventTime))
             MotionEvent.ACTION_CANCEL -> tracker.onCancel()
         }
         return false
@@ -27,13 +36,26 @@ abstract class SwipePageTouchListener(
     open fun onLeftSwipe() = Unit
     open fun onRightSwipe() = Unit
     open fun onTap(x: Float, y: Float) = Unit
+    open fun onDoubleTap(x: Float, y: Float) = Unit
     open fun shouldIgnoreReaderGesture(event: MotionEvent): Boolean = false
 
-    private fun dispatch(result: ReaderSwipeGestureTracker.Result) {
+    private fun dispatch(view: View, result: ReaderSwipeGestureTracker.Result) {
         when (result) {
             ReaderSwipeGestureTracker.Result.LeftSwipe -> onLeftSwipe()
             ReaderSwipeGestureTracker.Result.RightSwipe -> onRightSwipe()
-            is ReaderSwipeGestureTracker.Result.Tap -> onTap(result.x, result.y)
+            is ReaderSwipeGestureTracker.Result.Tap -> {
+                if (doubleTapEnabled) {
+                    tapDispatcher.dispatchTap(
+                        x = result.x,
+                        y = result.y,
+                        eventTimeMs = SystemClock.uptimeMillis(),
+                        postDelayed = view::postDelayed,
+                        removeCallback = view::removeCallbacks,
+                    )
+                } else {
+                    onTap(result.x, result.y)
+                }
+            }
             ReaderSwipeGestureTracker.Result.None -> Unit
         }
     }
@@ -125,5 +147,63 @@ internal class ReaderSwipeGestureTracker(
         const val MAX_EARLY_SWIPE_DURATION_MS = 300L
         const val MAX_TAP_DURATION_MS = 500L
         const val MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND = 360f
+    }
+}
+
+/**
+ * Buffers a tap for [doubleTapTimeoutMs] to detect a following second tap at
+ * roughly the same position, matching Android's standard double-tap window.
+ */
+internal class ReaderTapDispatcher(
+    private val doubleTapTimeoutMs: Long,
+    private val onTap: (Float, Float) -> Unit,
+    private val onDoubleTap: (Float, Float) -> Unit,
+) {
+    private var pendingTap: Runnable? = null
+    private var pendingX = 0f
+    private var pendingY = 0f
+    private var pendingTime = 0L
+
+    fun dispatchTap(
+        x: Float,
+        y: Float,
+        eventTimeMs: Long,
+        postDelayed: (Runnable, Long) -> Unit,
+        removeCallback: (Runnable) -> Unit,
+    ) {
+        val pending = pendingTap
+        if (
+            pending != null &&
+            eventTimeMs - pendingTime <= doubleTapTimeoutMs &&
+            abs(x - pendingX) <= DOUBLE_TAP_SLOP &&
+            abs(y - pendingY) <= DOUBLE_TAP_SLOP
+        ) {
+            removeCallback(pending)
+            pendingTap = null
+            onDoubleTap(x, y)
+            return
+        }
+        // A non-matching pending tap (different position, or its window already
+        // elapsed) is left running so it still fires as its own single tap; only
+        // this new tap becomes the one a following tap can pair with.
+        lateinit var runnable: Runnable
+        runnable = Runnable {
+            if (pendingTap === runnable) pendingTap = null
+            onTap(x, y)
+        }
+        pendingTap = runnable
+        pendingX = x
+        pendingY = y
+        pendingTime = eventTimeMs
+        postDelayed(runnable, doubleTapTimeoutMs)
+    }
+
+    fun cancelPending(removeCallback: (Runnable) -> Unit) {
+        pendingTap?.let(removeCallback)
+        pendingTap = null
+    }
+
+    private companion object {
+        const val DOUBLE_TAP_SLOP = 100f
     }
 }

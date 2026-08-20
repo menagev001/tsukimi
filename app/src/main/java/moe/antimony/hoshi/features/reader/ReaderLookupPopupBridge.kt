@@ -303,6 +303,11 @@ internal sealed class ReaderLookupPopupBridgeMessage {
         override val messageId: String?,
     ) : ReaderLookupPopupBridgeMessage()
 
+    data class AskAi(
+        override val popupId: String,
+        override val messageId: String?,
+    ) : ReaderLookupPopupBridgeMessage()
+
     companion object {
         fun fromJson(message: String): ReaderLookupPopupBridgeMessage? {
             val payload = runCatching { readerPopupJson.parseToJsonElement(message).jsonObject }.getOrNull() ?: return null
@@ -380,6 +385,7 @@ internal sealed class ReaderLookupPopupBridgeMessage {
                 "sasayakiReplayCue" -> SasayakiReplayCue(popupId, messageId)
                 "sasayakiTogglePlayback" -> SasayakiTogglePlayback(popupId, messageId)
                 "sasayakiPlayForward" -> SasayakiPlayForward(popupId, messageId)
+                "askAi" -> AskAi(popupId, messageId)
                 else -> null
             }
         }
@@ -399,6 +405,7 @@ private fun JsonObject.toReaderSelectionData(): ReaderSelectionData? {
         ),
         normalizedOffset = int("normalizedOffset"),
         sentenceOffset = int("sentenceOffset"),
+        isSentenceOnly = boolean("isSentenceOnly") ?: false,
     )
 }
 

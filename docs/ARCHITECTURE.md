@@ -163,6 +163,38 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   instead of mixing unscaled layout offsets with scaled scroll coordinates.
 - Lookup opens from a single tap on reader text. Long press is reserved for
   native selection/highlight flows.
+- Double tap on reader text (paginated and continuous modes only, not VN)
+  sends the surrounding sentence to Ask AI instead of opening the dictionary
+  popup. Native double-tap buffering lives in `ReaderTapDispatcher`
+  (`SwipePageTouchListener.kt`), shared by `SwipePageTouchListener` (gated by
+  a `doubleTapEnabled` constructor flag, on only for `ReaderViewMode.Paginated`)
+  and `ContinuousScrollTouchListener`; it delays single-tap dispatch by
+  `ViewConfiguration.getDoubleTapTimeout()` to detect a following tap at
+  roughly the same position. The JS side reuses `hoshiSelection.selectText`'s
+  existing word/sentence scan unchanged, just with a trailing `sentenceOnly`
+  flag threaded through to the posted selection payload as `isSentenceOnly`;
+  no separate JS sentence-scanning path exists for double tap.
+- The reader lookup popup, Dictionary tab, and Process Text popups share one
+  "Ask AI" button (`popup.js` button-slot kind `'ai'`, gated by
+  `window.aiLookupEnabled`) that posts a fire-and-forget `askAi` bridge
+  message; only the Reader passes `aiLookupEnabled = true` to
+  `LookupPopupHtml.renderIframeDocument`, so Dictionary/Process Text popups
+  render the same JS without the button. `AskAi` reads the popup's already-
+  captured `ReaderSelectionData` (no new word/context round-trip) and calls
+  `AiRepository.ask` (Anthropic Messages API via `HttpURLConnection`,
+  `AiSettingsRepository`-backed base URL/model/API key under Settings > AI
+  Lookup), rendering the result through `AiLookupOverlay`, a plain Compose
+  overlay in `ReaderWebView` state (not a native popup replacing the
+  JS/iframe dictionary popup).
+- `ReaderHighlight` carries an optional `sentence` field computed once at
+  highlight-creation time in `highlights.js` (`createHighlight` calls the
+  same `hoshiSelection.getSentenceContext` used by tap lookup and double tap,
+  guarded to text-node selection starts), not re-derived at read time.
+  Highlights created before this field existed simply have `sentence = null`.
+  `MigakuExportRepository` walks every book's `highlights.json` and writes one
+  JSON array (word, sentence falling back to the highlighted text, book
+  title, ISO-8601 timestamp) through Storage Access Framework `CreateDocument`,
+  reachable from Settings > Advanced > Migaku Export.
 
 ## Integrations
 

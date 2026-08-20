@@ -45,6 +45,7 @@ import androidx.compose.material.icons.automirrored.rounded.Sort
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CheckCircle
 import androidx.compose.material.icons.rounded.ChevronRight
@@ -2304,6 +2305,7 @@ private fun SettingsGlyph(destination: SettingsDestination, color: Color, modifi
     val icon = when (destination) {
         SettingsDestination.Dictionaries -> Icons.AutoMirrored.Rounded.MenuBook
         SettingsDestination.Anki -> Icons.Rounded.Inventory2
+        SettingsDestination.Ai -> Icons.Rounded.AutoAwesome
         SettingsDestination.Profiles -> Icons.Rounded.Person
         SettingsDestination.Appearance -> Icons.Rounded.Palette
         SettingsDestination.Behavior -> Icons.Rounded.Keyboard

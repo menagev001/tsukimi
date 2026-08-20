@@ -22,7 +22,19 @@ class ReaderSelectionCommandTest {
             maxLength = 16,
         )
 
-        assertEquals("window.hoshiSelection.selectText(12.5, 24.25, 16)", command.source)
+        assertEquals("window.hoshiSelection.selectText(12.5, 24.25, 16, 12.5, 24.25, false)", command.source)
+    }
+
+    @Test
+    fun selectTextCommandCanRequestSentenceOnlyScanForDoubleTap() {
+        val command = ReaderSelectionCommand.SelectText(
+            x = 12.5f,
+            y = 24.25f,
+            maxLength = 16,
+            sentenceOnly = true,
+        )
+
+        assertEquals("window.hoshiSelection.selectText(12.5, 24.25, 16, 12.5, 24.25, true)", command.source)
     }
 
     @Test

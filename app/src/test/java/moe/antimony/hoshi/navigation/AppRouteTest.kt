@@ -64,6 +64,7 @@ class AppRouteTest {
             listOf(
                 "Dictionaries",
                 "Anki",
+                "Ai",
                 "Profiles",
                 "Appearance",
                 "Behavior",

@@ -300,6 +300,147 @@ test('shared selection posts reader payloads through the Android reader bridge',
     assert.equal(posted, JSON.stringify({ text: '猫', sentence: '猫。' }));
 });
 
+test('shared selection posts popup payloads with the sentence-only flag through the webkit bridge', () => {
+    const { selection, window } = loadSelection('猫');
+    let posted = null;
+    window.webkit = {
+        messageHandlers: {
+            textSelected: {
+                postMessage(payload) {
+                    posted = payload;
+                },
+            },
+        },
+    };
+
+    selection.postTextSelected({ text: '猫', sentence: '猫。', isSentenceOnly: true });
+
+    assert.deepEqual(posted, { text: '猫', sentence: '猫。', isSentenceOnly: true });
+});
+
+test('shared selection posts reader payloads with the sentence-only flag through the Android reader bridge', () => {
+    const { selection, window } = loadSelection('猫');
+    let posted = null;
+    window.HoshiTextSelection = {
+        postMessage(message) {
+            posted = message;
+        },
+    };
+
+    selection.configure({ bridge: 'android-reader' });
+    selection.postTextSelected({ text: '猫', sentence: '猫。', isSentenceOnly: true });
+
+    assert.equal(posted, JSON.stringify({ text: '猫', sentence: '猫。', isSentenceOnly: true }));
+});
+
+test('double-tap sentence scan sets isSentenceOnly and does not disturb the word scan result', () => {
+    const { document, selection, textNode, window } = loadSelection('猫が座る。');
+    document.pointElement = hitElement([]);
+    selection.clearSelection = () => {};
+    selection.getCharacterAtPoint = () => ({ node: textNode, offset: 0 });
+    window.scanNonJapaneseText = false;
+    let posted = null;
+    window.webkit = {
+        messageHandlers: {
+            textSelected: {
+                postMessage(payload) {
+                    posted = payload;
+                },
+            },
+        },
+    };
+
+    const result = selection.selectText(1, 1, 80, 1, 1, true);
+
+    assert.equal(result, '猫が座る');
+    assert.equal(posted.isSentenceOnly, true);
+    assert.equal(posted.sentence, '猫が座る。');
+});
+
+test('shared selection identifies furigana reading text nodes for tree-walker exclusion', () => {
+    const { selection } = loadSelection('猫');
+    const rtElement = {
+        closest(selector) {
+            return selector.split(',').map((item) => item.trim()).includes('rt') ? this : null;
+        },
+    };
+    const rtTextNode = { nodeType: 3, textContent: 'ねこ', parentElement: rtElement };
+    const baseElement = {
+        closest() {
+            return null;
+        },
+    };
+    const baseTextNode = { nodeType: 3, textContent: '猫', parentElement: baseElement };
+
+    assert.equal(selection.isFurigana(rtTextNode), true);
+    assert.equal(selection.isFurigana(baseTextNode), false);
+});
+
+test('double-tap sentence scan excludes furigana reading text sitting in rt tags', () => {
+    const rubyElement = {
+        nodeType: 1,
+        closest(selector) {
+            return selector.split(',').map((item) => item.trim()).includes('p') ? this : null;
+        },
+        querySelectorAll() {
+            return [];
+        },
+    };
+    const beforeNode = { nodeType: 3, textContent: '猫', parentElement: rubyElement };
+    const rubyBaseNode = { nodeType: 3, textContent: '犬', parentElement: rubyElement };
+    const afterNode = { nodeType: 3, textContent: 'です。', parentElement: rubyElement };
+    // The real browser TreeWalker never yields the <rt> reading-text node here because
+    // createWalker's acceptNode filter rejects it (isFurigana -> FILTER_REJECT); this
+    // node list mirrors that already-filtered result rather than re-implementing the filter.
+    const filteredNodes = [beforeNode, rubyBaseNode, afterNode];
+
+    const document = {
+        body: rubyElement,
+        createTreeWalker() {
+            return treeWalker(filteredNodes);
+        },
+        createRange() {
+            return {
+                setStart() {},
+                setEnd() {},
+                collapse() {},
+                getClientRects() {
+                    return [];
+                },
+                getBoundingClientRect() {
+                    return { x: 0, y: 0, width: 0, height: 0 };
+                },
+            };
+        },
+        elementFromPoint() {
+            return hitElement([]);
+        },
+        addEventListener() {},
+    };
+    const window = {
+        getComputedStyle() {
+            return { writingMode: 'horizontal-tb' };
+        },
+    };
+
+    vm.runInNewContext(selectionSource(), {
+        CSS: {},
+        document,
+        getSelection() {
+            return null;
+        },
+        Node: { TEXT_NODE: 3 },
+        NodeFilter: { SHOW_TEXT: 4, FILTER_ACCEPT: 1, FILTER_REJECT: 2 },
+        window,
+    });
+
+    const selection = window.hoshiSelection;
+    const context = selection.getSentenceContext(rubyBaseNode, 0);
+
+    assert.equal(context.sentence, '猫犬です。');
+    assert.doesNotMatch(context.sentence, /いぬ/);
+});
+
 test('shared selection can preserve reader link and image tap tokens', () => {
     const { selection } = loadSelection('猫');
 

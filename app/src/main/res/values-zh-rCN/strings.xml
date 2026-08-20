@@ -129,6 +129,7 @@
     </plurals>
     <string name="settings_dictionaries" comment="Settings row label, intentionally matching the backup Dictionaries section.">辞典</string>
     <string name="settings_anki">Anki</string>
+    <string name="settings_ai" comment="Settings row label, intentionally matching the AI Lookup screen title.">AI 查询</string>
     <string name="settings_profiles" comment="Settings row label, intentionally matching the Profiles screen title.">Profile</string>
     <string name="settings_appearance">外观</string>
     <string name="settings_behavior">行为</string>
@@ -137,6 +138,7 @@
     <string name="settings_diagnostics">诊断</string>
     <string name="settings_about">关于</string>
     <string name="settings_backup" comment="Advanced settings row label, intentionally matching the Backup action noun.">备份</string>
+    <string name="settings_migaku_export" comment="Advanced settings row label, intentionally matching the Migaku Export screen title.">Migaku 导出</string>
     <string name="settings_title" comment="Shared label for settings page titles distinct from the main tab key.">设置</string>
     <string name="settings_language">语言</string>
     <string name="language_follow_system">跟随系统</string>
@@ -506,6 +508,9 @@
     <string name="backup_dictionaries_saved">辞典备份已保存。</string>
     <string name="backup_dictionaries_save_failed">无法保存辞典备份。</string>
     <string name="backup_ttu_saved">ッツ bookdata 备份已保存。</string>
+    <string name="migaku_export_description">将书库中所有高亮及其上下文句子导出为 JSON，用于导入 Migaku。</string>
+    <string name="migaku_export_success_format">已导出 %1$d 条高亮。</string>
+    <string name="migaku_export_error_format">导出失败：%1$s</string>
     <string name="backup_ttu_save_failed">无法保存 ッツ bookdata 备份。</string>
     <string name="backup_books_restored">书籍已恢复。</string>
     <string name="backup_books_restore_failed">无法恢复书籍备份。</string>
@@ -556,7 +561,7 @@
     <string name="anki_open_app_settings">打开应用设置</string>
     <string name="anki_fetching">正在获取</string>
     <string name="anki_deck" comment="Anki deck selector label, intentionally matching duplicate scope deck label.">牌组</string>
-    <string name="anki_model">模板</string>
+    <string name="anki_model" comment="Anki note-type model label, intentionally matching the AI provider settings label.">模板</string>
     <string name="anki_allow_duplicates">允许重复</string>
     <string name="anki_check_duplicates_all_models">跨所有模板检查重复</string>
     <string name="anki_duplicate_check_scope">重复检查范围</string>
@@ -592,7 +597,7 @@
     <string name="anki_connect_address">地址</string>
     <string name="anki_connect_url">AnkiConnect URL</string>
     <string name="anki_connect_api_key">API 密钥（可选）</string>
-    <string name="anki_connect_api_key_configured">已配置</string>
+    <string name="anki_connect_api_key_configured" comment="AnkiConnect API key configured state, intentionally matching the AI API key configured state.">已配置</string>
     <string name="anki_connect_use">使用 AnkiConnect</string>
     <string name="anki_connect_use_description">这会用 AnkiConnect JSON 请求替代 AnkiDroid 请求。</string>
     <string name="anki_connect_address_help">互联网主机请使用 HTTPS。HTTP 仅允许 localhost 和私有网络地址。</string>
@@ -617,6 +622,14 @@
     <string name="anki_fetch_no_ankidroid_note_types">未找到 AnkiDroid 笔记类型。</string>
     <string name="anki_fetch_no_ankiconnect_note_types">未找到 AnkiConnect 笔记类型。</string>
     <string name="anki_connect_invalid_url">AnkiConnect URL 无效。</string>
+    <string name="ai_base_url">基础 URL</string>
+    <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">模型</string>
+    <string name="ai_api_key">API 密钥</string>
+    <string name="ai_api_key_configured" comment="AI API key configured state, intentionally matching the AnkiConnect API key configured state.">已配置</string>
+    <string name="ai_lookup_title">询问 AI</string>
+    <string name="ai_lookup_loading">正在询问 AI…</string>
+    <string name="ai_lookup_error_format">AI 请求失败：%1$s</string>
+    <string name="ai_lookup_retry">重试</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

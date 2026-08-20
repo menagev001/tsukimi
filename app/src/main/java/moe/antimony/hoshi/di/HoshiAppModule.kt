@@ -15,6 +15,8 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import moe.antimony.hoshi.BuildConfig
+import moe.antimony.hoshi.features.ai.AiSettingsRepository
+import moe.antimony.hoshi.features.ai.aiSettingsRepository
 import moe.antimony.hoshi.features.anki.AnkiSettingsRepository
 import moe.antimony.hoshi.features.anki.ankiSettingsRepository
 import moe.antimony.hoshi.features.audio.AudioSettingsRepository
@@ -128,6 +130,11 @@ internal object HoshiAppModule {
     @Singleton
     fun provideSasayakiSettingsRepository(@ApplicationContext context: Context): SasayakiSettingsRepository =
         context.sasayakiSettingsRepository()
+
+    @Provides
+    @Singleton
+    fun provideAiSettingsRepository(@ApplicationContext context: Context): AiSettingsRepository =
+        context.aiSettingsRepository()
 
     @Provides
     @Singleton

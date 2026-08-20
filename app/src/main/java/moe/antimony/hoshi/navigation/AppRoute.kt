@@ -43,6 +43,7 @@ sealed interface AppRoute : NavKey {
 enum class SettingsDetailSection {
     Dictionaries,
     Anki,
+    Ai,
     Profiles,
     Appearance,
     Behavior,
