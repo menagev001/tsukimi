@@ -187,10 +187,17 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
 - The reader lookup popup has an "Explain Word" button (`popup.js`
   button-slot kind `'ai'`, gated by `window.aiLookupEnabled`, set only by the
   Reader's call to `LookupPopupHtml.renderIframeDocument` — Dictionary tab and
-  Process Text popups render the same JS without it) that posts a
-  fire-and-forget `askAi` bridge message. `AskAi` reads the popup's
-  already-captured `ReaderSelectionData` (no new word/context round-trip) and
-  calls `AiRepository.askWordNuance`; double tap calls
+  Process Text popups render the same JS without it) that posts an `askAi`
+  bridge message carrying `{ word }` in its body, where `word` is the clicked
+  entry's resolved `matched` (falling back to `expression`) from
+  `window.lookupEntries[entryIndex]` — not the raw
+  `hoshiSelection.selectText` scan span (`ReaderSelectionData.text`), which
+  reads far more than the actual dictionary word since it exists for
+  deinflection matching, not display. Sentence context still comes from the
+  popup's already-captured `ReaderSelectionData.sentence` (correct as-is; only
+  the word needed the entry-specific source). Kotlin calls
+  `AiRepository.askWordNuance(message.word, selection.sentence)`; double tap
+  calls
   `AiRepository.askSentenceBreakdown` after its confirm step. Both hit the
   Anthropic Messages API via `HttpURLConnection` (`AiClient`, `AiTransport`
   Hilt-provided for test seams), `AiSettingsRepository`-backed base URL/model/
@@ -209,13 +216,15 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   the bundled asset text whenever non-blank.
 - The reader lookup popup, Dictionary tab, and Process Text popups share one
   unconditional "Export" button (`popup.js` button-slot kind `'export'`) that
-  posts a fire-and-forget `exportWord` bridge message. All three handle it by
-  reading the popup's `ReaderSelectionData` and calling
-  `Context.shareWordExport`, which serializes `{word, sentence}` — nothing
-  else, no book metadata, no timestamp — through Android's `ACTION_SEND`
-  share sheet (`features/export/WordExport.kt`), so the destination (Drive,
-  email, clipboard, any installed app) is picked per export rather than
-  configured once. This is independent of both the highlight system and the
+  posts an `exportWord` bridge message carrying `{ word }` (same
+  entry-`matched`-over-raw-selection sourcing as `askAi`, see above). All
+  three handle it by combining `message.word` with the popup's
+  `ReaderSelectionData.sentence` and calling `Context.shareWordExport`, which
+  serializes `{word, sentence}` — nothing else, no book metadata, no
+  timestamp — through Android's `ACTION_SEND` share sheet
+  (`features/export/WordExport.kt`), so the destination (Drive, email,
+  clipboard, any installed app) is picked per export rather than configured
+  once. This is independent of both the highlight system and the
   AI settings/API key.
 
 ## Integrations

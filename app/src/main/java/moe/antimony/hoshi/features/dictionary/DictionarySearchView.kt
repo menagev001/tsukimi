@@ -561,7 +561,7 @@ fun DictionarySearchView(
             }
             is ReaderLookupPopupBridgeMessage.ExportWord -> {
                 val selection = popupById(message.popupId)?.state?.selection ?: return
-                context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
+                context.shareWordExport(WordExport(word = message.word, sentence = selection.sentence))
             }
             is ReaderLookupPopupBridgeMessage.SasayakiReplayCue,
             is ReaderLookupPopupBridgeMessage.SasayakiTogglePlayback,

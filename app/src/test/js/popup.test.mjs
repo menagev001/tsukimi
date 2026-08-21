@@ -148,6 +148,8 @@ function popupContext({
     const mineEntryMessages = [];
     const duplicateCheckMessages = [];
     const showNotesMessages = [];
+    const askAiMessages = [];
+    const exportWordMessages = [];
     let currentDuplicateStates = duplicateStates;
     const window = {
         scrollX: 0,
@@ -197,6 +199,16 @@ function popupContext({
                         return true;
                     },
                 },
+                askAi: {
+                    postMessage(message) {
+                        askAiMessages.push(message);
+                    },
+                },
+                exportWord: {
+                    postMessage(message) {
+                        exportWordMessages.push(message);
+                    },
+                },
             },
         },
         window,
@@ -218,6 +230,8 @@ function popupContext({
         mineEntryMessages,
         duplicateCheckMessages,
         showNotesMessages,
+        askAiMessages,
+        exportWordMessages,
         setDuplicateStates(value) { currentDuplicateStates = value; },
     };
 }
@@ -244,6 +258,13 @@ function clickEvent(target, x, y) {
         preventDefault() {
             this.defaultPrevented = true;
         },
+    };
+}
+
+function buttonClickEvent() {
+    return {
+        preventDefault() {},
+        stopPropagation() {},
     };
 }
 
@@ -397,6 +418,37 @@ test('popup action controls remain DOM buttons even if a legacy native button fl
     assert.equal(mineSlot.disabled, true);
     assert.equal(circleSlot.dataset.formatId, 'format-circle');
     assert.match(circleSlot.style.properties.get('--button-icon-url'), /add_circle\.svg/);
+});
+
+test('explain-word and export buttons post the entry\'s matched dictionary span, not the raw overscanned selection', () => {
+    const { context, askAiMessages, exportWordMessages } = popupContext();
+    // The raw tap-to-lookup scan (`window.hoshiSelection.selectText`) reads far
+    // more than the actual dictionary word for deinflection-matching purposes;
+    // these buttons must use the entry's resolved `matched` span instead.
+    context.window.lookupEntries = [
+        { expression: '廻り続ける', reading: 'まわりつづける', matched: '廻り続けている' },
+    ];
+
+    const aiSlot = context.createButtonSlot('ai', 0);
+    aiSlot.listeners.get('click')[0](buttonClickEvent());
+    assert.equal(askAiMessages.length, 1);
+    assert.equal(askAiMessages[0].word, '廻り続けている');
+
+    const exportSlot = context.createButtonSlot('export', 0);
+    exportSlot.listeners.get('click')[0](buttonClickEvent());
+    assert.equal(exportWordMessages.length, 1);
+    assert.equal(exportWordMessages[0].word, '廻り続けている');
+});
+
+test('explain-word and export buttons fall back to the entry expression when matched is absent', () => {
+    const { context, askAiMessages } = popupContext();
+    context.window.lookupEntries = [{ expression: '猫', reading: 'ねこ' }];
+
+    const aiSlot = context.createButtonSlot('ai', 0);
+    aiSlot.listeners.get('click')[0](buttonClickEvent());
+
+    assert.equal(askAiMessages.length, 1);
+    assert.equal(askAiMessages[0].word, '猫');
 });
 
 test('popup renders ordered format buttons with independent icon and disabled state', () => {

@@ -1615,9 +1615,11 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
         } else if (kind === 'notes') {
             showNotesAtIndex(entryIndex, formatId);
         } else if (kind === 'ai') {
-            webkit.messageHandlers.askAi.postMessage();
+            const entry = window.lookupEntries?.[entryIndex];
+            webkit.messageHandlers.askAi.postMessage({ word: entry?.matched || entry?.expression || '' });
         } else if (kind === 'export') {
-            webkit.messageHandlers.exportWord.postMessage();
+            const entry = window.lookupEntries?.[entryIndex];
+            webkit.messageHandlers.exportWord.postMessage({ word: entry?.matched || entry?.expression || '' });
         }
     });
     slot.appendChild(el('span', { className: 'button-slot-icon' }));

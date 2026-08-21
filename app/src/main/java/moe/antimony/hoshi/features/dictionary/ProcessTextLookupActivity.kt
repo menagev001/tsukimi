@@ -460,7 +460,7 @@ private fun ProcessTextLookupOverlay(
                 }
                 is ReaderLookupPopupBridgeMessage.ExportWord -> {
                     val selection = popupById(message.popupId)?.state?.selection ?: return
-                    context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
+                    context.shareWordExport(WordExport(word = message.word, sentence = selection.sentence))
                 }
                 is ReaderLookupPopupBridgeMessage.ContentReady,
                 is ReaderLookupPopupBridgeMessage.ScrollState,

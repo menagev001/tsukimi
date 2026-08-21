@@ -862,11 +862,11 @@ fun ReaderWebView(
             }
             is ReaderLookupPopupBridgeMessage.AskAi -> {
                 val selection = popupById(message.popupId)?.state?.selection ?: return
-                aiLookupViewModel.askWordNuance(word = selection.text, sentence = selection.sentence)
+                aiLookupViewModel.askWordNuance(word = message.word, sentence = selection.sentence)
             }
             is ReaderLookupPopupBridgeMessage.ExportWord -> {
                 val selection = popupById(message.popupId)?.state?.selection ?: return
-                context.shareWordExport(WordExport(word = selection.text, sentence = selection.sentence))
+                context.shareWordExport(WordExport(word = message.word, sentence = selection.sentence))
             }
         }
     }

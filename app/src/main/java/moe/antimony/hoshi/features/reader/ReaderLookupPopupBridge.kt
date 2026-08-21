@@ -306,11 +306,13 @@ internal sealed class ReaderLookupPopupBridgeMessage {
     data class AskAi(
         override val popupId: String,
         override val messageId: String?,
+        val word: String,
     ) : ReaderLookupPopupBridgeMessage()
 
     data class ExportWord(
         override val popupId: String,
         override val messageId: String?,
+        val word: String,
     ) : ReaderLookupPopupBridgeMessage()
 
     companion object {
@@ -390,8 +392,16 @@ internal sealed class ReaderLookupPopupBridgeMessage {
                 "sasayakiReplayCue" -> SasayakiReplayCue(popupId, messageId)
                 "sasayakiTogglePlayback" -> SasayakiTogglePlayback(popupId, messageId)
                 "sasayakiPlayForward" -> SasayakiPlayForward(popupId, messageId)
-                "askAi" -> AskAi(popupId, messageId)
-                "exportWord" -> ExportWord(popupId, messageId)
+                "askAi" -> AskAi(
+                    popupId = popupId,
+                    messageId = messageId,
+                    word = payload.obj("body")?.stringOrEmpty("word").orEmpty(),
+                )
+                "exportWord" -> ExportWord(
+                    popupId = popupId,
+                    messageId = messageId,
+                    word = payload.obj("body")?.stringOrEmpty("word").orEmpty(),
+                )
                 else -> null
             }
         }
