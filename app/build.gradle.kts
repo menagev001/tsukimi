@@ -1,3 +1,5 @@
+import java.util.Properties
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
@@ -11,7 +13,21 @@ val uniffiOutDir = layout.buildDirectory.dir("generated/source/uniffi/main/kotli
 val rustDebugJniLibsDir = layout.buildDirectory.dir("jniLibs/debug").get().asFile
 val rustReleaseJniLibsDir = layout.buildDirectory.dir("jniLibs/release").get().asFile
 val cargo = System.getenv("HOME") + "/.cargo/bin/cargo"
-val androidNdkHome = System.getenv("ANDROID_NDK_HOME") ?: "/opt/homebrew/share/android-ndk"
+val rustAndroidNdkVersion = "29.0.14206865"
+val androidNdkHome = System.getenv("ANDROID_NDK_HOME")
+    ?: run {
+        // Falls back to local.properties' sdk.dir (always present once Android
+        // Studio has synced) rather than relying on ANDROID_NDK_HOME being set
+        // in whatever shell/session launched the IDE — that env var has proven
+        // unreliable across different session-start mechanisms (profile.d,
+        // environment.d, direct launch) on this machine.
+        val localProperties = Properties().apply {
+            val file = rootProject.file("local.properties")
+            if (file.exists()) file.inputStream().use { load(it) }
+        }
+        localProperties.getProperty("sdk.dir")?.let { sdkDir -> "$sdkDir/ndk/$rustAndroidNdkVersion" }
+    }
+    ?: "/opt/homebrew/share/android-ndk"
 val releaseKeystorePath = providers.environmentVariable("ANDROID_KEYSTORE_FILE").orNull
 val releaseKeystorePassword = providers.environmentVariable("ANDROID_KEYSTORE_PASSWORD").orNull
 val releaseKeyAlias = providers.environmentVariable("ANDROID_KEY_ALIAS").orNull
@@ -46,7 +62,7 @@ val hostLibExtension = when {
 
 android {
     namespace = "moe.antimony.hoshi"
-    ndkVersion = "29.0.14206865"
+    ndkVersion = rustAndroidNdkVersion
     compileSdk {
         version = release(36) {
             minorApiLevel = 1
