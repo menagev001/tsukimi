@@ -261,6 +261,18 @@ test('reader selection leaves ellipses and periods after the selected sentence',
     assert.equal(periodContext.sentenceOffset, 0);
 });
 
+test('sentence scan does not split on a sentence-final delimiter still nested inside an open quote', () => {
+    const context = sentenceContext(
+        '「何かおとりしますか？」と声をかけてもいいが、客が買うかどうか悩んでいるように見えるときは、一歩引いて待つことにしている。',
+        '一歩引いて',
+    );
+
+    assert.equal(
+        context.sentence,
+        '「何かおとりしますか？」と声をかけてもいいが、客が買うかどうか悩んでいるように見えるときは、一歩引いて待つことにしている。',
+    );
+});
+
 test('recursive lookup scanning stays inside one expression tag', () => {
     const selection = loadAdjacentExpressionTags();
 

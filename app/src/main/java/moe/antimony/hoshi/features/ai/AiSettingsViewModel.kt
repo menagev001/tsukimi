@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -19,6 +21,17 @@ internal class AiSettingsViewModel @Inject constructor(
         initialValue = AiSettings(),
     )
 
+    private val _defaultWordNuancePrompt = MutableStateFlow("")
+    val defaultWordNuancePrompt: StateFlow<String> = _defaultWordNuancePrompt.asStateFlow()
+
+    private val _defaultSentenceBreakdownPrompt = MutableStateFlow("")
+    val defaultSentenceBreakdownPrompt: StateFlow<String> = _defaultSentenceBreakdownPrompt.asStateFlow()
+
+    init {
+        viewModelScope.launch { _defaultWordNuancePrompt.value = repository.defaultWordNuancePrompt() }
+        viewModelScope.launch { _defaultSentenceBreakdownPrompt.value = repository.defaultSentenceBreakdownPrompt() }
+    }
+
     fun updateBaseUrl(value: String) {
         viewModelScope.launch { repository.updateBaseUrl(value) }
     }
@@ -29,5 +42,13 @@ internal class AiSettingsViewModel @Inject constructor(
 
     fun updateApiKey(value: String) {
         viewModelScope.launch { repository.updateApiKey(value) }
+    }
+
+    fun updateWordNuancePromptOverride(value: String) {
+        viewModelScope.launch { repository.updateWordNuancePromptOverride(value) }
+    }
+
+    fun updateSentenceBreakdownPromptOverride(value: String) {
+        viewModelScope.launch { repository.updateSentenceBreakdownPromptOverride(value) }
     }
 }

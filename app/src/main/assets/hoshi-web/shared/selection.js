@@ -441,6 +441,8 @@ window.hoshiSelection = {
     getSentenceContext(startNode, startOffset) {
         const container = this.findParagraph(startNode) || document.body;
         const walker = this.createWalker(container);
+        const openBracketChars = new Set(Object.keys(this.brackets));
+        const closeBracketChars = new Set(Object.values(this.brackets));
 
         walker.currentNode = startNode;
         const partsBefore = [];
@@ -450,8 +452,20 @@ window.hoshiSelection = {
         while (node) {
             const text = node.textContent;
             let foundStart = false;
+            // Scanning backward (against reading order), a closing bracket is
+            // entered before its opening match is seen, so depth counts up on
+            // close and down on open; a delimiter only ends the sentence when
+            // depth is back to zero, i.e. it isn't nested inside an unclosed
+            // quote/bracket relative to the tap point (e.g. the ？ inside
+            // 「…？」 should not end the sentence on its own).
+            let bracketDepth = 0;
             for (let i = limit - 1; i >= 0; i--) {
-                if (this.sentenceDelimiters.includes(text[i])) {
+                const ch = text[i];
+                if (closeBracketChars.has(ch)) {
+                    bracketDepth++;
+                } else if (openBracketChars.has(ch) && bracketDepth > 0) {
+                    bracketDepth--;
+                } else if (bracketDepth === 0 && this.sentenceDelimiters.includes(ch)) {
                     partsBefore.push(text.slice(i + 1, limit));
                     foundStart = true;
                     break;
@@ -475,9 +489,15 @@ window.hoshiSelection = {
         while (node) {
             const text = node.textContent;
             let foundEnd = false;
+            let bracketDepth = 0;
 
             for (let i = start; i < text.length; i++) {
-                if (this.sentenceDelimiters.includes(text[i])) {
+                const ch = text[i];
+                if (openBracketChars.has(ch)) {
+                    bracketDepth++;
+                } else if (closeBracketChars.has(ch) && bracketDepth > 0) {
+                    bracketDepth--;
+                } else if (bracketDepth === 0 && this.sentenceDelimiters.includes(ch)) {
                     let end = i + 1;
 
                     while (end < text.length) {
@@ -506,16 +526,14 @@ window.hoshiSelection = {
         let selectedOffset = Math.max(0, beforeText.length - leadingTrim);
         let sentence = rawSentence.trim();
 
-        const closeBrackets = new Set(Object.values(this.brackets));
-        const openBrackets = new Set(Object.keys(this.brackets));
         let stack = [];
         let unmatchedClose = [];
 
         for (let i = 0; i < sentence.length; i++) {
             const ch = sentence[i];
-            if (openBrackets.has(ch)) {
+            if (openBracketChars.has(ch)) {
                 stack.push(ch);
-            } else if (closeBrackets.has(ch)) {
+            } else if (closeBracketChars.has(ch)) {
                 if (stack.length > 0 && this.brackets[stack[stack.length-1]] === ch) {
                     stack.pop();
                 } else {

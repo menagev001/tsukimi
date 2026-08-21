@@ -622,11 +622,15 @@
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">模型</string>
     <string name="ai_api_key">API 密钥</string>
     <string name="ai_api_key_configured" comment="AI API key configured state, intentionally matching the AnkiConnect API key configured state.">已配置</string>
-    <string name="ai_lookup_title">询问 AI</string>
+    <string name="explain_word_title">单词释义</string>
     <string name="ai_lookup_loading">正在询问 AI…</string>
     <string name="ai_lookup_error_format">AI 请求失败：%1$s</string>
     <string name="ai_lookup_retry">重试</string>
     <string name="sentence_breakdown_title" comment="Both the double-tap result overlay title and the button label shown before sending the sentence to AI.">句子解析</string>
+    <string name="ai_word_nuance_prompt_label">单词释义提示词</string>
+    <string name="ai_prompt_using_default">使用内置提示词</string>
+    <string name="ai_prompt_using_custom">使用自定义提示词</string>
+    <string name="ai_prompt_reset_to_default">恢复默认</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

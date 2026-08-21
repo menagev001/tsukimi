@@ -13,6 +13,8 @@ data class AiSettings(
     val baseUrl: String = DEFAULT_BASE_URL,
     val model: String = DEFAULT_MODEL,
     val apiKey: String = "",
+    val wordNuancePromptOverride: String = "",
+    val sentenceBreakdownPromptOverride: String = "",
 ) {
     companion object {
         const val DEFAULT_BASE_URL = "https://api.anthropic.com"
@@ -33,6 +35,8 @@ class AiSettingsRepository(
             baseUrl = preferences[KEY_BASE_URL]?.takeIf(String::isNotBlank) ?: AiSettings.DEFAULT_BASE_URL,
             model = preferences[KEY_MODEL]?.takeIf(String::isNotBlank) ?: AiSettings.DEFAULT_MODEL,
             apiKey = preferences[KEY_API_KEY] ?: "",
+            wordNuancePromptOverride = preferences[KEY_WORD_NUANCE_PROMPT] ?: "",
+            sentenceBreakdownPromptOverride = preferences[KEY_SENTENCE_BREAKDOWN_PROMPT] ?: "",
         )
     }
 
@@ -48,9 +52,19 @@ class AiSettingsRepository(
         dataStore.edit { it[KEY_API_KEY] = value }
     }
 
+    suspend fun updateWordNuancePromptOverride(value: String) {
+        dataStore.edit { it[KEY_WORD_NUANCE_PROMPT] = value }
+    }
+
+    suspend fun updateSentenceBreakdownPromptOverride(value: String) {
+        dataStore.edit { it[KEY_SENTENCE_BREAKDOWN_PROMPT] = value }
+    }
+
     private companion object {
         val KEY_BASE_URL = stringPreferencesKey("baseUrl")
         val KEY_MODEL = stringPreferencesKey("model")
         val KEY_API_KEY = stringPreferencesKey("apiKey")
+        val KEY_WORD_NUANCE_PROMPT = stringPreferencesKey("wordNuancePromptOverride")
+        val KEY_SENTENCE_BREAKDOWN_PROMPT = stringPreferencesKey("sentenceBreakdownPromptOverride")
     }
 }

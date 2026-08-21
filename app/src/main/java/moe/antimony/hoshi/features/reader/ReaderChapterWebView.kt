@@ -16,7 +16,6 @@ import android.view.MenuItem
 import android.view.MotionEvent
 import android.view.View
 import android.view.View.MeasureSpec
-import android.view.ViewConfiguration
 import android.view.ViewGroup
 import android.webkit.JavascriptInterface
 import android.webkit.RenderProcessGoneDetail
@@ -1086,7 +1085,7 @@ private class ContinuousScrollTouchListener(
     private var currentGestureIgnored = false
     private val focusTracker = ReaderContinuousScrollFocusTracker()
     private val tapDispatcher = ReaderTapDispatcher(
-        doubleTapTimeoutMs = ViewConfiguration.getDoubleTapTimeout().toLong(),
+        doubleTapTimeoutMs = READER_DOUBLE_TAP_TIMEOUT_MS,
         onTap = onTap,
         onDoubleTap = onDoubleTap,
     )

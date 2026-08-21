@@ -1596,7 +1596,7 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
         'aria-label',
         kind === 'audio' ? 'Play audio'
             : kind === 'notes' ? 'Show Anki notes'
-            : kind === 'ai' ? 'Ask AI'
+            : kind === 'ai' ? 'Explain Word'
             : kind === 'export' ? 'Export'
             : 'Add to Anki',
     );

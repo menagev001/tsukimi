@@ -1,7 +1,10 @@
 package moe.antimony.hoshi.features.ai
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -9,6 +12,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
@@ -35,6 +39,8 @@ import moe.antimony.hoshi.ui.hoshiOutlinedTextFieldColors
 import moe.antimony.hoshi.ui.hoshiSingleLineTextFieldLineLimits
 import moe.antimony.hoshi.ui.rememberSyncedTextFieldState
 
+private enum class AiPromptKind { WordNuance, SentenceBreakdown }
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AiSettingsView(
@@ -50,6 +56,32 @@ fun AiSettingsView(
     var modelInput by remember { mutableStateOf("") }
     var editingApiKey by remember { mutableStateOf(false) }
     var apiKeyInput by remember { mutableStateOf("") }
+    var editingPromptKind by remember { mutableStateOf<AiPromptKind?>(null) }
+
+    if (editingPromptKind == AiPromptKind.WordNuance) {
+        val defaultPrompt by viewModel.defaultWordNuancePrompt.collectAsStateWithLifecycle()
+        PromptEditorView(
+            title = stringResource(R.string.ai_word_nuance_prompt_label),
+            currentOverride = settings.wordNuancePromptOverride,
+            defaultPrompt = defaultPrompt,
+            onSave = viewModel::updateWordNuancePromptOverride,
+            onClose = { editingPromptKind = null },
+            modifier = modifier,
+        )
+        return
+    }
+    if (editingPromptKind == AiPromptKind.SentenceBreakdown) {
+        val defaultPrompt by viewModel.defaultSentenceBreakdownPrompt.collectAsStateWithLifecycle()
+        PromptEditorView(
+            title = stringResource(R.string.sentence_breakdown_title),
+            currentOverride = settings.sentenceBreakdownPromptOverride,
+            defaultPrompt = defaultPrompt,
+            onSave = viewModel::updateSentenceBreakdownPromptOverride,
+            onClose = { editingPromptKind = null },
+            modifier = modifier,
+        )
+        return
+    }
 
     if (editingBaseUrl) {
         val baseUrlState = rememberSyncedTextFieldState(
@@ -228,6 +260,100 @@ fun AiSettingsView(
                     )
                 }
             }
+            item {
+                AiSettingsCard {
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                        headlineContent = { Text(stringResource(R.string.ai_word_nuance_prompt_label)) },
+                        supportingContent = {
+                            Text(
+                                if (settings.wordNuancePromptOverride.isBlank()) {
+                                    stringResource(R.string.ai_prompt_using_default)
+                                } else {
+                                    stringResource(R.string.ai_prompt_using_custom)
+                                },
+                            )
+                        },
+                        trailingContent = {
+                            TextButton(onClick = { editingPromptKind = AiPromptKind.WordNuance }) {
+                                Text(stringResource(R.string.action_edit))
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                        headlineContent = { Text(stringResource(R.string.sentence_breakdown_title)) },
+                        supportingContent = {
+                            Text(
+                                if (settings.sentenceBreakdownPromptOverride.isBlank()) {
+                                    stringResource(R.string.ai_prompt_using_default)
+                                } else {
+                                    stringResource(R.string.ai_prompt_using_custom)
+                                },
+                            )
+                        },
+                        trailingContent = {
+                            TextButton(onClick = { editingPromptKind = AiPromptKind.SentenceBreakdown }) {
+                                Text(stringResource(R.string.action_edit))
+                            }
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PromptEditorView(
+    title: String,
+    currentOverride: String,
+    defaultPrompt: String,
+    onSave: (String) -> Unit,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var text by remember(currentOverride, defaultPrompt) {
+        mutableStateOf(currentOverride.ifBlank { defaultPrompt })
+    }
+    SettingsDetailScaffold(
+        title = title,
+        onClose = onClose,
+        modifier = modifier,
+    ) { innerPadding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .padding(16.dp),
+        ) {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                colors = hoshiOutlinedTextFieldColors(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+            )
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            ) {
+                TextButton(onClick = { text = defaultPrompt }) {
+                    Text(stringResource(R.string.ai_prompt_reset_to_default))
+                }
+                Button(
+                    onClick = {
+                        onSave(if (text.trim() == defaultPrompt.trim()) "" else text)
+                        onClose()
+                    },
+                ) {
+                    Text(stringResource(R.string.action_save))
+                }
+            }
         }
     }
 }
@@ -243,7 +369,7 @@ private fun AiSettingsCard(content: @Composable () -> Unit) {
             .fillMaxWidth()
             .padding(bottom = 12.dp),
     ) {
-        androidx.compose.foundation.layout.Column {
+        Column {
             content()
         }
     }

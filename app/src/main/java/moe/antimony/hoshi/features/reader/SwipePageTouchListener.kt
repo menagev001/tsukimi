@@ -3,8 +3,15 @@ package moe.antimony.hoshi.features.reader
 import android.os.SystemClock
 import android.view.MotionEvent
 import android.view.View
-import android.view.ViewConfiguration
 import kotlin.math.abs
+
+/**
+ * Shorter than [android.view.ViewConfiguration.getDoubleTapTimeout()] (~400ms):
+ * that system default makes every single tap feel sluggish since it always
+ * waits out the window before opening the lookup popup. This keeps double-tap
+ * detection snappy for single taps at the cost of a tighter double-tap window.
+ */
+internal const val READER_DOUBLE_TAP_TIMEOUT_MS = 180L
 
 abstract class SwipePageTouchListener(
     swipeDistance: Float = DEFAULT_SWIPE_DISTANCE,
@@ -12,7 +19,7 @@ abstract class SwipePageTouchListener(
 ) : View.OnTouchListener {
     private val tracker = ReaderSwipeGestureTracker(minDistance = swipeDistance)
     private val tapDispatcher = ReaderTapDispatcher(
-        doubleTapTimeoutMs = ViewConfiguration.getDoubleTapTimeout().toLong(),
+        doubleTapTimeoutMs = READER_DOUBLE_TAP_TIMEOUT_MS,
         onTap = ::onTap,
         onDoubleTap = ::onDoubleTap,
     )

@@ -23,22 +23,45 @@ class AiRepository @Inject constructor(
     suspend fun updateBaseUrl(value: String) = settingsRepository.updateBaseUrl(value)
     suspend fun updateModel(value: String) = settingsRepository.updateModel(value)
     suspend fun updateApiKey(value: String) = settingsRepository.updateApiKey(value)
+    suspend fun updateWordNuancePromptOverride(value: String) =
+        settingsRepository.updateWordNuancePromptOverride(value)
+    suspend fun updateSentenceBreakdownPromptOverride(value: String) =
+        settingsRepository.updateSentenceBreakdownPromptOverride(value)
+
+    suspend fun defaultWordNuancePrompt(): String = withContext(ioDispatcher) {
+        loadPromptAsset(WordNuancePromptAsset)
+    }
+
+    suspend fun defaultSentenceBreakdownPrompt(): String = withContext(ioDispatcher) {
+        loadPromptAsset(SentenceBreakdownPromptAsset)
+    }
 
     suspend fun askWordNuance(word: String, sentence: String): Result<String> =
-        ask(promptAsset = WordNuancePromptAsset, userMessage = "Word: $word\nSentence: $sentence")
+        ask(
+            promptAsset = WordNuancePromptAsset,
+            promptOverride = { it.wordNuancePromptOverride },
+            userMessage = "Word: $word\nSentence: $sentence",
+        )
 
     suspend fun askSentenceBreakdown(sentence: String): Result<String> =
-        ask(promptAsset = SentenceBreakdownPromptAsset, userMessage = sentence)
+        ask(
+            promptAsset = SentenceBreakdownPromptAsset,
+            promptOverride = { it.sentenceBreakdownPromptOverride },
+            userMessage = sentence,
+        )
 
-    private suspend fun ask(promptAsset: String, userMessage: String): Result<String> = withContext(ioDispatcher) {
+    private suspend fun ask(
+        promptAsset: String,
+        promptOverride: (AiSettings) -> String,
+        userMessage: String,
+    ): Result<String> = withContext(ioDispatcher) {
         runCatching {
-            val systemPrompt = promptCache.getOrPut(promptAsset) {
-                context.assets.open(promptAsset).bufferedReader().use { it.readText() }
-            }
             val currentSettings = settingsRepository.settings.first()
             if (currentSettings.apiKey.isBlank()) {
                 throw AiRequestException("No API key configured")
             }
+            val systemPrompt = promptOverride(currentSettings).takeIf(String::isNotBlank)
+                ?: loadPromptAsset(promptAsset)
             client.ask(
                 baseUrl = currentSettings.baseUrl,
                 model = currentSettings.model,
@@ -48,6 +71,11 @@ class AiRepository @Inject constructor(
             )
         }
     }
+
+    private fun loadPromptAsset(promptAsset: String): String =
+        promptCache.getOrPut(promptAsset) {
+            context.assets.open(promptAsset).bufferedReader().use { it.readText() }
+        }
 
     private companion object {
         const val WordNuancePromptAsset = "ai-prompts/word_nuance.md"

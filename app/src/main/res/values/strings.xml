@@ -624,11 +624,15 @@
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">Model</string>
     <string name="ai_api_key">API Key</string>
     <string name="ai_api_key_configured" comment="AI API key configured state, intentionally matching the AnkiConnect API key configured state.">Configured</string>
-    <string name="ai_lookup_title">Ask AI</string>
+    <string name="explain_word_title">Explain Word</string>
     <string name="ai_lookup_loading">Asking AI…</string>
     <string name="ai_lookup_error_format">AI request failed: %1$s</string>
     <string name="ai_lookup_retry">Retry</string>
     <string name="sentence_breakdown_title" comment="Both the double-tap result overlay title and the button label shown before sending the sentence to AI.">Sentence Breakdown</string>
+    <string name="ai_word_nuance_prompt_label">Word Nuance Prompt</string>
+    <string name="ai_prompt_using_default">Using bundled prompt</string>
+    <string name="ai_prompt_using_custom">Using custom prompt</string>
+    <string name="ai_prompt_reset_to_default">Reset to Default</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

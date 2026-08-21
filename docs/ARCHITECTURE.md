@@ -171,18 +171,26 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   (`SwipePageTouchListener.kt`), shared by `SwipePageTouchListener` (gated by
   a `doubleTapEnabled` constructor flag, on only for `ReaderViewMode.Paginated`)
   and `ContinuousScrollTouchListener`; it delays single-tap dispatch by
-  `ViewConfiguration.getDoubleTapTimeout()` to detect a following tap at
-  roughly the same position. The JS side reuses `hoshiSelection.selectText`'s
-  existing word/sentence scan unchanged, just with a trailing `sentenceOnly`
-  flag threaded through to the posted selection payload as `isSentenceOnly`;
-  no separate JS sentence-scanning path exists for double tap.
-- The reader lookup popup has an "Ask AI" button (`popup.js` button-slot kind
-  `'ai'`, gated by `window.aiLookupEnabled`, set only by the Reader's call to
-  `LookupPopupHtml.renderIframeDocument` — Dictionary tab and Process Text
-  popups render the same JS without it) that posts a fire-and-forget `askAi`
-  bridge message. `AskAi` reads the popup's already-captured
-  `ReaderSelectionData` (no new word/context round-trip) and calls
-  `AiRepository.askWordNuance`; double tap calls
+  `READER_DOUBLE_TAP_TIMEOUT_MS` (180ms — deliberately shorter than Android's
+  ~400ms `ViewConfiguration.getDoubleTapTimeout()` default, which made every
+  single tap feel sluggish) to detect a following tap at roughly the same
+  position. The JS side reuses `hoshiSelection.selectText`'s existing
+  word/sentence scan unchanged, just with a trailing `sentenceOnly` flag
+  threaded through to the posted selection payload as `isSentenceOnly`; no
+  separate JS sentence-scanning path exists for double tap.
+- `hoshiSelection.getSentenceContext`'s forward/backward terminator scan is
+  bracket-depth aware: a closing bracket increments depth scanning backward
+  (decremented by its opening match), and vice versa scanning forward, and a
+  `。！？` delimiter only ends the sentence at depth zero. This keeps a
+  sentence-final mark still inside an unclosed quote (e.g. the ？ inside
+  「…？」の) from splitting the sentence early.
+- The reader lookup popup has an "Explain Word" button (`popup.js`
+  button-slot kind `'ai'`, gated by `window.aiLookupEnabled`, set only by the
+  Reader's call to `LookupPopupHtml.renderIframeDocument` — Dictionary tab and
+  Process Text popups render the same JS without it) that posts a
+  fire-and-forget `askAi` bridge message. `AskAi` reads the popup's
+  already-captured `ReaderSelectionData` (no new word/context round-trip) and
+  calls `AiRepository.askWordNuance`; double tap calls
   `AiRepository.askSentenceBreakdown` after its confirm step. Both hit the
   Anthropic Messages API via `HttpURLConnection` (`AiClient`, `AiTransport`
   Hilt-provided for test seams), `AiSettingsRepository`-backed base URL/model/
@@ -190,10 +198,15 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   `AiLookupState` (`Hidden` / `Confirm` / `Loading` / `Success` / `Error`) over
   an `AiLookupRequest` (`WordNuance` or `SentenceBreakdown`), rendered through
   `AiLookupOverlay`, a plain Compose overlay in `ReaderWebView` state (not a
-  native popup replacing the JS/iframe dictionary popup). The two system
-  prompts are fixed, bundled assets — `app/src/main/assets/ai-prompts/
-  word_nuance.md` and `sentence_breakdown.md` — sent via the Anthropic API's
-  `system` parameter, not user-editable.
+  native popup replacing the JS/iframe dictionary popup) — the sentence is
+  shown with the looked-up word bolded for `WordNuance` requests, and the
+  response text scrolls internally (with a drawn scrollbar thumb) inside a
+  dialog height-capped at 85% of the screen. The two system prompts default to
+  fixed, bundled assets — `app/src/main/assets/ai-prompts/word_nuance.md` and
+  `sentence_breakdown.md` — sent via the Anthropic API's `system` parameter;
+  `AiSettings.wordNuancePromptOverride`/`sentenceBreakdownPromptOverride`
+  (DataStore-backed, edited under Settings > AI Lookup) take precedence over
+  the bundled asset text whenever non-blank.
 - The reader lookup popup, Dictionary tab, and Process Text popups share one
   unconditional "Export" button (`popup.js` button-slot kind `'export'`) that
   posts a fire-and-forget `exportWord` bridge message. All three handle it by

@@ -13,9 +13,11 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 - Add `hoshi://search?text=...` deep links for opening lookup results in the
   existing popup overlay, with `mode=app` support for opening the Dictionary
   tab instead.
-- Add an "Ask AI" action to the reader lookup popup that sends the looked-up
-  word and its sentence to a configurable AI provider (Settings > AI Lookup)
-  and shows a word-nuance explanation in a simple result view.
+- Add an "Explain Word" action to the reader lookup popup that sends the
+  looked-up word and its sentence to a configurable AI provider (Settings >
+  AI Lookup, with optional custom prompt overrides) and shows a word-nuance
+  explanation, with the word bolded in the sentence, in a scrollable result
+  view.
 - Add a double-tap gesture on reader text (paginated and continuous modes)
   that offers a "Sentence Breakdown" of the surrounding sentence, skipping
   the normal dictionary popup; the AI request only sends once that option is
