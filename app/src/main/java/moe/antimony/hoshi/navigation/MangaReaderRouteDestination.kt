@@ -10,13 +10,16 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import kotlinx.coroutines.launch
 import moe.antimony.hoshi.LocalHoshiUiDependencies
 import moe.antimony.hoshi.content.ContentLanguageProfile
+import moe.antimony.hoshi.features.manga.MangaReaderWebView
 import moe.antimony.hoshi.features.reader.ReaderLoadingPage
 import moe.antimony.hoshi.features.reader.ReaderSettings
 
@@ -37,6 +40,7 @@ internal fun MangaReaderRouteDestination(
     var reloadKey by remember(volumeId) { mutableIntStateOf(0) }
     val systemDarkTheme = isSystemInDarkTheme()
     val loadingBackground = Modifier.background(Color(readerSettings.backgroundColor(systemDarkTheme)))
+    val scope = rememberCoroutineScope()
 
     val routeState by produceState<MangaReaderRouteRenderState>(
         MangaReaderRouteRenderState.Loading,
@@ -72,14 +76,20 @@ internal fun MangaReaderRouteDestination(
             Text(state.message)
         }
         is MangaReaderRouteRenderState.Ready -> {
-            // Placeholder body: validates routing/back-stack/profile-activation in isolation
-            // before the reader-manga.js overlay shell + MangaReaderWebView are wired in.
-            Box(
-                modifier = modifier.fillMaxSize().then(loadingBackground),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(state.loadState.entry.displayTitle)
-            }
+            val readyState = state.loadState
+            MangaReaderWebView(
+                volumeId = volumeId,
+                volumeEntry = readyState.entry,
+                mokuroVolume = readyState.mokuroVolume,
+                initialPageIndex = readyState.bookmark?.pageIndex ?: 0,
+                readerSettings = readerSettings,
+                contentLanguageProfile = state.contentLanguageProfile,
+                onSaveBookmark = { pageIndex ->
+                    scope.launch { stateHolder.saveBookmark(readyState.entry, pageIndex) }
+                },
+                onClose = onClose,
+                modifier = modifier.fillMaxSize(),
+            )
         }
     }
 }
