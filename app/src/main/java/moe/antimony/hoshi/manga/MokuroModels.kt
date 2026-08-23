@@ -11,6 +11,10 @@ data class MokuroVolume(
     val volume: String? = null,
     @SerialName("volume_uuid") val volumeUuid: String? = null,
     val pages: List<MokuroPage> = emptyList(),
+    // Whole-volume character count, present in real mokuro output (confirmed against real
+    // .mokuro files) -- a ready-made reading-progress/statistics proxy metric for later use,
+    // no need to derive one from OCR line lengths.
+    val chars: Int? = null,
 )
 
 @Serializable
