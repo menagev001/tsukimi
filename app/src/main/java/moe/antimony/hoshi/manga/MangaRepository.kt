@@ -1,5 +1,7 @@
 package moe.antimony.hoshi.manga
 
+import android.content.ContentResolver
+import android.net.Uri
 import java.io.File
 import java.time.Instant
 import javax.inject.Inject
@@ -21,6 +23,7 @@ import moe.antimony.hoshi.di.IoDispatcher
  */
 @Singleton
 class MangaRepository private constructor(
+    private val filesDir: File,
     private val ioDispatcher: CoroutineDispatcher,
     private val fileDataSource: MangaFileDataSource,
     private val sidecarDataSource: MangaSidecarDataSource,
@@ -31,6 +34,7 @@ class MangaRepository private constructor(
         @FilesDir filesDir: File,
         @IoDispatcher ioDispatcher: CoroutineDispatcher,
     ) : this(
+        filesDir = filesDir,
         ioDispatcher = ioDispatcher,
         fileDataSource = MangaFileDataSource(filesDir, ioDispatcher),
         sidecarDataSource = MangaSidecarDataSource(ioDispatcher),
@@ -39,7 +43,20 @@ class MangaRepository private constructor(
 
     constructor(filesDir: File) : this(filesDir, Dispatchers.IO)
 
+    private val importDataSource = MangaImportDataSource(
+        filesDir = filesDir,
+        fileDataSource = fileDataSource,
+        clock = clock,
+        ioDispatcher = ioDispatcher,
+    )
+
     val mangaDirectory: File get() = fileDataSource.mangaDirectory
+
+    suspend fun importCbz(contentResolver: ContentResolver, cbzUri: Uri, mokuroUri: Uri): File =
+        importDataSource.importCbz(contentResolver, cbzUri, mokuroUri)
+
+    internal suspend fun importFolderCandidate(contentResolver: ContentResolver, candidate: MangaImportCandidate<Uri>): File =
+        importDataSource.importFolderCandidate(contentResolver, candidate)
 
     suspend fun loadAllVolumes(): List<File> = fileDataSource.loadAllVolumes()
 

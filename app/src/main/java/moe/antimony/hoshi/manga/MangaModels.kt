@@ -8,7 +8,7 @@ import moe.antimony.hoshi.epub.HighlightColor
 data class MangaVolumeMetadata(
     val id: String,
     val title: String?,
-    // Relative path into app storage, e.g. "Manga/<folder>/pages/<firstImgPath>".
+    // Path relative to the volume's own root directory, e.g. "pages/<firstImgPath>".
     val cover: String?,
     val folder: String?,
     // Apple-reference-epoch seconds, same convention as BookMetadata.lastAccess.

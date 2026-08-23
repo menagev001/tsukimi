@@ -44,6 +44,8 @@
     <string name="import_select_hoshi_backup">Select a .hoshi Hoshi backup file.</string>
     <string name="import_select_ttu_bookdata_backup">Select a .zip ッツ bookdata backup file.</string>
     <string name="import_select_font">Select a .ttf, .otf, .woff, or .woff2 font file.</string>
+    <string name="import_select_manga_cbz">Select a .cbz manga CBZ archive file.</string>
+    <string name="import_select_mokuro_sidecar">Select a .mokuro sidecar file.</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">Books</string>
     <string name="main_tab_dictionary">Dictionary</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">Statistics</string>

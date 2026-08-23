@@ -44,6 +44,8 @@
     <string name="import_select_hoshi_backup">请选择 .hoshi Hoshi 备份文件。</string>
     <string name="import_select_ttu_bookdata_backup">请选择 .zip ッツ bookdata 备份文件。</string>
     <string name="import_select_font">请选择 .ttf、.otf、.woff 或 .woff2 字体文件。</string>
+    <string name="import_select_manga_cbz">请选择 .cbz 漫画压缩包文件。</string>
+    <string name="import_select_mokuro_sidecar">请选择 .mokuro 附属文件。</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">书库</string>
     <string name="main_tab_dictionary">查词</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">统计</string>

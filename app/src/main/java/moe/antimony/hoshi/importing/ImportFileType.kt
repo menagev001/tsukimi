@@ -81,6 +81,25 @@ data class ImportFileType(
             unsupportedMessageRes = R.string.import_select_ttu_bookdata_backup,
         )
 
+        val MangaCbz = ImportFileType(
+            description = "manga CBZ archive",
+            extensions = listOf("cbz", "zip"),
+            mimeTypes = arrayOf(
+                "application/vnd.comicbook+zip",
+                "application/zip",
+                "application/x-zip-compressed",
+                "application/octet-stream",
+            ),
+            unsupportedMessageRes = R.string.import_select_manga_cbz,
+        )
+
+        val MokuroSidecar = ImportFileType(
+            description = "mokuro sidecar",
+            extensions = listOf("mokuro"),
+            mimeTypes = arrayOf("application/json", "text/plain", "application/octet-stream"),
+            unsupportedMessageRes = R.string.import_select_mokuro_sidecar,
+        )
+
         val ReaderFont = ImportFileType(
             description = "font",
             extensions = listOf("ttf", "otf", "woff", "woff2"),
