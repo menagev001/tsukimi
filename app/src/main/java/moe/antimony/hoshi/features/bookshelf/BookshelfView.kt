@@ -94,11 +94,15 @@ import androidx.compose.material3.adaptive.navigationsuite.NavigationSuiteType
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -128,6 +132,7 @@ import moe.antimony.hoshi.epub.BookEntry
 import moe.antimony.hoshi.epub.BookRepository
 import moe.antimony.hoshi.epub.BookShelf
 import moe.antimony.hoshi.epub.BookSortOption
+import moe.antimony.hoshi.features.manga.MangaShelfView
 import moe.antimony.hoshi.features.reader.ReaderSettings
 import moe.antimony.hoshi.features.sync.DriveAuthStatus
 import moe.antimony.hoshi.features.sync.SyncDirection
@@ -155,10 +160,12 @@ fun BookshelfView(
     pendingImportUri: Uri? = null,
     onPendingImportConsumed: () -> Unit = {},
     onOpenReader: (String) -> Unit,
+    onOpenMangaReader: (String) -> Unit = {},
     refreshKey: Int = 0,
     layoutSpec: MainShellLayoutSpec,
     modifier: Modifier = Modifier,
 ) {
+    var libraryMode by rememberSaveable { mutableStateOf(LibraryMode.Novels) }
     val context = LocalContext.current
     val appContainer = LocalHoshiUiDependencies.current
     val syncSettings by appContainer.syncSettingsRepository.settings.collectAsStateWithLifecycle(
@@ -282,7 +289,20 @@ fun BookshelfView(
         }
     }
 
-    Box(modifier = modifier.fillMaxSize()) {
+    Column(modifier = modifier.fillMaxSize()) {
+    LibraryModeSegmentedToggle(
+        mode = libraryMode,
+        onModeChange = { libraryMode = it },
+    )
+    Box(Modifier.weight(1f).fillMaxWidth()) {
+    if (libraryMode == LibraryMode.Manga) {
+        MangaShelfView(
+            layoutSpec = layoutSpec,
+            onOpenReader = onOpenMangaReader,
+            modifier = Modifier.fillMaxSize(),
+        )
+    } else {
+    Box(modifier = Modifier.fillMaxSize()) {
     BooksTab(
         modifier = Modifier.fillMaxSize(),
         layoutSpec = layoutSpec,
@@ -371,7 +391,11 @@ fun BookshelfView(
                 .padding(16.dp),
         )
     }
+    }
+    }
+    }
 
+    if (libraryMode == LibraryMode.Novels) {
     uiState.statusMessage?.let { message ->
         AlertDialog(
             onDismissRequest = booksViewModel::consumeStatusMessage,
@@ -552,6 +576,41 @@ fun BookshelfView(
             onConfirm = booksViewModel::confirmShelfCreationMove,
             onDismiss = booksViewModel::dismissShelfCreationMoveDialog,
         )
+    }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun LibraryModeSegmentedToggle(
+    mode: LibraryMode,
+    onModeChange: (LibraryMode) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colorScheme = MaterialTheme.colorScheme
+    SingleChoiceSegmentedButtonRow(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        LibraryMode.entries.forEachIndexed { index, entry ->
+            SegmentedButton(
+                selected = mode == entry,
+                onClick = { onModeChange(entry) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = LibraryMode.entries.size),
+                colors = SegmentedButtonDefaults.colors(
+                    activeContainerColor = colorScheme.secondaryContainer,
+                    activeContentColor = colorScheme.onSecondaryContainer,
+                    activeBorderColor = colorScheme.outline,
+                    inactiveContainerColor = Color.Transparent,
+                    inactiveContentColor = colorScheme.onSurface,
+                    inactiveBorderColor = colorScheme.outline,
+                ),
+                icon = {},
+            ) {
+                Text(stringResource(entry.labelRes))
+            }
+        }
     }
 }
 

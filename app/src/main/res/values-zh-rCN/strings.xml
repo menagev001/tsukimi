@@ -47,9 +47,21 @@
     <string name="import_select_manga_cbz">请选择 .cbz 漫画压缩包文件。</string>
     <string name="import_select_mokuro_sidecar">请选择 .mokuro 附属文件。</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">书库</string>
+    <string name="main_tab_manga">漫画</string>
     <string name="main_tab_dictionary">查词</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">统计</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">设置</string>
+    <string name="library_mode_novels">小说</string>
+    <string name="library_mode_manga">漫画</string>
+    <string name="manga_shelf_open_failed">无法打开此漫画卷。</string>
+    <string name="manga_shelf_import_failed">无法导入此漫画卷。</string>
+    <string name="manga_shelf_import_folder_empty">在该文件夹中未找到带有匹配 CBZ 或页面图片的 .mokuro 文件。</string>
+    <string name="manga_shelf_import_selection_invalid">请同时选择一个 .cbz 文件和一个 .mokuro 文件。</string>
+    <string name="manga_shelf_import_cbz">导入 CBZ + mokuro</string>
+    <string name="manga_shelf_import_folder">导入文件夹</string>
+    <string name="manga_shelf_importing">正在导入漫画卷…</string>
+    <string name="manga_shelf_empty_title">暂无漫画</string>
+    <string name="manga_shelf_empty_body">导入 .cbz 文件及其 .mokuro 附属文件，或包含它们的文件夹，即可开始。</string>
     <string name="statistics_title" comment="Statistics page title, intentionally matching the main tab label.">统计</string>
     <string name="statistics_today" comment="Statistics dashboard section title, intentionally matching reader statistics today label.">今天</string>
     <string name="statistics_this_week">本周</string>

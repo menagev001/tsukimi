@@ -13,6 +13,11 @@ enum class MainTab(@param:StringRes val labelRes: Int) {
     Settings(R.string.main_tab_settings),
 }
 
+internal enum class LibraryMode(@param:StringRes val labelRes: Int) {
+    Novels(R.string.library_mode_novels),
+    Manga(R.string.library_mode_manga),
+}
+
 enum class MainShellNavigationLayout {
     BottomBar,
     NavigationRail,

@@ -100,6 +100,13 @@ data class ImportFileType(
             unsupportedMessageRes = R.string.import_select_mokuro_sidecar,
         )
 
+        val MangaPageImage = ImportFileType(
+            description = "manga page image",
+            extensions = listOf("jpg", "jpeg", "png", "webp", "gif", "bmp"),
+            mimeTypes = arrayOf("image/jpeg", "image/png", "image/webp", "image/gif", "image/bmp"),
+            unsupportedMessageRes = R.string.import_select_manga_cbz,
+        )
+
         val ReaderFont = ImportFileType(
             description = "font",
             extensions = listOf("ttf", "otf", "woff", "woff2"),

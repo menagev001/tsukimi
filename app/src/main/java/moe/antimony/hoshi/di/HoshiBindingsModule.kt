@@ -15,6 +15,8 @@ import moe.antimony.hoshi.features.dictionary.AndroidDictionarySearchRepository
 import moe.antimony.hoshi.features.dictionary.AndroidDictionaryViewModelRepository
 import moe.antimony.hoshi.features.dictionary.DictionarySearchRepository
 import moe.antimony.hoshi.features.dictionary.DictionaryViewModelRepository
+import moe.antimony.hoshi.features.manga.AndroidMangaLibraryRepository
+import moe.antimony.hoshi.features.manga.MangaLibraryRepository
 import moe.antimony.hoshi.features.statistics.AndroidStatisticsRepository
 import moe.antimony.hoshi.features.statistics.StatisticsDateProvider
 import moe.antimony.hoshi.features.statistics.StatisticsRepository
@@ -47,6 +49,10 @@ internal interface HoshiBindingsModule {
     @Binds
     @Singleton
     fun bindBookshelfRepository(repository: AndroidBookshelfRepository): BookshelfRepository
+
+    @Binds
+    @Singleton
+    fun bindMangaLibraryRepository(repository: AndroidMangaLibraryRepository): MangaLibraryRepository
 
     @Binds
     @Singleton

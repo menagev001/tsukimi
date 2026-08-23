@@ -47,9 +47,21 @@
     <string name="import_select_manga_cbz">Select a .cbz manga CBZ archive file.</string>
     <string name="import_select_mokuro_sidecar">Select a .mokuro sidecar file.</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">Books</string>
+    <string name="main_tab_manga">Manga</string>
     <string name="main_tab_dictionary">Dictionary</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">Statistics</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">Settings</string>
+    <string name="library_mode_novels">Novels</string>
+    <string name="library_mode_manga">Manga</string>
+    <string name="manga_shelf_open_failed">Unable to open this manga volume.</string>
+    <string name="manga_shelf_import_failed">Unable to import this manga volume.</string>
+    <string name="manga_shelf_import_folder_empty">No .mokuro files with a matching CBZ or page images were found in that folder.</string>
+    <string name="manga_shelf_import_selection_invalid">Select exactly one .cbz and one .mokuro file together.</string>
+    <string name="manga_shelf_import_cbz">Import CBZ + mokuro</string>
+    <string name="manga_shelf_import_folder">Import folder</string>
+    <string name="manga_shelf_importing">Importing manga volume…</string>
+    <string name="manga_shelf_empty_title">No manga yet</string>
+    <string name="manga_shelf_empty_body">Import a .cbz and its .mokuro sidecar, or a folder containing them, to get started.</string>
     <string name="statistics_title" comment="Statistics page title, intentionally matching the main tab label.">Statistics</string>
     <string name="statistics_today" comment="Statistics dashboard section title, intentionally matching reader statistics today label.">Today</string>
     <string name="statistics_this_week">This Week</string>
