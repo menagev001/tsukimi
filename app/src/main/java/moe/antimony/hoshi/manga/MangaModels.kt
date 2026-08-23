@@ -2,6 +2,7 @@ package moe.antimony.hoshi.manga
 
 import java.io.File
 import kotlinx.serialization.Serializable
+import moe.antimony.hoshi.content.ProfileActivationSubject
 import moe.antimony.hoshi.epub.HighlightColor
 
 @Serializable
@@ -19,9 +20,9 @@ data class MangaVolumeMetadata(
     // Cached from mokuro.pages.size at import time so the shelf grid never has to parse the
     // full mokuro.json just to render page-count/progress UI.
     val pageCount: Int = 0,
-    val profileId: String? = null,
-    val bookLanguage: String? = null,
-) {
+    override val profileId: String? = null,
+    override val bookLanguage: String? = null,
+) : ProfileActivationSubject {
     val displayTitle: String
         get() = renamedTitle?.takeIf { it.isNotBlank() } ?: title.orEmpty()
 }

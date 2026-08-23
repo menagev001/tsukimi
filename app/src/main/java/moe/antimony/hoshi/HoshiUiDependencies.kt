@@ -14,6 +14,7 @@ import moe.antimony.hoshi.features.backup.HoshiBackupRepository
 import moe.antimony.hoshi.features.dictionary.DictionarySettingsRepository
 import moe.antimony.hoshi.features.reader.ReaderFontManager
 import moe.antimony.hoshi.features.reader.ReaderSettingsRepository
+import moe.antimony.hoshi.manga.MangaRepository
 import moe.antimony.hoshi.features.sasayaki.SasayakiPlaybackServiceRuntime
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettingsRepository
 import moe.antimony.hoshi.features.statistics.StatisticsDateProvider
@@ -33,6 +34,7 @@ import moe.antimony.hoshi.features.update.UpdateSettingsRepository
 internal class HoshiUiDependencies @Inject constructor(
     @param:ApplicationScope private val appScopeProvider: Lazy<CoroutineScope>,
     private val bookRepositoryProvider: Lazy<BookRepository>,
+    private val mangaRepositoryProvider: Lazy<MangaRepository>,
     private val dictionaryRepositoryProvider: Lazy<DictionaryRepository>,
     private val readerSettingsRepositoryProvider: Lazy<ReaderSettingsRepository>,
     private val dictionarySettingsRepositoryProvider: Lazy<DictionarySettingsRepository>,
@@ -59,6 +61,7 @@ internal class HoshiUiDependencies @Inject constructor(
 ) {
     val appScope: CoroutineScope get() = appScopeProvider.get()
     val bookRepository: BookRepository get() = bookRepositoryProvider.get()
+    val mangaRepository: MangaRepository get() = mangaRepositoryProvider.get()
     val dictionaryRepository: DictionaryRepository get() = dictionaryRepositoryProvider.get()
     val readerSettingsRepository: ReaderSettingsRepository get() = readerSettingsRepositoryProvider.get()
     val dictionarySettingsRepository: DictionarySettingsRepository get() = dictionarySettingsRepositoryProvider.get()

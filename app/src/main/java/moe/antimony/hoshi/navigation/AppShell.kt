@@ -94,6 +94,10 @@ fun AppShell(
     val readerRouteStateHolder = remember(bookRepository, epubBookParser) {
         ReaderRouteStateHolder(bookRepository, DefaultReaderRouteEpubParser(epubBookParser))
     }
+    val mangaRepository = appContainer.mangaRepository
+    val mangaReaderRouteStateHolder = remember(mangaRepository) {
+        MangaReaderRouteStateHolder(mangaRepository)
+    }
     val readerFontManager = appContainer.readerFontManager
     val sasayakiSettingsRepository = appContainer.sasayakiSettingsRepository
     val scope = rememberCoroutineScope()
@@ -244,6 +248,12 @@ fun AppShell(
         booksBackStack.openReaderRoute(bookId)
     }
 
+    fun openMangaReader(volumeId: String) {
+        clearReaderRoutesOutsideBooks()
+        selectedTab = MainTab.Books
+        booksBackStack.openMangaReaderRoute(volumeId)
+    }
+
     fun returnToSasayakiReader(bookId: String) {
         clearReaderRoutesOutsideBooks()
         selectedTab = MainTab.Books
@@ -291,6 +301,7 @@ fun AppShell(
                     readerSettings = currentReaderSettings,
                     onReaderSettingsChange = currentOnReaderSettingsChange,
                     onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
                 )
@@ -301,6 +312,7 @@ fun AppShell(
                     readerSettings = currentReaderSettings,
                     onReaderSettingsChange = currentOnReaderSettingsChange,
                     onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
                     pendingDictionaryLookupRequest = currentPendingDictionaryLookupRequest,
@@ -313,6 +325,7 @@ fun AppShell(
                     readerSettings = currentReaderSettings,
                     onReaderSettingsChange = currentOnReaderSettingsChange,
                     onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
                 )
@@ -323,6 +336,7 @@ fun AppShell(
                     readerSettings = currentReaderSettings,
                     onReaderSettingsChange = currentOnReaderSettingsChange,
                     onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
                     onSettingsDestination = { destination ->
@@ -373,6 +387,15 @@ fun AppShell(
                         modifier = Modifier.fillMaxSize(),
                     )
                 }
+                is AppRoute.MangaReaderRoute -> {
+                    MangaReaderRouteDestination(
+                        volumeId = route.volumeId,
+                        stateHolder = mangaReaderRouteStateHolder,
+                        readerSettings = currentReaderSettings,
+                        onClose = ::closeReaderRoute,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                }
                 AppRoute.MainRoute -> TopLevelRouteContent(
                     selectedTab = MainTab.Books,
                     pendingImportUri = currentPendingImportUri,
@@ -380,6 +403,7 @@ fun AppShell(
                     readerSettings = currentReaderSettings,
                     onReaderSettingsChange = currentOnReaderSettingsChange,
                     onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
                 )
@@ -457,6 +481,7 @@ private fun TopLevelRouteContent(
     readerSettings: ReaderSettings,
     onReaderSettingsChange: (ReaderSettings) -> Unit,
     onOpenReader: (String) -> Unit,
+    onOpenMangaReader: (String) -> Unit,
     bookshelfRefreshKey: Int,
     dictionaryFocusRequestKey: Int,
     pendingDictionaryLookupRequest: PendingDictionaryLookupRequest? = null,
@@ -469,6 +494,7 @@ private fun TopLevelRouteContent(
             pendingImportUri = pendingImportUri,
             onPendingImportConsumed = onPendingImportConsumed,
             onOpenReader = onOpenReader,
+            onOpenMangaReader = onOpenMangaReader,
             refreshKey = bookshelfRefreshKey,
             layoutSpec = layoutSpec,
             modifier = Modifier.fillMaxSize(),
@@ -607,6 +633,7 @@ private fun AppRoute.toMainTab(): MainTab = when (this) {
     AppRoute.StatisticsRoute -> MainTab.Statistics
     AppRoute.SettingsRoute -> MainTab.Settings
     is AppRoute.ReaderRoute -> MainTab.Books
+    is AppRoute.MangaReaderRoute -> MainTab.Books
     is AppRoute.SettingsDetailRoute -> MainTab.Settings
     is AppRoute.AnkiCardFormatRoute, AppRoute.AnkiAdvancedRoute -> MainTab.Settings
 }

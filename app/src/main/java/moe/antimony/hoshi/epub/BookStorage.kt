@@ -6,6 +6,7 @@ import android.net.Uri
 import kotlinx.serialization.Serializable
 import java.io.File
 import java.util.UUID
+import moe.antimony.hoshi.content.ProfileActivationSubject
 
 @Serializable
 data class Bookmark(
@@ -39,9 +40,9 @@ data class BookMetadata(
     val lastAccess: Double,
     val renamedTitle: String? = null,
     val epub: String? = null,
-    val profileId: String? = null,
-    val bookLanguage: String? = null,
-) {
+    override val profileId: String? = null,
+    override val bookLanguage: String? = null,
+) : ProfileActivationSubject {
     val displayTitle: String
         get() = renamedTitle?.takeIf { it.isNotBlank() } ?: title.orEmpty()
 }

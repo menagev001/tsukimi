@@ -36,11 +36,16 @@ internal fun MutableList<NavKey>.openReaderRoute(bookId: String) {
     add(AppRoute.ReaderRoute(bookId))
 }
 
+internal fun MutableList<NavKey>.openMangaReaderRoute(volumeId: String) {
+    replaceWithTopLevelRoute(AppRoute.BooksRoute)
+    add(AppRoute.MangaReaderRoute(volumeId))
+}
+
 internal fun MutableList<NavKey>.removeReaderRoutes(
     onReaderRouteRemoved: () -> Unit = {},
 ) {
     val hadReaderRoute = containsReaderRoute()
-    removeAll { route -> route is AppRoute.ReaderRoute }
+    removeAll { route -> route is AppRoute.ReaderRoute || route is AppRoute.MangaReaderRoute }
     notifyReaderRouteRemoved(hadReaderRoute, onReaderRouteRemoved)
 }
 
@@ -68,7 +73,7 @@ internal fun MutableList<NavKey>.returnFromMediaSession(
 }
 
 private fun List<NavKey>.containsReaderRoute(): Boolean =
-    any { route -> route is AppRoute.ReaderRoute }
+    any { route -> route is AppRoute.ReaderRoute || route is AppRoute.MangaReaderRoute }
 
 private fun List<NavKey>.notifyReaderRouteRemoved(
     hadReaderRoute: Boolean,

@@ -14,9 +14,9 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import moe.antimony.hoshi.content.ContentLanguageProfile
+import moe.antimony.hoshi.content.ProfileActivationSubject
 import moe.antimony.hoshi.di.FilesDir
 import moe.antimony.hoshi.di.IoDispatcher
-import moe.antimony.hoshi.epub.BookMetadata
 
 @Singleton
 class ProfileRepository internal constructor(
@@ -130,7 +130,7 @@ class ProfileRepository internal constructor(
         }
     }
 
-    fun activateForBook(metadata: BookMetadata): HoshiProfile = synchronized(lock) {
+    fun activateForBook(metadata: ProfileActivationSubject): HoshiProfile = synchronized(lock) {
         val forced = metadata.profileId?.let { storedIndex.profiles.firstOrNull { profile -> profile.id == it } }
         val automatic = storedIndex.toProfileState(loadedProfileId = null).automaticBookProfile(metadata.bookLanguage)
         val profile = forced ?: automatic

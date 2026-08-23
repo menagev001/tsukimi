@@ -2,13 +2,13 @@ package moe.antimony.hoshi.profiles
 
 import javax.inject.Inject
 import javax.inject.Singleton
-import moe.antimony.hoshi.epub.BookMetadata
+import moe.antimony.hoshi.content.ProfileActivationSubject
 
 @Singleton
 class ProfileActivationService @Inject constructor(
     private val profileRepository: ProfileRepository,
 ) {
-    fun activateForBook(metadata: BookMetadata): HoshiProfile =
+    fun activateForBook(metadata: ProfileActivationSubject): HoshiProfile =
         profileRepository.activateForBook(metadata)
 
     suspend fun activateGlobal(profileId: String) {
