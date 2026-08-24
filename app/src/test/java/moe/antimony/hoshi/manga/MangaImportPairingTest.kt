@@ -2,30 +2,51 @@ package moe.antimony.hoshi.manga
 
 import moe.antimony.hoshi.importing.ImportDirectoryFile
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MangaImportPairingTest {
     @Test
-    fun pairsMokuroWithSameDirectorySameStemCbz() {
-        val mokuro = ImportDirectoryFile(key = "m1", displayName = "Series/Volume 1.mokuro")
+    fun cbzWithNoSameStemMokuroSiblingIsTreatedAsSelfContained() {
+        // The common real-world case: a mokuro-processed CBZ download bundles its own .mokuro
+        // file as a root-level zip entry, so no separate sidecar file exists on disk to pair
+        // against -- confirmed against real sample volumes (see MokuroParserTest's fixture).
         val cbz = ImportDirectoryFile(key = "c1", displayName = "Series/Volume 1.cbz")
-        val unrelatedCbz = ImportDirectoryFile(key = "c2", displayName = "Series/Volume 2.cbz")
 
         val candidates = pairMangaImportCandidates(
-            mokuroFiles = listOf(mokuro),
-            cbzFiles = listOf(unrelatedCbz, cbz),
+            mokuroFiles = emptyList(),
+            cbzFiles = listOf(cbz),
             imageFiles = emptyList(),
         )
 
-        assertEquals(1, candidates.size)
-        assertEquals("c1", candidates.single().cbzKey)
-        assertTrue(candidates.single().loosePageFiles.isEmpty())
+        val candidate = candidates.single()
+        assertTrue(candidate is MangaImportCandidate.SelfContainedCbz)
+        assertEquals("c1", (candidate as MangaImportCandidate.SelfContainedCbz).cbzKey)
     }
 
     @Test
-    fun cbzMatchIsCaseInsensitiveOnStem() {
+    fun pairsCbzWithSameDirectorySameStemExternalMokuro() {
+        val mokuro = ImportDirectoryFile(key = "m1", displayName = "Series/Volume 1.mokuro")
+        val cbz = ImportDirectoryFile(key = "c1", displayName = "Series/Volume 1.cbz")
+        val unrelatedMokuro = ImportDirectoryFile(key = "m2", displayName = "Series/Volume 2.mokuro")
+
+        val candidates = pairMangaImportCandidates(
+            mokuroFiles = listOf(mokuro, unrelatedMokuro),
+            cbzFiles = listOf(cbz),
+            imageFiles = emptyList(),
+        )
+
+        val cbzCandidate = candidates.filterIsInstance<MangaImportCandidate.CbzWithExternalMokuro<String>>().single()
+        assertEquals("c1", cbzCandidate.cbzKey)
+        assertEquals("m1", cbzCandidate.mokuroKey)
+        // The unrelated mokuro (different stem) isn't consumed by the pairing -- it surfaces as
+        // its own loose-mokuro candidate instead.
+        val looseCandidate = candidates.filterIsInstance<MangaImportCandidate.LooseMokuroWithImages<String>>().single()
+        assertEquals("m2", looseCandidate.mokuroKey)
+    }
+
+    @Test
+    fun externalMokuroMatchIsCaseInsensitiveOnStem() {
         val mokuro = ImportDirectoryFile(key = "m1", displayName = "Volume 1.MOKURO")
         val cbz = ImportDirectoryFile(key = "c1", displayName = "volume 1.cbz")
 
@@ -35,21 +56,23 @@ class MangaImportPairingTest {
             imageFiles = emptyList(),
         )
 
-        assertEquals("c1", candidates.single().cbzKey)
+        val cbzCandidate = candidates.single() as MangaImportCandidate.CbzWithExternalMokuro<String>
+        assertEquals("m1", cbzCandidate.mokuroKey)
     }
 
     @Test
-    fun doesNotMatchCbzInADifferentDirectory() {
-        val mokuro = ImportDirectoryFile(key = "m1", displayName = "Series/Volume 1.mokuro")
-        val cbzElsewhere = ImportDirectoryFile(key = "c1", displayName = "Other/Volume 1.cbz")
+    fun doesNotPairMokuroInADifferentDirectoryWithACbz() {
+        val mokuro = ImportDirectoryFile(key = "m1", displayName = "Other/Volume 1.mokuro")
+        val cbz = ImportDirectoryFile(key = "c1", displayName = "Series/Volume 1.cbz")
 
         val candidates = pairMangaImportCandidates(
             mokuroFiles = listOf(mokuro),
-            cbzFiles = listOf(cbzElsewhere),
+            cbzFiles = listOf(cbz),
             imageFiles = emptyList(),
         )
 
-        assertNull(candidates.single().cbzKey)
+        assertTrue(candidates.any { it is MangaImportCandidate.SelfContainedCbz })
+        assertTrue(candidates.any { it is MangaImportCandidate.LooseMokuroWithImages })
     }
 
     @Test
@@ -65,8 +88,7 @@ class MangaImportPairingTest {
             imageFiles = listOf(siblingImage, nestedImage, unrelatedImage),
         )
 
-        val candidate = candidates.single()
-        assertNull(candidate.cbzKey)
+        val candidate = candidates.single() as MangaImportCandidate.LooseMokuroWithImages<String>
         assertEquals(
             mapOf("001.jpg" to "i1", "Volume 1/002.jpg" to "i2"),
             candidate.loosePageFiles,
@@ -84,25 +106,28 @@ class MangaImportPairingTest {
             imageFiles = listOf(image),
         )
 
-        assertEquals(mapOf("001.jpg" to "i1"), candidates.single().loosePageFiles)
+        val candidate = candidates.single() as MangaImportCandidate.LooseMokuroWithImages<String>
+        assertEquals(mapOf("001.jpg" to "i1"), candidate.loosePageFiles)
     }
 
     @Test
-    fun pairsMultipleMokuroFilesIndependently() {
-        val mokuroOne = ImportDirectoryFile(key = "m1", displayName = "Volume 1.mokuro")
-        val mokuroTwo = ImportDirectoryFile(key = "m2", displayName = "Volume 2.mokuro")
+    fun pairsMultipleCbzFilesIndependently() {
         val cbzOne = ImportDirectoryFile(key = "c1", displayName = "Volume 1.cbz")
         val cbzTwo = ImportDirectoryFile(key = "c2", displayName = "Volume 2.cbz")
+        val mokuroTwo = ImportDirectoryFile(key = "m2", displayName = "Volume 2.mokuro")
 
         val candidates = pairMangaImportCandidates(
-            mokuroFiles = listOf(mokuroOne, mokuroTwo),
+            mokuroFiles = listOf(mokuroTwo),
             cbzFiles = listOf(cbzOne, cbzTwo),
             imageFiles = emptyList(),
         )
 
-        assertEquals(
-            mapOf("m1" to "c1", "m2" to "c2"),
-            candidates.associate { it.mokuroKey to it.cbzKey },
+        assertEquals(2, candidates.size)
+        assertTrue(candidates.any { it is MangaImportCandidate.SelfContainedCbz && it.cbzKey == "c1" })
+        assertTrue(
+            candidates.any {
+                it is MangaImportCandidate.CbzWithExternalMokuro && it.cbzKey == "c2" && it.mokuroKey == "m2"
+            },
         )
     }
 }

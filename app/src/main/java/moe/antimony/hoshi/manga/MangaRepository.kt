@@ -52,11 +52,16 @@ class MangaRepository private constructor(
 
     val mangaDirectory: File get() = fileDataSource.mangaDirectory
 
+    /** Self-contained CBZ: its `.mokuro` sidecar is bundled inside the archive itself. */
+    suspend fun importCbz(contentResolver: ContentResolver, cbzUri: Uri): File =
+        importDataSource.importCbz(contentResolver, cbzUri)
+
+    /** CBZ paired with a separate `.mokuro` sidecar file. */
     suspend fun importCbz(contentResolver: ContentResolver, cbzUri: Uri, mokuroUri: Uri): File =
         importDataSource.importCbz(contentResolver, cbzUri, mokuroUri)
 
-    internal suspend fun importFolderCandidate(contentResolver: ContentResolver, candidate: MangaImportCandidate<Uri>): File =
-        importDataSource.importFolderCandidate(contentResolver, candidate)
+    internal suspend fun importCandidate(contentResolver: ContentResolver, candidate: MangaImportCandidate<Uri>): File =
+        importDataSource.importCandidate(contentResolver, candidate)
 
     suspend fun loadAllVolumes(): List<File> = fileDataSource.loadAllVolumes()
 

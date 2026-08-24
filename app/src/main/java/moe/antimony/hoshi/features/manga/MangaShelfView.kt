@@ -66,9 +66,8 @@ import moe.antimony.hoshi.R
 import moe.antimony.hoshi.features.bookshelf.BookCoverSource
 import moe.antimony.hoshi.features.bookshelf.MainShellLayoutSpec
 import moe.antimony.hoshi.importing.DirectoryImportContent
+import moe.antimony.hoshi.importing.FileImportContent
 import moe.antimony.hoshi.importing.ImportFileType
-import moe.antimony.hoshi.importing.MultipleFileImportContent
-import moe.antimony.hoshi.importing.importDisplayName
 import moe.antimony.hoshi.manga.MangaVolumeEntry
 import moe.antimony.hoshi.ui.HoshiBlockingProgressOverlay
 import moe.antimony.hoshi.ui.asString
@@ -91,15 +90,12 @@ internal fun MangaShelfView(
     var renameCandidate by remember { mutableStateOf<MangaVolumeEntry?>(null) }
     val renameTextState = rememberTextFieldState()
 
-    val mokuroPicker = rememberLauncherForActivityResult(MultipleFileImportContent()) { uris ->
-        val resolver = context.contentResolver
-        val cbz = uris.firstOrNull { ImportFileType.MangaCbz.matchesDisplayName(resolver.importDisplayName(it)) }
-        val mokuro = uris.firstOrNull { ImportFileType.MokuroSidecar.matchesDisplayName(resolver.importDisplayName(it)) }
-        if (cbz != null && mokuro != null) {
-            viewModel.importCbz(cbz, mokuro)
-        } else {
-            viewModel.reportSelectionError()
-        }
+    // Real mokuro-processed CBZ downloads already bundle the .mokuro sidecar as a root-level
+    // zip entry alongside the page subfolder and a cover image, so a single-file picker is the
+    // primary flow -- also far friendlier to cloud-storage pickers (e.g. Google Drive) than
+    // asking the user to multi-select two separate files from providers that handle that poorly.
+    val cbzPicker = rememberLauncherForActivityResult(FileImportContent()) { uri ->
+        if (uri != null) viewModel.importCbz(uri)
     }
     val folderPicker = rememberLauncherForActivityResult(DirectoryImportContent()) { uri ->
         if (uri != null) viewModel.importFolder(uri)
@@ -124,11 +120,7 @@ internal fun MangaShelfView(
                 title = { Text(stringResource(R.string.main_tab_manga)) },
                 actions = {
                     IconButton(
-                        onClick = {
-                            mokuroPicker.launch(
-                                ImportFileType.MangaCbz.mimeTypes + ImportFileType.MokuroSidecar.mimeTypes,
-                            )
-                        },
+                        onClick = { cbzPicker.launch(ImportFileType.MangaCbz.mimeTypes) },
                         enabled = !uiState.isImporting,
                     ) {
                         Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.manga_shelf_import_cbz))

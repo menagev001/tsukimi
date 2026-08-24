@@ -20,6 +20,12 @@ import moe.antimony.hoshi.importing.validateImportFile
  * packed archive for iOS-backup-compatibility reasons that don't apply here, repeatedly
  * decompressing a CBZ while flipping pages would hurt e-ink/low-end read performance. The raw
  * `.mokuro` JSON is kept as a verbatim byte copy, never re-serialized.
+ *
+ * The common real-world case (confirmed against real mokuro-processed CBZ downloads) is a single
+ * self-contained `.cbz` that already bundles its own `.mokuro` file as a root-level zip entry
+ * alongside the page subfolder and a cover image -- [importCbz] (single-`Uri` overload) handles
+ * this and is the primary single-file import path. The two-`Uri` overload and the folder-scan
+ * path (`importCandidate`) exist for the less common case where the sidecar is a separate file.
  */
 class MangaImportDataSource(
     private val filesDir: File,
@@ -28,6 +34,33 @@ class MangaImportDataSource(
     private val clock: MangaClock = SystemMangaClock,
     private val ioDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) {
+    /** Self-contained CBZ: its `.mokuro` sidecar is bundled inside the archive itself. */
+    suspend fun importCbz(contentResolver: ContentResolver, cbzUri: Uri): File = withContext(ioDispatcher) {
+        val cbzDisplayName = contentResolver.validateImportFile(cbzUri, ImportFileType.MangaCbz)
+        val importRoot = File(filesDir, "ImportTemp/${UUID.randomUUID()}").canonicalFile
+        val archiveFile = importRoot.resolve("source.cbz").canonicalFile
+        val extractedRoot = importRoot.resolve("extracted").canonicalFile
+        try {
+            importRoot.mkdirs()
+            contentResolver.copyUriTo(cbzUri, archiveFile)
+            archiveExtractor.extract(archiveFile, extractedRoot)
+            val mokuroFile = findBundledMokuroFile(extractedRoot)
+                ?: throw IllegalArgumentException(
+                    "This .cbz does not contain a .mokuro file. Use folder import instead if it's a separate file.",
+                )
+            val volume = parseOrThrow(mokuroFile)
+            importVolume(
+                fallbackTitle = cbzDisplayName.substringBeforeLast('.', cbzDisplayName),
+                volume = volume,
+                mokuroFile = mokuroFile,
+                resolvePage = { imgPath, destination -> copyExtractedPage(extractedRoot, imgPath, destination) },
+            )
+        } finally {
+            importRoot.deleteRecursively()
+        }
+    }
+
+    /** CBZ paired with a separate `.mokuro` sidecar file, picked (or discovered) independently. */
     suspend fun importCbz(contentResolver: ContentResolver, cbzUri: Uri, mokuroUri: Uri): File =
         withContext(ioDispatcher) {
             val cbzDisplayName = contentResolver.validateImportFile(cbzUri, ImportFileType.MangaCbz)
@@ -55,43 +88,37 @@ class MangaImportDataSource(
             }
         }
 
-    internal suspend fun importFolderCandidate(
+    internal suspend fun importCandidate(
         contentResolver: ContentResolver,
         candidate: MangaImportCandidate<Uri>,
+    ): File = when (candidate) {
+        is MangaImportCandidate.SelfContainedCbz -> importCbz(contentResolver, candidate.cbzKey)
+        is MangaImportCandidate.CbzWithExternalMokuro ->
+            importCbz(contentResolver, candidate.cbzKey, candidate.mokuroKey)
+        is MangaImportCandidate.LooseMokuroWithImages -> importLooseMokuroWithImages(contentResolver, candidate)
+    }
+
+    private suspend fun importLooseMokuroWithImages(
+        contentResolver: ContentResolver,
+        candidate: MangaImportCandidate.LooseMokuroWithImages<Uri>,
     ): File = withContext(ioDispatcher) {
         val importRoot = File(filesDir, "ImportTemp/${UUID.randomUUID()}").canonicalFile
         val mokuroFile = importRoot.resolve("source.mokuro").canonicalFile
         try {
             importRoot.mkdirs()
             contentResolver.copyUriTo(candidate.mokuroKey, mokuroFile)
-
             val volume = parseOrThrow(mokuroFile)
             val fallbackTitle = candidate.mokuroDisplayName
                 .substringAfterLast('/')
                 .substringBeforeLast('.', candidate.mokuroDisplayName)
-
-            val cbzKey = candidate.cbzKey
-            if (cbzKey != null) {
-                val archiveFile = importRoot.resolve("source.cbz").canonicalFile
-                val extractedRoot = importRoot.resolve("extracted").canonicalFile
-                contentResolver.copyUriTo(cbzKey, archiveFile)
-                archiveExtractor.extract(archiveFile, extractedRoot)
-                importVolume(
-                    fallbackTitle = fallbackTitle,
-                    volume = volume,
-                    mokuroFile = mokuroFile,
-                    resolvePage = { imgPath, destination -> copyExtractedPage(extractedRoot, imgPath, destination) },
-                )
-            } else {
-                importVolume(
-                    fallbackTitle = fallbackTitle,
-                    volume = volume,
-                    mokuroFile = mokuroFile,
-                    resolvePage = { imgPath, destination ->
-                        copyLoosePage(contentResolver, candidate.loosePageFiles, imgPath, destination)
-                    },
-                )
-            }
+            importVolume(
+                fallbackTitle = fallbackTitle,
+                volume = volume,
+                mokuroFile = mokuroFile,
+                resolvePage = { imgPath, destination ->
+                    copyLoosePage(contentResolver, candidate.loosePageFiles, imgPath, destination)
+                },
+            )
         } finally {
             importRoot.deleteRecursively()
         }
@@ -172,6 +199,16 @@ class MangaImportDataSource(
         }
     }
 }
+
+/**
+ * Finds the `.mokuro` entry bundled inside an extracted CBZ. Real mokuro-processed CBZ downloads
+ * keep it at the archive root (alongside a page subfolder and cover image); a recursive search is
+ * used to stay lenient about layout variance rather than assuming root-only placement.
+ */
+internal fun findBundledMokuroFile(extractedRoot: File): File? =
+    extractedRoot.walkTopDown()
+        .filter { it.isFile && it.extension.equals("mokuro", ignoreCase = true) }
+        .minByOrNull { it.toRelativeString(extractedRoot).count { c -> c == File.separatorChar } }
 
 /**
  * Guards a page destination path derived from a `.mokuro` file's untrusted `img_path` value.

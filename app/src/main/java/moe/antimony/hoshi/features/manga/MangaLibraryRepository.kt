@@ -27,6 +27,9 @@ internal interface MangaLibraryRepository {
     suspend fun coverSourcesById(entries: List<MangaVolumeEntry>): Map<String, BookCoverSource>
     suspend fun progressById(entries: List<MangaVolumeEntry>): Map<String, Double>
     suspend fun openVolume(entry: MangaVolumeEntry): String
+    /** Self-contained CBZ (the common case): its `.mokuro` sidecar is bundled inside. */
+    suspend fun importCbz(cbzUri: Uri): String
+    /** CBZ paired with a separate `.mokuro` sidecar file. */
     suspend fun importCbz(cbzUri: Uri, mokuroUri: Uri): String
     suspend fun importFolder(treeUri: Uri): List<String>
     suspend fun deleteVolume(entry: MangaVolumeEntry)
@@ -74,6 +77,11 @@ internal class AndroidMangaLibraryRepository @Inject constructor(
         metadata.id
     }
 
+    override suspend fun importCbz(cbzUri: Uri): String = withContext(ioDispatcher) {
+        val root = mangaRepository.importCbz(contentResolver, cbzUri)
+        requireNotNull(mangaRepository.loadMetadata(root)).id
+    }
+
     override suspend fun importCbz(cbzUri: Uri, mokuroUri: Uri): String = withContext(ioDispatcher) {
         val root = mangaRepository.importCbz(contentResolver, cbzUri, mokuroUri)
         requireNotNull(mangaRepository.loadMetadata(root)).id
@@ -87,7 +95,7 @@ internal class AndroidMangaLibraryRepository @Inject constructor(
             imageFiles = scanner.scan(treeUri, ImportFileType.MangaPageImage),
         )
         candidates.map { candidate ->
-            val root = mangaRepository.importFolderCandidate(contentResolver, candidate)
+            val root = mangaRepository.importCandidate(contentResolver, candidate)
             requireNotNull(mangaRepository.loadMetadata(root)).id
         }
     }

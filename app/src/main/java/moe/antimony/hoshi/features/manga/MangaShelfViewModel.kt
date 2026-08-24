@@ -74,15 +74,16 @@ internal class MangaShelfViewModel private constructor(
         }
     }
 
-    fun reportSelectionError() {
-        _uiState.update { it.copy(errorMessage = UiText.Resource(R.string.manga_shelf_import_selection_invalid)) }
+    /** Self-contained CBZ (the common case): its `.mokuro` sidecar is bundled inside. */
+    fun importCbz(cbzUri: Uri) {
+        runImport { repository.importCbz(cbzUri) }
     }
 
-    fun importCbz(cbzUri: Uri, mokuroUri: Uri) {
+    private fun runImport(import: suspend () -> String) {
         _uiState.update { it.copy(isImporting = true) }
         workScope.launch {
             try {
-                repository.importCbz(cbzUri, mokuroUri)
+                import()
                 reloadVolumesSync()
             } catch (error: Throwable) {
                 _uiState.update {

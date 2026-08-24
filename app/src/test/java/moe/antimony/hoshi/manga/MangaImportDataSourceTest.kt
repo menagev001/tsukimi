@@ -85,6 +85,36 @@ class MangaImportDataSourceTest {
     }
 
     @Test
+    fun findBundledMokuroFilePrefersRootLevelEntryOverANestedOne() {
+        // Matches the real layout confirmed against actual mokuro-processed CBZ downloads: the
+        // .mokuro file sits at the archive root alongside a page subfolder and a cover image.
+        val root = Files.createTempDirectory("hoshi-manga-bundled-mokuro").toFile()
+        root.resolve("Volume 1").mkdirs()
+        root.resolve("Volume 1/nested.mokuro").writeText("{}")
+        root.resolve("Volume 1.mokuro").writeText("{}")
+
+        val found = findBundledMokuroFile(root)
+
+        assertEquals(root.resolve("Volume 1.mokuro").canonicalFile, found)
+    }
+
+    @Test
+    fun findBundledMokuroFileIsCaseInsensitiveOnExtension() {
+        val root = Files.createTempDirectory("hoshi-manga-bundled-mokuro-case").toFile()
+        root.resolve("Volume 1.MOKURO").writeText("{}")
+
+        assertEquals(root.resolve("Volume 1.MOKURO").canonicalFile, findBundledMokuroFile(root))
+    }
+
+    @Test
+    fun findBundledMokuroFileReturnsNullWhenNoneExists() {
+        val root = Files.createTempDirectory("hoshi-manga-bundled-mokuro-missing").toFile()
+        root.resolve("001.jpg").writeText("not a mokuro file")
+
+        assertNull(findBundledMokuroFile(root))
+    }
+
+    @Test
     fun mangaCbzImportFileTypeMatchesCbzAndZipExtensions() {
         assertTrue(ImportFileType.MangaCbz.matchesDisplayName("Volume 1.cbz"))
         assertTrue(ImportFileType.MangaCbz.matchesDisplayName("Volume 1.zip"))

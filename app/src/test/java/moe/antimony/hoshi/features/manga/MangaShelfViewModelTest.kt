@@ -80,15 +80,6 @@ class MangaShelfViewModelTest {
     // indirectly through openVolume's equivalent try/catch shape above.
 
     @Test
-    fun reportSelectionErrorPublishesInvalidSelectionMessage() {
-        val viewModel = MangaShelfViewModel(FakeMangaLibraryRepository(), testScope())
-
-        viewModel.reportSelectionError()
-
-        assertEquals("Select exactly one .cbz and one .mokuro file together.", viewModel.uiState.value.errorMessage.testString())
-    }
-
-    @Test
     fun deleteVolumeReloadsVolumes() {
         val repository = FakeMangaLibraryRepository(volumesAfterImport = emptyList())
         val viewModel = MangaShelfViewModel(repository, testScope())
@@ -131,9 +122,7 @@ private fun UiText?.testString(): String? =
         is UiText.Resource -> when (id) {
             R.string.manga_shelf_open_failed -> "Unable to open this manga volume."
             R.string.manga_shelf_import_failed -> "Unable to import this manga volume."
-            R.string.manga_shelf_import_folder_empty ->
-                "No .mokuro files with a matching CBZ or page images were found in that folder."
-            R.string.manga_shelf_import_selection_invalid -> "Select exactly one .cbz and one .mokuro file together."
+            R.string.manga_shelf_import_folder_empty -> "No .cbz or .mokuro files were found in that folder."
             else -> error("Unmapped string resource id $id in test helper")
         }
         else -> error("Unmapped UiText variant $this in test helper")
@@ -164,6 +153,12 @@ private class FakeMangaLibraryRepository(
     override suspend fun openVolume(entry: MangaVolumeEntry): String {
         openVolumeError?.let { throw it }
         return openVolumeId ?: entry.metadata.id
+    }
+
+    override suspend fun importCbz(cbzUri: Uri): String {
+        importError?.let { throw it }
+        reloadedAfterMutation = true
+        return "imported-id"
     }
 
     override suspend fun importCbz(cbzUri: Uri, mokuroUri: Uri): String {
