@@ -6,8 +6,22 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+## [v1.4.0] - 2026-09-03
+
 ### Added
 
+- Add an optional "Add Furigana to Unknown Words" reader setting that
+  generates furigana for kanji words not in a known-word list, baked directly
+  into the chapter so it never blocks the page from loading; processing is
+  centered on wherever you currently are in the book (not always the start)
+  with a live "X / Y characters scanned" progress indicator, and a
+  "Recalculate Furigana" action to force a fresh pass on demand. The
+  known-word list is built either by tapping a "Mark as known" button in the
+  reader's lookup popup, or by importing a Migaku known-words export from
+  Reader Appearance settings; both merge additively and never overwrite each
+  other.
+- Add a Reader Appearance setting (shown when E-ink Mode is on) that reduces
+  ghosting after the lookup popup closes on Onyx/Boox e-ink devices.
 - Add an optional Reader Behavior setting that uses the volume keys to jump
   between terms in the topmost lookup popup.
 - Add `hoshi://search?text=...` deep links for opening lookup results in the
@@ -29,6 +43,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Fixed
 
+- Make the double-tap "Sentence Breakdown" gesture work inside nested lookup
+  popups (tapping a word from within an already-open popup), not just the
+  main reader text.
 - Keep oversized lookup popup frames fully inside the visible screen so their
   bottom border and all scrollable content remain reachable.
 - Prefer Arial throughout lookup popups before Android's Japanese font fallback
