@@ -145,6 +145,7 @@ function popupContext({
     };
     const selectTextCalls = [];
     const tapOutsideMessages = [];
+    const timers = [];
     const mineEntryMessages = [];
     const duplicateCheckMessages = [];
     const showNotesMessages = [];
@@ -171,6 +172,13 @@ function popupContext({
             return { zoom: target === documentElement ? htmlZoom : '1' };
         },
         Node: { TEXT_NODE: 3 },
+        setTimeout(callback, delay) {
+            timers.push({ callback, delay });
+            return timers.length;
+        },
+        clearTimeout(id) {
+            timers[id - 1] = null;
+        },
         webkit: {
             messageHandlers: {
                 tapOutside: {
@@ -232,6 +240,7 @@ function popupContext({
         showNotesMessages,
         askAiMessages,
         exportWordMessages,
+        timers,
         setDuplicateStates(value) { currentDuplicateStates = value; },
     };
 }
@@ -278,7 +287,7 @@ function descendants(element) {
 }
 
 test('popup touch tap selects text even when WebView suppresses the follow-up click', () => {
-    const { context, selectTextCalls, tapOutsideMessages } = popupContext();
+    const { context, selectTextCalls, tapOutsideMessages, timers } = popupContext();
     const container = new FakeContainer();
     const target = new FakeElement(['.glossary-content']);
 
@@ -286,15 +295,16 @@ test('popup touch tap selects text even when WebView suppresses the follow-up cl
     container.dispatch('touchstart', touchEvent(target, 48, 148));
     const end = touchEvent(target, 48, 148, true);
     container.dispatch('touchend', end);
+    timers[0].callback();
 
     assert.equal(selectTextCalls.length, 1);
-    assert.deepEqual(selectTextCalls[0], [48, 148, 24, 48, 148]);
+    assert.deepEqual(selectTextCalls[0], [48, 148, 24, 48, 148, false]);
     assert.equal(tapOutsideMessages.length, 0);
     assert.equal(end.defaultPrevented, true);
 });
 
 test('popup tap coordinates ignore user body zoom when popup scale is active', () => {
-    const { context, selectTextCalls } = popupContext({
+    const { context, selectTextCalls, timers } = popupContext({
         htmlZoom: '0.95',
         htmlProbeWidth: 95,
         bodyProbeWidth: 104.5,
@@ -304,11 +314,12 @@ test('popup tap coordinates ignore user body zoom when popup scale is active', (
 
     context.installPopupTapHandlers(container);
     container.dispatch('click', clickEvent(target, 45.35555648803711, 233.93334197998047));
+    timers[0].callback();
 
     assert.equal(selectTextCalls.length, 1);
     assert.deepEqual(
         selectTextCalls[0],
-        [45.35555648803711, 233.93334197998047, 24, 45.35555648803711, 233.93334197998047],
+        [45.35555648803711, 233.93334197998047, 24, 45.35555648803711, 233.93334197998047, false],
     );
 });
 
@@ -341,7 +352,7 @@ test('popup geometry keeps scaled visual positions in the scroll coordinate spac
 });
 
 test('popup touch tap suppresses the duplicate click generated for the same tap', () => {
-    const { context, selectTextCalls } = popupContext();
+    const { context, selectTextCalls, timers } = popupContext();
     const container = new FakeContainer();
     const target = new FakeElement(['.glossary-content']);
 
@@ -350,6 +361,7 @@ test('popup touch tap suppresses the duplicate click generated for the same tap'
     container.dispatch('touchend', touchEvent(target, 48, 148, true));
     const duplicateClick = clickEvent(target, 49, 149);
     container.dispatch('click', duplicateClick);
+    timers[0].callback();
 
     assert.equal(selectTextCalls.length, 1);
     assert.equal(duplicateClick.defaultPrevented, true);
@@ -374,14 +386,61 @@ test('popup touch tap lets interactive controls keep their click behavior', () =
 });
 
 test('popup click still selects text when there was no touch fallback', () => {
-    const { context, selectTextCalls } = popupContext();
+    const { context, selectTextCalls, timers } = popupContext();
     const container = new FakeContainer();
     const target = new FakeElement(['.glossary-content']);
 
     context.installPopupTapHandlers(container);
     container.dispatch('click', clickEvent(target, 48, 148));
+    timers[0].callback();
 
     assert.equal(selectTextCalls.length, 1);
+});
+
+test('popup double tap within the timeout and slop selects the sentence instead of the word', () => {
+    const { context, selectTextCalls, timers } = popupContext();
+    const container = new FakeContainer();
+    const target = new FakeElement(['.glossary-content']);
+
+    context.installPopupTapHandlers(container);
+    container.dispatch('click', clickEvent(target, 48, 148));
+    container.dispatch('click', clickEvent(target, 52, 150));
+
+    assert.equal(selectTextCalls.length, 1);
+    assert.deepEqual(selectTextCalls[0], [52, 150, 24, 52, 150, true]);
+    assert.equal(timers[0], null);
+});
+
+test('two taps that already timed out each select their own word instead of pairing up', () => {
+    const { context, selectTextCalls, timers } = popupContext();
+    const container = new FakeContainer();
+    const target = new FakeElement(['.glossary-content']);
+
+    context.installPopupTapHandlers(container);
+    container.dispatch('click', clickEvent(target, 48, 148));
+    timers[0].callback();
+    container.dispatch('click', clickEvent(target, 48, 148));
+    timers[1].callback();
+
+    assert.equal(selectTextCalls.length, 2);
+    assert.deepEqual(selectTextCalls[0], [48, 148, 24, 48, 148, false]);
+    assert.deepEqual(selectTextCalls[1], [48, 148, 24, 48, 148, false]);
+});
+
+test('a second tap outside the position slop leaves the first tap running as its own single tap', () => {
+    const { context, selectTextCalls, timers } = popupContext();
+    const container = new FakeContainer();
+    const target = new FakeElement(['.glossary-content']);
+
+    context.installPopupTapHandlers(container);
+    container.dispatch('click', clickEvent(target, 48, 148));
+    container.dispatch('click', clickEvent(target, 200, 148));
+    timers[0].callback();
+    timers[1].callback();
+
+    assert.equal(selectTextCalls.length, 2);
+    assert.deepEqual(selectTextCalls[0], [48, 148, 24, 48, 148, false]);
+    assert.deepEqual(selectTextCalls[1], [200, 148, 24, 200, 148, false]);
 });
 
 test('popup content blank area click posts tapOutside through the document handler', () => {

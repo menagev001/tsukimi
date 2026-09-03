@@ -315,6 +315,13 @@ internal sealed class ReaderLookupPopupBridgeMessage {
         val word: String,
     ) : ReaderLookupPopupBridgeMessage()
 
+    data class MarkKnown(
+        override val popupId: String,
+        override val messageId: String?,
+        val expression: String,
+        val reading: String,
+    ) : ReaderLookupPopupBridgeMessage()
+
     companion object {
         fun fromJson(message: String): ReaderLookupPopupBridgeMessage? {
             val payload = runCatching { readerPopupJson.parseToJsonElement(message).jsonObject }.getOrNull() ?: return null
@@ -401,6 +408,12 @@ internal sealed class ReaderLookupPopupBridgeMessage {
                     popupId = popupId,
                     messageId = messageId,
                     word = payload.obj("body")?.stringOrEmpty("word").orEmpty(),
+                )
+                "markKnown" -> MarkKnown(
+                    popupId = popupId,
+                    messageId = messageId,
+                    expression = payload.obj("body")?.stringOrEmpty("expression").orEmpty(),
+                    reading = payload.obj("body")?.stringOrEmpty("reading").orEmpty(),
                 )
                 else -> null
             }

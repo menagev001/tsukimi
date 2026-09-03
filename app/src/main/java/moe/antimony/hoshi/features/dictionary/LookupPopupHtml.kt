@@ -78,6 +78,7 @@ internal object LookupPopupHtml {
         popupScale: Double = 1.0,
         contentLanguageProfile: ContentLanguageProfile = ContentLanguageProfile.Default,
         aiLookupEnabled: Boolean = false,
+        markKnownEnabled: Boolean = false,
     ): String {
         val normalizedSettings = settings.normalized()
         val collapsedDictionaries = dictionaryNamesJson(normalizedSettings.collapsedDictionaries)
@@ -191,7 +192,8 @@ internal object LookupPopupHtml {
                             getEntry: { postMessage: function(index) { return window.HoshiAndroidPopup.requestMessage('getEntry', index); } },
                             lookupRedirect: { postMessage: function(query) { return window.HoshiAndroidPopup.requestMessage('lookupRedirect', query); } },
                             askAi: { postMessage: function(content) { window.HoshiAndroidPopup.postMessage('askAi', content); } },
-                            exportWord: { postMessage: function(content) { window.HoshiAndroidPopup.postMessage('exportWord', content); } }
+                            exportWord: { postMessage: function(content) { window.HoshiAndroidPopup.postMessage('exportWord', content); } },
+                            markKnown: { postMessage: function(content) { window.HoshiAndroidPopup.postMessage('markKnown', content); } }
                         }
                     };
                     window.scanNonJapaneseText = ${normalizedSettings.scanNonJapaneseText};
@@ -218,6 +220,7 @@ internal object LookupPopupHtml {
                     window.ankiFormats = ${ankiFormatsJson(ankiSettings)};
                     window.ankiBackendAvailable = ${ankiSettings.isBackendAvailable};
                     window.aiLookupEnabled = $aiLookupEnabled;
+                    window.markKnownEnabled = $markKnownEnabled;
                     window.disableShowNotes = ${ankiSettings.disableShowNotes};
                     window.customCSS = ${JsonPrimitive(normalizedSettings.customCSS)};
                     window.swipeThreshold = $effectiveSwipeThreshold;

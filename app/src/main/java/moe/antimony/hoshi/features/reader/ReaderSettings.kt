@@ -72,6 +72,7 @@ internal fun Int.coerceReaderBottomSafeAreaDp(): Int {
 data class ReaderSettings(
     val theme: ReaderTheme = ReaderTheme.System,
     val eInkMode: Boolean = false,
+    val eInkReduceGhosting: Boolean = false,
     val uiTheme: ReaderInterfaceTheme = ReaderInterfaceTheme.System,
     val systemLightSepia: Boolean = false,
     val sepiaInvertInDark: Boolean = false,
@@ -82,6 +83,7 @@ data class ReaderSettings(
     val selectedFont: String = ReaderFontManager.defaultMinchoFont,
     val fontSize: Int = 22,
     val hideFurigana: Boolean = false,
+    val autoFurigana: Boolean = false,
     val viewMode: ReaderViewMode = ReaderViewMode.Paginated,
     val visualNovelRevealSpeed: Int = 45,
     val visualNovelScreenMode: VisualNovelScreenMode = VisualNovelScreenMode.Block,
@@ -328,6 +330,7 @@ class ReaderSettingsStore(context: Context) : ReaderSettingsLegacySource {
             ?.let { saved -> ReaderTheme.entries.firstOrNull { it.label == saved } }
             ?: ReaderTheme.System,
         eInkMode = preferences.getBoolean("eInkMode", false),
+        eInkReduceGhosting = preferences.getBoolean("eInkReduceGhosting", false),
         uiTheme = ReaderInterfaceTheme.fromStorage(preferences.getString("uiTheme", null)),
         systemLightSepia = preferences.getBoolean("systemLightSepia", false),
         sepiaInvertInDark = preferences.getBoolean("sepiaInvertInDark", false),
@@ -338,6 +341,7 @@ class ReaderSettingsStore(context: Context) : ReaderSettingsLegacySource {
         selectedFont = preferences.getString("selectedFont", null) ?: ReaderFontManager.defaultMinchoFont,
         fontSize = preferences.getInt("fontSize", 22),
         hideFurigana = preferences.getBoolean("readerHideFurigana", false),
+        autoFurigana = preferences.getBoolean("readerAutoFurigana", false),
         viewMode = ReaderViewMode.fromStorage(
             preferences.getString("readerViewMode", null),
             legacyContinuousMode = preferences.getBoolean("continuousMode", false),
@@ -410,6 +414,7 @@ class ReaderSettingsStore(context: Context) : ReaderSettingsLegacySource {
         preferences.edit()
             .putString("theme", settings.theme.label)
             .putBoolean("eInkMode", settings.eInkMode)
+            .putBoolean("eInkReduceGhosting", settings.eInkReduceGhosting)
             .putString("uiTheme", settings.uiTheme.label)
             .putBoolean("systemLightSepia", settings.systemLightSepia)
             .putBoolean("sepiaInvertInDark", settings.sepiaInvertInDark)
@@ -420,6 +425,7 @@ class ReaderSettingsStore(context: Context) : ReaderSettingsLegacySource {
             .putString("selectedFont", settings.selectedFont)
             .putInt("fontSize", settings.fontSize)
             .putBoolean("readerHideFurigana", settings.hideFurigana)
+            .putBoolean("readerAutoFurigana", settings.autoFurigana)
             .putString("readerViewMode", settings.viewMode.rawValue)
             .putBoolean("continuousMode", settings.continuousMode)
             .putInt("visualNovelRevealSpeed", settings.visualNovelRevealSpeed.coerceVisualNovelRevealSpeed())
@@ -556,6 +562,7 @@ class ReaderSettingsRepository(
                 ?.let { saved -> ReaderTheme.entries.firstOrNull { it.label == saved } }
                 ?: ReaderTheme.System,
             eInkMode = this[KEY_E_INK_MODE] ?: false,
+            eInkReduceGhosting = this[KEY_E_INK_REDUCE_GHOSTING] ?: false,
             uiTheme = ReaderInterfaceTheme.fromStorage(this[KEY_UI_THEME]),
             systemLightSepia = this[KEY_SYSTEM_LIGHT_SEPIA] ?: false,
             sepiaInvertInDark = this[KEY_SEPIA_INVERT_IN_DARK] ?: false,
@@ -566,6 +573,7 @@ class ReaderSettingsRepository(
             selectedFont = this[KEY_SELECTED_FONT] ?: ReaderFontManager.defaultMinchoFont,
             fontSize = this[KEY_FONT_SIZE] ?: 22,
             hideFurigana = this[KEY_HIDE_FURIGANA] ?: false,
+            autoFurigana = this[KEY_AUTO_FURIGANA] ?: false,
             viewMode = ReaderViewMode.fromStorage(
                 this[KEY_READER_VIEW_MODE],
                 legacyContinuousMode = this[KEY_CONTINUOUS_MODE] ?: false,
@@ -632,6 +640,7 @@ class ReaderSettingsRepository(
     private fun MutablePreferences.writeReaderSettings(settings: ReaderSettings) {
         this[KEY_THEME] = settings.theme.label
         this[KEY_E_INK_MODE] = settings.eInkMode
+        this[KEY_E_INK_REDUCE_GHOSTING] = settings.eInkReduceGhosting
         this[KEY_UI_THEME] = settings.uiTheme.label
         this[KEY_SYSTEM_LIGHT_SEPIA] = settings.systemLightSepia
         this[KEY_SEPIA_INVERT_IN_DARK] = settings.sepiaInvertInDark
@@ -642,6 +651,7 @@ class ReaderSettingsRepository(
         this[KEY_SELECTED_FONT] = settings.selectedFont
         this[KEY_FONT_SIZE] = settings.fontSize
         this[KEY_HIDE_FURIGANA] = settings.hideFurigana
+        this[KEY_AUTO_FURIGANA] = settings.autoFurigana
         this[KEY_READER_VIEW_MODE] = settings.viewMode.rawValue
         this[KEY_CONTINUOUS_MODE] = settings.continuousMode
         this[KEY_VISUAL_NOVEL_REVEAL_SPEED] = settings.visualNovelRevealSpeed.coerceVisualNovelRevealSpeed()
@@ -751,6 +761,7 @@ class ReaderSettingsRepository(
             booleanPreferencesKey("readerSettingsMigratedFromSharedPreferences")
         private val KEY_THEME = stringPreferencesKey("theme")
         private val KEY_E_INK_MODE = booleanPreferencesKey("eInkMode")
+        private val KEY_E_INK_REDUCE_GHOSTING = booleanPreferencesKey("eInkReduceGhosting")
         private val KEY_UI_THEME = stringPreferencesKey("uiTheme")
         private val KEY_SYSTEM_LIGHT_SEPIA = booleanPreferencesKey("systemLightSepia")
         private val KEY_SEPIA_INVERT_IN_DARK = booleanPreferencesKey("sepiaInvertInDark")
@@ -761,6 +772,7 @@ class ReaderSettingsRepository(
         private val KEY_SELECTED_FONT = stringPreferencesKey("selectedFont")
         private val KEY_FONT_SIZE = intPreferencesKey("fontSize")
         private val KEY_HIDE_FURIGANA = booleanPreferencesKey("readerHideFurigana")
+        private val KEY_AUTO_FURIGANA = booleanPreferencesKey("readerAutoFurigana")
         private val KEY_READER_VIEW_MODE = stringPreferencesKey("readerViewMode")
         private val KEY_CONTINUOUS_MODE = booleanPreferencesKey("continuousMode")
         private val KEY_VISUAL_NOVEL_REVEAL_SPEED = intPreferencesKey("visualNovelRevealSpeed")
@@ -831,6 +843,7 @@ class ReaderSettingsRepository(
 private data class ProfileReaderAppearanceSettings(
     val theme: ReaderTheme = ReaderTheme.System,
     val eInkMode: Boolean = false,
+    val eInkReduceGhosting: Boolean = false,
     val uiTheme: ReaderInterfaceTheme = ReaderInterfaceTheme.System,
     val systemLightSepia: Boolean = false,
     val sepiaInvertInDark: Boolean = false,
@@ -841,6 +854,7 @@ private data class ProfileReaderAppearanceSettings(
     val selectedFont: String = ReaderFontManager.defaultMinchoFont,
     val fontSize: Int = 22,
     val hideFurigana: Boolean = false,
+    val autoFurigana: Boolean = false,
     val viewMode: ReaderViewMode? = null,
     val continuousMode: Boolean = false,
     val visualNovelRevealSpeed: Int = 45,
@@ -889,6 +903,7 @@ private fun ReaderSettings.toProfileAppearanceSettings(): ProfileReaderAppearanc
     ProfileReaderAppearanceSettings(
         theme = theme,
         eInkMode = eInkMode,
+        eInkReduceGhosting = eInkReduceGhosting,
         uiTheme = uiTheme,
         systemLightSepia = systemLightSepia,
         sepiaInvertInDark = sepiaInvertInDark,
@@ -899,6 +914,7 @@ private fun ReaderSettings.toProfileAppearanceSettings(): ProfileReaderAppearanc
         selectedFont = selectedFont,
         fontSize = fontSize,
         hideFurigana = hideFurigana,
+        autoFurigana = autoFurigana,
         viewMode = viewMode,
         continuousMode = continuousMode,
         visualNovelRevealSpeed = visualNovelRevealSpeed.coerceVisualNovelRevealSpeed(),
@@ -947,6 +963,7 @@ private fun ReaderSettings.withProfileAppearance(appearance: ProfileReaderAppear
     copy(
         theme = appearance.theme,
         eInkMode = appearance.eInkMode,
+        eInkReduceGhosting = appearance.eInkReduceGhosting,
         uiTheme = appearance.uiTheme,
         systemLightSepia = appearance.systemLightSepia,
         sepiaInvertInDark = appearance.sepiaInvertInDark,
@@ -957,6 +974,7 @@ private fun ReaderSettings.withProfileAppearance(appearance: ProfileReaderAppear
         selectedFont = appearance.selectedFont,
         fontSize = appearance.fontSize,
         hideFurigana = appearance.hideFurigana,
+        autoFurigana = appearance.autoFurigana,
         viewMode = appearance.viewMode ?: if (appearance.continuousMode) {
             ReaderViewMode.Continuous
         } else {

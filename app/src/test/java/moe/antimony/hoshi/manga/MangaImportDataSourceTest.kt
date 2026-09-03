@@ -1,13 +1,112 @@
 package moe.antimony.hoshi.manga
 
+import java.io.File
 import java.nio.file.Files
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.json.Json
 import moe.antimony.hoshi.importing.ImportFileType
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MangaImportDataSourceTest {
+    @Test
+    fun importVolumeCombinesSeriesTitleAndVolumeLabelWhenBothPresentAndDistinct() = runBlocking {
+        val importDataSource = newImportDataSource()
+
+        val root = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = MokuroVolume(title = "All You Need Is Kill", volume = "Volume 01", pages = emptyList()),
+            mokuroFile = tempMokuroFile(),
+            resolvePage = { _, _ -> false },
+        )
+
+        val metadata = MangaSidecarDataSource(Dispatchers.IO).loadMetadata(root)
+        assertEquals("All You Need Is Kill (Volume 01)", metadata?.title)
+    }
+
+    @Test
+    fun importVolumeGivesDistinctVolumesOfTheSameSeriesSeparateFolders() = runBlocking {
+        // Real mokuro output sets `title` to the series name, identical across every volume of
+        // that series -- importing a second, genuinely different volume must not collide with
+        // (and silently no-op on top of) the first one just because their titles match.
+        val importDataSource = newImportDataSource()
+
+        val firstRoot = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = MokuroVolume(
+                title = "20th Century Boys",
+                volume = "Volume 01",
+                volumeUuid = "uuid-vol-1",
+                pages = listOf(MokuroPage(imgWidth = 10, imgHeight = 10, imgPath = "001.jpg", blocks = emptyList())),
+            ),
+            mokuroFile = tempMokuroFile(),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(1)); true },
+        )
+        val secondRoot = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = MokuroVolume(
+                title = "20th Century Boys",
+                volume = "Volume 02",
+                volumeUuid = "uuid-vol-2",
+                pages = listOf(MokuroPage(imgWidth = 10, imgHeight = 10, imgPath = "001.jpg", blocks = emptyList())),
+            ),
+            mokuroFile = tempMokuroFile(),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(2)); true },
+        )
+
+        assertNotEquals(firstRoot.canonicalFile, secondRoot.canonicalFile)
+        val sidecar = MangaSidecarDataSource(Dispatchers.IO)
+        assertEquals("20th Century Boys (Volume 01)", sidecar.loadMetadata(firstRoot)?.title)
+        assertEquals("20th Century Boys (Volume 02)", sidecar.loadMetadata(secondRoot)?.title)
+    }
+
+    @Test
+    fun importVolumeReimportingTheSameVolumeUuidReusesTheExistingFolder() = runBlocking {
+        val importDataSource = newImportDataSource()
+        val volume = MokuroVolume(
+            title = "20th Century Boys",
+            volume = "Volume 01",
+            volumeUuid = "uuid-vol-1",
+            pages = listOf(MokuroPage(imgWidth = 10, imgHeight = 10, imgPath = "001.jpg", blocks = emptyList())),
+        )
+
+        val firstRoot = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = volume,
+            mokuroFile = tempMokuroFile(volume),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(1)); true },
+        )
+        val secondRoot = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = volume,
+            mokuroFile = tempMokuroFile(volume),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(1)); true },
+        )
+
+        assertEquals(firstRoot.canonicalFile, secondRoot.canonicalFile)
+    }
+
+    private fun newImportDataSource(): MangaImportDataSource {
+        val filesDir = Files.createTempDirectory("hoshi-manga-import-volume").toFile()
+        return MangaImportDataSource(
+            filesDir = filesDir,
+            fileDataSource = MangaFileDataSource(filesDir),
+        )
+    }
+
+    // importVolume copies the mokuroFile bytes verbatim rather than re-serializing `volume`, so
+    // for a same-volume-uuid comparison to see anything at all, the file's actual content must
+    // match the volume being imported -- an empty placeholder file (fine when a test doesn't
+    // round-trip through the copy) would otherwise silently carry no volume_uuid at all.
+    private fun tempMokuroFile(volume: MokuroVolume? = null): File =
+        Files.createTempFile("hoshi-manga-import-volume-mokuro", ".mokuro").toFile().apply {
+            writeText(if (volume != null) Json.encodeToString(MokuroVolume.serializer(), volume) else "{}")
+        }
+
     @Test
     fun resolveSafePageDestinationAllowsSimpleAndNestedRelativePaths() {
         val pagesRoot = Files.createTempDirectory("hoshi-manga-safe-dest").toFile()

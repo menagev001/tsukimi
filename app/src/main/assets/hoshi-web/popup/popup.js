@@ -1598,6 +1598,7 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
             : kind === 'notes' ? 'Show Anki notes'
             : kind === 'ai' ? 'Explain Word'
             : kind === 'export' ? 'Export'
+            : kind === 'known' ? 'Mark as known'
             : 'Add to Anki',
     );
     slot.addEventListener('click', (event) => {
@@ -1620,6 +1621,17 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
         } else if (kind === 'export') {
             const entry = window.lookupEntries?.[entryIndex];
             webkit.messageHandlers.exportWord.postMessage({ word: entry?.matched || entry?.expression || '' });
+        } else if (kind === 'known') {
+            const entry = window.lookupEntries?.[entryIndex];
+            if (!entry) { return; }
+            webkit.messageHandlers.markKnown.postMessage({
+                expression: entry.expression || '',
+                reading: entry.reading || '',
+            });
+            // Optimistic: marking known is a simple local write that isn't expected to fail, and
+            // there's no reply message for this one -- see askAi/exportWord above for the same
+            // fire-and-forget pattern.
+            updateButtonSlot(slot, { state: 'duplicate', enabled: false });
         }
     });
     slot.appendChild(el('span', { className: 'button-slot-icon' }));
@@ -1656,6 +1668,7 @@ function applyButtonSlotVisualState(slot) {
         : kind === 'notes' ? 'search'
         : kind === 'ai' ? 'auto_awesome'
         : kind === 'export' ? 'share'
+        : kind === 'known' ? (state === 'duplicate' ? 'check_circle' : 'check_box')
         : formatIcon === 'circle' ? (state === 'duplicate' ? 'check_circle' : 'add_circle')
         : formatIcon === 'diamond' ? (state === 'duplicate' ? 'diamond_fill' : 'diamond')
         : (state === 'duplicate' ? 'check_box' : 'add_box');
@@ -1851,6 +1864,9 @@ function createEntryHeader(entry, idx) {
         buttonsContainer.appendChild(createButtonSlot('ai', idx));
     }
     buttonsContainer.appendChild(createButtonSlot('export', idx));
+    if (window.markKnownEnabled && expression) {
+        buttonsContainer.appendChild(createButtonSlot('known', idx));
+    }
 
     header.appendChild(buttonsContainer);
 
@@ -1964,6 +1980,7 @@ const forwardStack = [];
 let pendingHistoryRestore = null;
 
 window.resetPopupResults = function() {
+    cancelPendingPopupTap();
     renderGeneration++;
     popupTermNavigator.reset();
     flushPendingHistoryRestore();
@@ -2123,19 +2140,62 @@ function isPopupInteractiveTapTarget(target) {
     return Boolean(tagRow && !tagRow.closest('.expr-tag-row'));
 }
 
+// Mirrors ReaderTapDispatcher (SwipePageTouchListener.kt): a matching second tap within
+// the timeout+slop window is a double-tap (sentence breakdown); a non-matching pending tap
+// is left running so it still fires as its own single tap.
+const POPUP_DOUBLE_TAP_TIMEOUT_MS = 180;
+const POPUP_DOUBLE_TAP_SLOP = 40;
+let pendingPopupTap = null;
+
+function performPopupSelection(clientX, clientY, sentenceOnly) {
+    const { rectX, rectY } = popupGeometry.selectionCoordinates(clientX, clientY);
+    const selected = window.hoshiSelection?.selectText(clientX, clientY, window.scanLength, rectX, rectY, sentenceOnly);
+    if (!selected) {
+        webkit.messageHandlers.tapOutside.postMessage(null);
+    }
+}
+
+function cancelPendingPopupTap() {
+    if (pendingPopupTap) {
+        clearTimeout(pendingPopupTap.timer);
+        pendingPopupTap = null;
+    }
+}
+
+function dispatchPopupWordTap(clientX, clientY) {
+    const now = Date.now();
+    const pending = pendingPopupTap;
+    if (
+        pending &&
+        now - pending.time <= POPUP_DOUBLE_TAP_TIMEOUT_MS &&
+        Math.abs(clientX - pending.x) <= POPUP_DOUBLE_TAP_SLOP &&
+        Math.abs(clientY - pending.y) <= POPUP_DOUBLE_TAP_SLOP
+    ) {
+        clearTimeout(pending.timer);
+        pendingPopupTap = null;
+        performPopupSelection(clientX, clientY, true);
+        return;
+    }
+    const entry = { x: clientX, y: clientY, time: now, timer: null };
+    entry.timer = setTimeout(() => {
+        if (pendingPopupTap === entry) {
+            pendingPopupTap = null;
+        }
+        performPopupSelection(clientX, clientY, false);
+    }, POPUP_DOUBLE_TAP_TIMEOUT_MS);
+    pendingPopupTap = entry;
+}
+
 function handlePopupTap(target, clientX, clientY) {
     if (isPopupInteractiveTapTarget(target)) {
         return false;
     }
     if (!target?.closest('.glossary-content') && !target?.closest('.expr-tag')) {
+        cancelPendingPopupTap();
         webkit.messageHandlers.tapOutside.postMessage(null);
         return true;
     }
-    const { rectX, rectY } = popupGeometry.selectionCoordinates(clientX, clientY);
-    const selected = window.hoshiSelection?.selectText(clientX, clientY, window.scanLength, rectX, rectY);
-    if (!selected) {
-        webkit.messageHandlers.tapOutside.postMessage(null);
-    }
+    dispatchPopupWordTap(clientX, clientY);
     return true;
 }
 

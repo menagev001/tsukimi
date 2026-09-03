@@ -60,16 +60,19 @@ internal fun mangaReaderSetupScript(
 }
 
 /**
- * Injects one page's OCR data + page image URL. `pageJson` is the raw mokuro page JSON object
- * text (one `MokuroPage`, not the whole volume) so a several-hundred-page volume never puts more
- * than the current page's OCR data in the WebView's JS heap at once -- mirrors how EPUB injects
- * only the current chapter, not the whole book.
+ * Injects one page's (or, in spread mode, one pair's) OCR data + page image URL(s). `pagesJson`
+ * is the raw mokuro page JSON object text for each entry (one or two `MokuroPage`s, never the
+ * whole volume) so a several-hundred-page volume never puts more than the currently-displayed
+ * page(s)' OCR data in the WebView's JS heap at once -- mirrors how EPUB injects only the current
+ * chapter, not the whole book. `pagesJson`/`imageUrls` must already be in final left-to-right
+ * *visual* order (the caller resolves RTL reading order into display order before calling this).
  */
-internal fun mangaShowPageScript(pageIndex: Int, pageJson: String, imageUrl: String): String {
-    val imageUrlLiteral = readerJavaScriptStringLiteral(imageUrl)
+internal fun mangaShowPageScript(pageIndex: Int, pagesJson: List<String>, imageUrls: List<String>): String {
+    val pagesArrayLiteral = pagesJson.joinToString(prefix = "[", postfix = "]")
+    val urlsArrayLiteral = imageUrls.joinToString(prefix = "[", postfix = "]") { readerJavaScriptStringLiteral(it) }
     return """
         (function() {
-          window.hoshiManga && window.hoshiManga.showPage($pageIndex, $pageJson, $imageUrlLiteral);
+          window.hoshiManga && window.hoshiManga.showPage($pageIndex, $pagesArrayLiteral, $urlsArrayLiteral);
         })();
     """.trimIndent()
 }

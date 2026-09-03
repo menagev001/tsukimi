@@ -61,6 +61,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import moe.antimony.hoshi.R
+import moe.antimony.hoshi.features.furigana.KnownWordsImportSummary
 import moe.antimony.hoshi.features.settings.SettingsDetailScaffold
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettings
 import moe.antimony.hoshi.importing.FileImportContent
@@ -96,6 +97,11 @@ internal fun ReaderAppearanceScreen(
             sasayakiSettings = sasayakiSettings,
             onSasayakiSettingsChange = onSasayakiSettingsChange,
             fontManager = fontManager,
+            // Null: no live chapter/WebView from this screen (the general Settings tab, not an
+            // active reading session) to recalculate against or surface an import result for --
+            // see the doc comment on ReaderAppearanceContent's params.
+            onRecalculateFurigana = null,
+            onImportKnownWords = null,
             contentPadding = PaddingValues(
                 start = 24.dp,
                 end = 24.dp,
@@ -116,6 +122,8 @@ internal fun ReaderAppearanceSheet(
     sasayakiSettings: SasayakiSettings,
     onSasayakiSettingsChange: (SasayakiSettings) -> Unit,
     fontManager: ReaderFontManager,
+    onRecalculateFurigana: (() -> Unit)?,
+    onImportKnownWords: (suspend (String) -> KnownWordsImportSummary)?,
     onDismiss: () -> Unit,
 ) {
     val palette = appearancePalette()
@@ -134,6 +142,8 @@ internal fun ReaderAppearanceSheet(
             sasayakiSettings = sasayakiSettings,
             onSasayakiSettingsChange = onSasayakiSettingsChange,
             fontManager = fontManager,
+            onRecalculateFurigana = onRecalculateFurigana,
+            onImportKnownWords = onImportKnownWords,
             contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = 24.dp),
             showTitle = false,
             showDone = true,
@@ -153,6 +163,12 @@ private fun ReaderAppearanceContent(
     sasayakiSettings: SasayakiSettings,
     onSasayakiSettingsChange: (SasayakiSettings) -> Unit,
     fontManager: ReaderFontManager,
+    // Null hides the corresponding action row entirely -- there's no live chapter/WebView to
+    // recalculate against from the general Settings tab, and a file picker whose result would
+    // just be silently discarded there is worse than not offering it. Both actions are available
+    // from the in-reader appearance sheet, which always provides real implementations.
+    onRecalculateFurigana: (() -> Unit)?,
+    onImportKnownWords: (suspend (String) -> KnownWordsImportSummary)?,
     contentPadding: PaddingValues,
     modifier: Modifier = Modifier,
     showTitle: Boolean = true,
@@ -168,6 +184,29 @@ private fun ReaderAppearanceContent(
     var isImportingFont by remember { mutableStateOf(false) }
     var importingFontMessage by remember { mutableStateOf<String?>(null) }
     var colorDialogRow by remember { mutableStateOf<ReaderAppearanceCustomColorRow?>(null) }
+    var isImportingKnownWords by remember { mutableStateOf(false) }
+    var knownWordsImportResult by remember { mutableStateOf<KnownWordsImportSummary?>(null) }
+    var knownWordsImportError by remember { mutableStateOf(false) }
+    val knownWordsImporter = rememberLauncherForActivityResult(FileImportContent()) { uri: Uri? ->
+        if (uri == null) return@rememberLauncherForActivityResult
+        scope.launch {
+            isImportingKnownWords = true
+            knownWordsImportResult = null
+            knownWordsImportError = false
+            val text = runCatching {
+                withContext(Dispatchers.IO) {
+                    context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
+                }
+            }.getOrNull()
+            if (text == null) {
+                knownWordsImportError = true
+            } else {
+                val summary = runCatching { onImportKnownWords?.invoke(text) }.getOrNull()
+                if (summary == null) knownWordsImportError = true else knownWordsImportResult = summary
+            }
+            isImportingKnownWords = false
+        }
+    }
     val fontImporter = rememberLauncherForActivityResult(FileImportContent()) { uri: Uri? ->
         if (uri == null) return@rememberLauncherForActivityResult
         val displayName = context.contentResolver.importDisplayName(uri)
@@ -238,6 +277,14 @@ private fun ReaderAppearanceContent(
                         checked = settings.eInkMode,
                         onCheckedChange = { onSettingsChange(settings.copy(eInkMode = it)) },
                     )
+                    if (settings.eInkMode) {
+                        AppearanceDivider(palette)
+                        SwitchRow(
+                            label = stringResource(R.string.reader_appearance_eink_reduce_ghosting),
+                            checked = settings.eInkReduceGhosting,
+                            onCheckedChange = { onSettingsChange(settings.copy(eInkReduceGhosting = it)) },
+                        )
+                    }
                     if (settings.theme == ReaderTheme.System) {
                         AppearanceDivider(palette)
                         SwitchRow(
@@ -329,6 +376,54 @@ private fun ReaderAppearanceContent(
                         checked = settings.hideFurigana,
                         onCheckedChange = { onSettingsChange(settings.copy(hideFurigana = it)) },
                     )
+                    AppearanceDivider(palette)
+                    SwitchRow(
+                        label = stringResource(R.string.reader_appearance_auto_furigana),
+                        checked = settings.autoFurigana,
+                        onCheckedChange = { onSettingsChange(settings.copy(autoFurigana = it)) },
+                    )
+                    if (settings.autoFurigana && onRecalculateFurigana != null) {
+                        AppearanceDivider(palette)
+                        ActionRow(
+                            label = stringResource(R.string.reader_appearance_recalculate_furigana),
+                            button = stringResource(R.string.action_recalculate),
+                            enabled = true,
+                            onClick = onRecalculateFurigana,
+                        )
+                    }
+                    if (settings.autoFurigana && onImportKnownWords != null) {
+                        AppearanceDivider(palette)
+                        ActionRow(
+                            label = stringResource(R.string.reader_appearance_import_known_words),
+                            button = if (isImportingKnownWords) {
+                                stringResource(R.string.reader_appearance_importing)
+                            } else {
+                                stringResource(R.string.action_import)
+                            },
+                            enabled = !isImportingKnownWords,
+                            onClick = { knownWordsImporter.launch(arrayOf("application/json")) },
+                        )
+                        val importResult = knownWordsImportResult
+                        if (importResult != null) {
+                            Text(
+                                text = stringResource(
+                                    R.string.reader_appearance_import_known_words_result,
+                                    importResult.newlyAddedCount,
+                                    importResult.totalKnownCount,
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = palette.onBackground.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+                            )
+                        } else if (knownWordsImportError) {
+                            Text(
+                                text = stringResource(R.string.reader_appearance_import_known_words_error),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 2.dp),
+                            )
+                        }
+                    }
                 }
                 AppearanceSection(title = stringResource(R.string.reader_appearance_layout), palette = palette) {
                     val paginatedLabel = stringResource(R.string.reader_appearance_paginated)

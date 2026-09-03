@@ -29,6 +29,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
@@ -49,6 +50,7 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import moe.antimony.hoshi.LocalHoshiUiDependencies
+import moe.antimony.hoshi.R
 import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.epub.BookEntry
 import moe.antimony.hoshi.epub.EpubBook
@@ -67,6 +69,10 @@ import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiViewModel
 import moe.antimony.hoshi.features.export.WordExport
 import moe.antimony.hoshi.features.export.shareWordExport
+import moe.antimony.hoshi.features.furigana.FuriganaHtmlInjector
+import moe.antimony.hoshi.features.furigana.FuriganaSegmenter
+import moe.antimony.hoshi.features.furigana.KnownWordEntry
+import moe.antimony.hoshi.features.furigana.asFuriganaLookup
 import moe.antimony.hoshi.features.dictionary.DictionaryImageRequestHandler
 import moe.antimony.hoshi.features.dictionary.DictionarySettings
 import moe.antimony.hoshi.features.dictionary.LookupPopupAssets
@@ -124,6 +130,13 @@ fun ReaderWebView(
         ReaderWebResourceBridge(book, fontManager)
     }
     val dictionaryRepository = appContainer.dictionaryRepository
+    val knownWordsRepository = appContainer.knownWordsRepository
+    LaunchedEffect(knownWordsRepository) {
+        // Warms KnownWordsRepository's synchronous snapshot, which the furigana injector below
+        // reads from the WebView's resource-serving thread and can't populate itself (it can't
+        // suspend). Until this completes, every word is treated as unknown -- safe, just noisier.
+        knownWordsRepository.knownWords()
+    }
     val dictionarySettingsRepository = appContainer.dictionarySettingsRepository
     val audioSettingsRepository = appContainer.audioSettingsRepository
     val sasayakiSettingsRepository = appContainer.sasayakiSettingsRepository
@@ -215,6 +228,26 @@ fun ReaderWebView(
         }
     }
     val effectiveSettings = stateHolder.effectiveSettings
+    var furiganaScanProgress by remember { mutableStateOf<FuriganaScanProgress?>(null) }
+    val furiganaInjector = remember(dictionaryRepository, knownWordsRepository, effectiveSettings.autoFurigana) {
+        if (!effectiveSettings.autoFurigana) {
+            furiganaScanProgress = null
+            null
+        } else {
+            val segmenter = FuriganaSegmenter(
+                lookup = dictionaryRepository.asFuriganaLookup(),
+                isKnownWord = { expression, reading ->
+                    KnownWordEntry(expression, reading) in knownWordsRepository.knownWordsSnapshot
+                },
+            )
+            FuriganaHtmlInjector(
+                segment = segmenter::segment,
+                // Runs on the WebView's own resource-loading thread, not the UI thread -- Compose
+                // state writes are safe from any thread and schedule a recomposition regardless.
+                onProgress = { processed, total -> furiganaScanProgress = FuriganaScanProgress(processed, total) },
+            )
+        }
+    }
     val readerPosition = stateHolder.readerPosition
     val lookupPopups = stateHolder.lookupPopups
     var readerPopupHistories by remember { mutableStateOf<Map<String, ReaderPopupHistoryCounts>>(emptyMap()) }
@@ -262,6 +295,7 @@ fun ReaderWebView(
             popupScale = effectiveSettings.popupScale,
             contentLanguageProfile = popupContentLanguageProfile,
             aiLookupEnabled = true,
+            markKnownEnabled = true,
         )
     }
     val currentReaderPopupIframeDocument = rememberUpdatedState(readerPopupIframeDocument)
@@ -588,6 +622,9 @@ fun ReaderWebView(
         rootSelectionHighlight = rootSelectionHighlight?.takeIf { highlight ->
             highlight.popupId == null || highlight.popupId in activeIds
         }
+        if (readerSettings.eInkReduceGhosting && nextPopups.isEmpty() && stateHolder.lookupPopups.isNotEmpty()) {
+            webView?.let(ReaderEInkRefresh::forceFullRefresh)
+        }
         stateHolder.setLookupPopups(nextPopups, ::resumeSasayakiAfterLookupIfNeeded)
     }
     fun dismissRootLookupPopup() {
@@ -744,6 +781,11 @@ fun ReaderWebView(
             }
             is ReaderLookupPopupBridgeMessage.TextSelected -> {
                 val index = popupIndex(message.popupId).takeIf { it >= 0 } ?: return
+                if (message.selection.isSentenceOnly) {
+                    setLookupPopups(emptyList())
+                    aiLookupViewModel.requestSentenceBreakdown(message.selection.sentence)
+                    return
+                }
                 val nextPopups = stateHolder.lookupPopups.take(index + 1)
                 val lookup = lookupChildPopup(message.selection)
                 if (lookup == null) {
@@ -867,6 +909,10 @@ fun ReaderWebView(
             is ReaderLookupPopupBridgeMessage.ExportWord -> {
                 val selection = popupById(message.popupId)?.state?.selection ?: return
                 context.shareWordExport(WordExport(word = message.word, sentence = selection.sentence))
+            }
+            is ReaderLookupPopupBridgeMessage.MarkKnown -> {
+                if (message.expression.isEmpty()) return
+                scope.launch { knownWordsRepository.markKnown(message.expression, message.reading) }
             }
         }
     }
@@ -1773,6 +1819,8 @@ fun ReaderWebView(
                         readerPopupFrames = readerLookupPopupPayloads,
                         fontManager = fontManager,
                         systemDark = systemDarkTheme,
+                        furiganaInjector = furiganaInjector,
+                        furiganaRecalculateEpoch = stateHolder.furiganaRecalculateEpoch,
                         onBeforeRestoreVisible = { restoredWebView ->
                             sasayakiRestoreBeforeVisibleAction(
                                 restoredWebView = restoredWebView,
@@ -1795,9 +1843,13 @@ fun ReaderWebView(
             }
         }
         if (restoreLoadingPresentation == ReaderRestoreLoadingPresentation.BehindChromeStaticSpinner) {
+            val furiganaProgressText = furiganaScanProgress?.takeIf { !it.isComplete }?.let { progress ->
+                stringResource(R.string.reader_furigana_scan_progress, progress.processed, progress.total)
+            }
             ReaderLoadingPage(
                 backgroundColor = Color(effectiveSettings.backgroundColor(systemDarkTheme)),
                 modifier = Modifier.fillMaxSize(),
+                progressText = furiganaProgressText,
             )
         }
         ReaderTopInfo(
@@ -1896,6 +1948,13 @@ fun ReaderWebView(
                 sasayakiSettings = sasayakiSettings,
                 onSasayakiSettingsChange = ::updateSasayakiSettings,
                 fontManager = fontManager,
+                onRecalculateFurigana = {
+                    // Otherwise the sheet just sits on top of the loading page, and pressing the
+                    // button looks like nothing happened even though it's working underneath.
+                    stateHolder.recalculateFurigana()
+                    stateHolder.dismissAppearance()
+                },
+                onImportKnownWords = knownWordsRepository::importMigakuExport,
                 onDismiss = stateHolder::dismissAppearance,
             )
         }
@@ -2075,3 +2134,7 @@ private data class SasayakiCueRevealResult(
 
 private fun SasayakiPlaybackData?.hasStoredAudioSource(): Boolean =
     this?.audioUri?.isNotBlank() == true || this?.audioFileName?.isNotBlank() == true
+
+internal data class FuriganaScanProgress(val processed: Int, val total: Int) {
+    val isComplete: Boolean get() = total <= 0 || processed >= total
+}

@@ -3,6 +3,7 @@ package moe.antimony.hoshi.navigation
 import java.nio.file.Files
 import kotlinx.coroutines.runBlocking
 import moe.antimony.hoshi.manga.MangaBookmark
+import moe.antimony.hoshi.manga.MangaReadingStats
 import moe.antimony.hoshi.manga.MangaRepository
 import moe.antimony.hoshi.manga.MangaVolumeMetadata
 import org.junit.Assert.assertEquals
@@ -73,5 +74,39 @@ class MangaReaderRouteStateHolderTest {
         stateHolder.saveBookmark(entry, pageIndex = 7)
 
         assertEquals(7, repository.loadBookmark(root)?.pageIndex)
+    }
+
+    @Test
+    fun addReadingSecondsAccumulatesOntoTheExistingTotal() = runBlocking {
+        val repository = MangaRepository(Files.createTempDirectory("hoshi-manga-route-stats").toFile())
+        val root = repository.createVolumeDirectoryForImportedTitle("volume-a")
+        repository.saveMetadata(
+            root,
+            MangaVolumeMetadata(id = "volume-a", title = "Volume A", cover = null, folder = "volume-a", lastAccess = 1.0),
+        )
+        repository.saveReadingStats(root, MangaReadingStats(totalSeconds = 60.0))
+        val stateHolder = MangaReaderRouteStateHolder(repository)
+        val entry = requireNotNull(repository.loadVolumeEntry("volume-a"))
+
+        stateHolder.addReadingSeconds(entry, deltaSeconds = 30.0)
+
+        assertEquals(90.0, repository.loadReadingStats(root).totalSeconds, 0.001)
+    }
+
+    @Test
+    fun addReadingSecondsIgnoresNonPositiveDeltas() = runBlocking {
+        val repository = MangaRepository(Files.createTempDirectory("hoshi-manga-route-stats-noop").toFile())
+        val root = repository.createVolumeDirectoryForImportedTitle("volume-a")
+        repository.saveMetadata(
+            root,
+            MangaVolumeMetadata(id = "volume-a", title = "Volume A", cover = null, folder = "volume-a", lastAccess = 1.0),
+        )
+        val stateHolder = MangaReaderRouteStateHolder(repository)
+        val entry = requireNotNull(repository.loadVolumeEntry("volume-a"))
+
+        stateHolder.addReadingSeconds(entry, deltaSeconds = 0.0)
+        stateHolder.addReadingSeconds(entry, deltaSeconds = -5.0)
+
+        assertEquals(0.0, repository.loadReadingStats(root).totalSeconds, 0.001)
     }
 }

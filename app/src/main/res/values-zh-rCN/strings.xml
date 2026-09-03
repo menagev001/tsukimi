@@ -47,20 +47,24 @@
     <string name="import_select_manga_cbz">请选择 .cbz 漫画压缩包文件。</string>
     <string name="import_select_mokuro_sidecar">请选择 .mokuro 附属文件。</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">书库</string>
-    <string name="main_tab_manga">漫画</string>
+    <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">漫画</string>
     <string name="main_tab_dictionary">查词</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">统计</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">设置</string>
     <string name="library_mode_novels">小说</string>
-    <string name="library_mode_manga">漫画</string>
+    <string name="library_mode_manga" comment="Library mode toggle label, intentionally matching the main tab label.">漫画</string>
     <string name="manga_shelf_open_failed">无法打开此漫画卷。</string>
     <string name="manga_shelf_import_failed">无法导入此漫画卷。</string>
     <string name="manga_shelf_import_folder_empty">在该文件夹中未找到 .cbz 或 .mokuro 文件。</string>
     <string name="manga_shelf_import_cbz">导入 CBZ</string>
-    <string name="manga_shelf_import_folder">导入文件夹</string>
+    <string name="manga_shelf_import_folder" comment="Intentionally matching the novels shelf's own bookshelf_import_folder label.">导入文件夹</string>
     <string name="manga_shelf_importing">正在导入漫画卷…</string>
     <string name="manga_shelf_empty_title">暂无漫画</string>
     <string name="manga_shelf_empty_body">导入 .cbz 文件（内含 .mokuro 附属文件），或包含它们的文件夹，即可开始。</string>
+    <plurals name="manga_shelf_series_volume_count">
+        <item quantity="one">%d 卷</item>
+        <item quantity="other">%d 卷</item>
+    </plurals>
     <string name="statistics_title" comment="Statistics page title, intentionally matching the main tab label.">统计</string>
     <string name="statistics_today" comment="Statistics dashboard section title, intentionally matching reader statistics today label.">今天</string>
     <string name="statistics_this_week">本周</string>
@@ -158,7 +162,7 @@
     <string name="bookshelf_import_failed">无法导入 EPUB。</string>
     <string name="bookshelf_import_failed_list_format" comment="Bookshelf batch import failure summary; intentionally matches the dictionary batch import format.">导入失败：\n%1$s</string>
     <string name="bookshelf_import_files">导入文件</string>
-    <string name="bookshelf_import_folder">导入文件夹</string>
+    <string name="bookshelf_import_folder" comment="Intentionally matching the manga shelf's own manga_shelf_import_folder label.">导入文件夹</string>
     <string name="bookshelf_scanning_folder">正在扫描文件夹...</string>
     <string name="bookshelf_no_epub_files_found">未找到 EPUB 文件。</string>
     <string name="bookshelf_importing_epub">正在导入 EPUB...</string>
@@ -387,6 +391,7 @@
     <string name="reader_appearance_theme_sepia">护眼色</string>
     <string name="reader_appearance_theme_custom" comment="Reader Appearance theme option, distinct from dictionary collapse custom mode.">自定义</string>
     <string name="reader_appearance_eink_mode">墨水屏模式</string>
+    <string name="reader_appearance_eink_reduce_ghosting">减少残影 (Onyx/Boox)</string>
     <string name="reader_appearance_use_sepia_light_theme">浅色主题使用护眼色</string>
     <string name="reader_appearance_invert_sepia_dark">系统深色时反转护眼色</string>
     <string name="reader_appearance_interface">界面</string>
@@ -409,6 +414,13 @@
     <string name="reader_appearance_importing" comment="Generic import progress label, intentionally shared with ッツ backup import.">正在导入...</string>
     <string name="reader_appearance_font_size">字号</string>
     <string name="reader_appearance_hide_furigana">隐藏振假名</string>
+    <string name="reader_appearance_auto_furigana" comment="Toggle that generates furigana for words not in the user's known-word list, distinct from the existing readerHideFurigana toggle which only hides/shows furigana already present in the book.">为生词自动添加振假名</string>
+    <string name="reader_appearance_recalculate_furigana" comment="Label for a button that forces a fresh furigana pass over the current chapter, e.g. after marking new words known.">重新计算振假名</string>
+    <string name="action_recalculate">重新计算</string>
+    <string name="reader_furigana_scan_progress" comment="Shown under the loading spinner while furigana is being generated for the chapter, e.g. '1,314 / 3,000 characters scanned'. %1$d is characters processed so far, %2$d is the total for this pass.">已扫描 %1$d / %2$d 字</string>
+    <string name="reader_appearance_import_known_words" comment="Label for a button that imports a Migaku known-words export, so furigana skips words the reader already knows.">导入已掌握词汇</string>
+    <string name="reader_appearance_import_known_words_result" comment="Shown after importing a known-words file. %1$d is how many were newly added by this import, %2$d is the total known-word count afterward.">新增 %1$d 个词（共 %2$d 个已掌握）</string>
+    <string name="reader_appearance_import_known_words_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid Migaku export.">无法导入该文件</string>
     <string name="reader_appearance_mode" comment="Reader appearance setting label, intentionally matching dictionary mode.">模式</string>
     <string name="reader_appearance_paginated">分页</string>
     <string name="reader_appearance_continuous">连续</string>

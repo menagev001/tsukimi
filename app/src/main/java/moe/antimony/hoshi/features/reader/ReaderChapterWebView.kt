@@ -52,6 +52,7 @@ import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.epub.EpubBook
 import moe.antimony.hoshi.epub.HighlightColor
 import moe.antimony.hoshi.features.dictionary.DictionarySettings
+import moe.antimony.hoshi.features.furigana.FuriganaHtmlInjector
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettings
 import moe.antimony.hoshi.webview.applyHoshiWebViewSecurityDefaults
 
@@ -94,6 +95,8 @@ internal fun ChapterWebView(
     readerPopupFrames: List<ReaderLookupPopupFramePayload>,
     fontManager: ReaderFontManager,
     systemDark: Boolean,
+    furiganaInjector: FuriganaHtmlInjector?,
+    furiganaRecalculateEpoch: Int,
     onBeforeRestoreVisible: (WebView) -> ReaderRestoreBeforeVisibleAction? = { null },
     modifier: Modifier = Modifier,
 ) {
@@ -134,8 +137,8 @@ internal fun ChapterWebView(
         fontManager.webViewFontUrl(readerSettings.selectedFont)
     }
     val baseUrl = remember(chapter) { "https://appassets.androidplatform.net/epub/${chapter.href}" }
-    val readerContentReloadKey = remember(readerSettings) {
-        readerSettings.readerContentReloadKey()
+    val readerContentReloadKey = remember(readerSettings, furiganaRecalculateEpoch) {
+        readerSettings.readerContentReloadKey().copy(furiganaRecalculateEpoch = furiganaRecalculateEpoch)
     }
     val appearanceUpdateKey = readerAppearanceUpdateKey(
         settings = readerSettings,
@@ -260,6 +263,8 @@ internal fun ChapterWebView(
                     fontManager = fontManager,
                     onInternalLink = onInternalLink,
                     popupResourceHandler = { currentReaderPopupResourceHandler.value },
+                    furiganaInjector = furiganaInjector,
+                    furiganaStartFraction = chapterPosition.progress,
                 ) { view ->
                     view.evaluateReaderSetupScript(
                         source = readerSetupScript,
@@ -271,6 +276,9 @@ internal fun ChapterWebView(
             }
         },
         update = { webView ->
+            if (readerSettings.eInkReduceGhosting) {
+                ReaderEInkRefresh.preventWebViewA2Mode(webView)
+            }
             fun selectAt(x: Float, y: Float, sentenceOnly: Boolean = false, onBlankTap: () -> Unit) {
                 val density = webView.resources.displayMetrics.density
                 webView.evaluateJavascript(
@@ -454,6 +462,8 @@ internal fun ChapterWebView(
                     fontManager = fontManager,
                     onInternalLink = onInternalLink,
                     popupResourceHandler = { currentReaderPopupResourceHandler.value },
+                    furiganaInjector = furiganaInjector,
+                    furiganaStartFraction = chapterPosition.progress,
                 ) { view ->
                     view.evaluateReaderSetupScript(
                         source = readerSetupScript,
@@ -795,9 +805,11 @@ private class EpubWebViewClient(
     private val fontManager: ReaderFontManager,
     private val onInternalLink: (ReaderInternalLinkTarget) -> Unit,
     private val popupResourceHandler: () -> ReaderLookupPopupResourceHandler?,
+    private val furiganaInjector: FuriganaHtmlInjector?,
+    private val furiganaStartFraction: Double,
     private val onReaderPageFinished: (WebView) -> Unit,
 ) : WebViewClient() {
-    private val resourceBridge = ReaderWebResourceBridge(book, fontManager)
+    private val resourceBridge = ReaderWebResourceBridge(book, fontManager, furiganaInjector, furiganaStartFraction)
 
     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
         val target = book.resolveInternalReaderLink(request.url?.toString().orEmpty()) ?: return false

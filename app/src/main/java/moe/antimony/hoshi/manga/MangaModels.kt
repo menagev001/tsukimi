@@ -20,6 +20,11 @@ data class MangaVolumeMetadata(
     // Cached from mokuro.pages.size at import time so the shelf grid never has to parse the
     // full mokuro.json just to render page-count/progress UI.
     val pageCount: Int = 0,
+    // Raw mokuro `title` field verbatim (the series name, shared across every volume of a
+    // series) -- distinct from `title` above, which since the multi-volume-collision fix is a
+    // combined "series (volume label)" string good for display but lossy for grouping. Null for
+    // volumes imported before this field existed; they simply don't participate in grouping.
+    val seriesTitle: String? = null,
     override val profileId: String? = null,
     override val bookLanguage: String? = null,
 ) : ProfileActivationSubject {
@@ -31,6 +36,11 @@ data class MangaVolumeMetadata(
 data class MangaBookmark(
     val pageIndex: Int,
     val lastModified: Double? = null,
+)
+
+@Serializable
+data class MangaReadingStats(
+    val totalSeconds: Double = 0.0,
 )
 
 @Serializable

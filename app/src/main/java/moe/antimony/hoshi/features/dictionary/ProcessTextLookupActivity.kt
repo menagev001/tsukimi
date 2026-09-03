@@ -468,6 +468,7 @@ private fun ProcessTextLookupOverlay(
                 is ReaderLookupPopupBridgeMessage.SasayakiTogglePlayback,
                 is ReaderLookupPopupBridgeMessage.SasayakiPlayForward,
                 is ReaderLookupPopupBridgeMessage.AskAi,
+                is ReaderLookupPopupBridgeMessage.MarkKnown,
                 -> Unit
             }
         }

@@ -111,6 +111,13 @@ class MangaRepository private constructor(
         sidecarDataSource.saveHighlights(volumeRoot, highlights)
     }
 
+    suspend fun loadReadingStats(volumeRoot: File): MangaReadingStats =
+        sidecarDataSource.loadReadingStats(volumeRoot) ?: MangaReadingStats()
+
+    suspend fun saveReadingStats(volumeRoot: File, stats: MangaReadingStats) {
+        sidecarDataSource.saveReadingStats(volumeRoot, stats)
+    }
+
     suspend fun loadMokuroVolume(volumeRoot: File): MokuroVolume? = withContext(ioDispatcher) {
         val file = fileDataSource.mokuroFile(volumeRoot) ?: return@withContext null
         runCatching { MokuroParser.parse(file) }.getOrNull()
@@ -234,6 +241,13 @@ class MangaSidecarDataSource(
         saveJson(volumeRoot, HIGHLIGHTS_FILE_NAME, ListSerializer(MangaHighlight.serializer()), highlights)
     }
 
+    suspend fun loadReadingStats(volumeRoot: File): MangaReadingStats? =
+        loadJson(MangaReadingStats.serializer(), volumeRoot.resolve(STATS_FILE_NAME))
+
+    suspend fun saveReadingStats(volumeRoot: File, stats: MangaReadingStats) {
+        saveJson(volumeRoot, STATS_FILE_NAME, MangaReadingStats.serializer(), stats)
+    }
+
     private suspend fun <T> loadJson(serializer: KSerializer<T>, file: File): T? = withContext(ioDispatcher) {
         if (!file.isFile) return@withContext null
         runCatching { json.decodeFromString(serializer, file.readText()) }.getOrNull()
@@ -262,6 +276,7 @@ internal const val PAGES_DIRECTORY_NAME = "pages"
 private const val METADATA_FILE_NAME = "metadata.json"
 private const val BOOKMARK_FILE_NAME = "bookmark.json"
 private const val HIGHLIGHTS_FILE_NAME = "highlights.json"
+private const val STATS_FILE_NAME = "stats.json"
 private const val APPLE_REFERENCE_EPOCH_SECONDS = 978_307_200.0
 
 private fun String.sanitizeImportedVolumeTitle(): String =

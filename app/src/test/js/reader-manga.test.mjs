@@ -38,6 +38,85 @@ test('fitDisplaySize is height-constrained for a tall narrow viewport', () => {
     assert.equal(fit.scale, 1000 / 2400);
 });
 
+test('fitSpreadDisplaySize with one page matches fitDisplaySize exactly', () => {
+    const geometry = loadMangaGeometry();
+
+    const single = geometry.fitDisplaySize(761, 1200, 400, 900);
+    const spread = geometry.fitSpreadDisplaySize([{ width: 761, height: 1200 }], 400, 900);
+
+    assert.equal(spread.scale, single.scale);
+    assert.ok(Math.abs(spread.totalWidth - single.width) < 1e-9);
+    assert.ok(Math.abs(spread.totalHeight - single.height) < 1e-9);
+    assert.equal(spread.widths.length, 1);
+    assert.ok(Math.abs(spread.widths[0] - single.width) < 1e-9);
+});
+
+test('fitSpreadDisplaySize scales two same-sized pages to a shared height and sums their widths', () => {
+    const geometry = loadMangaGeometry();
+
+    // Two same-sized pages in a viewport chosen to be width-constrained: at viewport height
+    // (2000), the pair would need width 1000*(800/1200)*2 = 1333.3, well over the 1000 available,
+    // so the pair's total width is capped to the viewport width instead.
+    const fit = geometry.fitSpreadDisplaySize(
+        [{ width: 800, height: 1200 }, { width: 800, height: 1200 }],
+        1000,
+        2000,
+    );
+
+    assert.ok(Math.abs(fit.totalWidth - 1000) < 1e-9);
+    assert.ok(fit.totalHeight < 2000);
+    assert.ok(Math.abs(fit.heights[0] - fit.totalHeight) < 1e-9);
+    assert.ok(Math.abs(fit.heights[1] - fit.totalHeight) < 1e-9);
+    assert.equal(fit.widths.length, 2);
+    assert.ok(Math.abs(fit.widths[0] - 500) < 1e-9);
+    assert.ok(Math.abs(fit.widths[1] - 500) < 1e-9);
+});
+
+test('fitSpreadDisplaySize gives every page in a spread the same display height even when their natural sizes differ', () => {
+    const geometry = loadMangaGeometry();
+
+    // A taller second page (e.g. a slightly different scan) must still render at the SAME
+    // height as the first -- print convention, and what makes a spread look like one unit
+    // instead of two mismatched pages. Each page gets its OWN scale factor to get there.
+    const fit = geometry.fitSpreadDisplaySize(
+        [{ width: 800, height: 1200 }, { width: 800, height: 1600 }],
+        3000,
+        3000,
+    );
+
+    assert.ok(Math.abs(fit.heights[0] - fit.heights[1]) < 1e-9);
+    assert.notEqual(fit.scales[0], fit.scales[1]);
+    assert.ok(Math.abs(fit.widths[0] - 800 * fit.scales[0]) < 1e-9);
+    assert.ok(Math.abs(fit.widths[1] - 800 * fit.scales[1]) < 1e-9);
+    assert.ok(Math.abs(fit.totalWidth - (fit.widths[0] + fit.widths[1])) < 1e-9);
+});
+
+test('blockFontSizePx uses the OCR-reported font_size scaled to the current display scale', () => {
+    const geometry = loadMangaGeometry();
+    const block = { box: [0, 0, 100, 300], vertical: true, lines: ['a', 'b'], font_size: 24 };
+
+    assert.equal(geometry.blockFontSizePx(block, 0.5), 12);
+    assert.equal(geometry.blockFontSizePx(block, 2), 48);
+});
+
+test('blockFontSizePx falls back to a box/line-count estimate when font_size is missing', () => {
+    const geometry = loadMangaGeometry();
+    // Vertical block: font size derived from width (the narrow dimension text lays out across).
+    const verticalBlock = { box: [0, 0, 100, 300], vertical: true, lines: ['a', 'b'] };
+    // Horizontal block: derived from height instead.
+    const horizontalBlock = { box: [0, 0, 300, 100], vertical: false, lines: ['a', 'b'] };
+
+    assert.ok(Math.abs(geometry.blockFontSizePx(verticalBlock, 1) - (100 / 2) * 0.9) < 1e-9);
+    assert.ok(Math.abs(geometry.blockFontSizePx(horizontalBlock, 1) - (100 / 2) * 0.9) < 1e-9);
+});
+
+test('blockFontSizePx never returns a size too small to hit-test', () => {
+    const geometry = loadMangaGeometry();
+    const tinyBlock = { box: [0, 0, 1, 1], vertical: true, lines: ['a', 'b', 'c', 'd', 'e', 'f'] };
+
+    assert.ok(geometry.blockFontSizePx(tinyBlock, 0.01) >= 6);
+});
+
 test('axisAlignedBoxFromPoints computes the bounding box of a skewed polygon', () => {
     const geometry = loadMangaGeometry();
 

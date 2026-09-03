@@ -5,6 +5,7 @@ import java.io.File
 import java.net.HttpURLConnection
 import java.net.URI
 import moe.antimony.hoshi.epub.EpubBook
+import moe.antimony.hoshi.features.furigana.FuriganaHtmlInjector
 
 internal data class ReaderWebResource(
     val mediaType: String,
@@ -38,11 +39,15 @@ internal data class ReaderWebResource(
 internal class ReaderWebResourceBridge(
     private val book: EpubBook,
     private val fontFileForRequest: (String) -> File?,
+    private val furiganaInjector: FuriganaHtmlInjector? = null,
+    private val furiganaStartFraction: Double = 0.0,
 ) {
     constructor(
         book: EpubBook,
         fontManager: ReaderFontManager,
-    ) : this(book, fontManager::fontFileForRequest)
+        furiganaInjector: FuriganaHtmlInjector? = null,
+        furiganaStartFraction: Double = 0.0,
+    ) : this(book, fontManager::fontFileForRequest, furiganaInjector, furiganaStartFraction)
 
     fun resourceForUrl(url: String): ReaderWebResource? {
         val uri = runCatching { URI(url).normalize() }.getOrNull() ?: return null
@@ -84,7 +89,8 @@ internal class ReaderWebResourceBridge(
         val rawData = book.readResource(path) ?: return null
         val normalizedMediaType = mediaType.substringBefore(';').trim()
         val data = if (normalizedMediaType.isReaderHtmlMediaType()) {
-            readerHtmlWithEarlyViewport(rawData.toString(Charsets.UTF_8)).toByteArray(Charsets.UTF_8)
+            val withViewport = readerHtmlWithEarlyViewport(rawData.toString(Charsets.UTF_8))
+            (furiganaInjector?.inject(withViewport, furiganaStartFraction) ?: withViewport).toByteArray(Charsets.UTF_8)
         } else {
             sanitizeReaderResource(mediaType, rawData)
         }

@@ -4,6 +4,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.antimony.hoshi.manga.MangaBookmark
+import moe.antimony.hoshi.manga.MangaReadingStats
 import moe.antimony.hoshi.manga.MangaRepository
 import moe.antimony.hoshi.manga.MangaVolumeEntry
 import moe.antimony.hoshi.manga.MokuroVolume
@@ -47,6 +48,20 @@ internal class MangaReaderRouteStateHolder(
                     lastModified = repository.currentAppleReferenceDateSeconds(),
                 ),
             )
+        }
+    }
+
+    /**
+     * Adds [deltaSeconds] of active reading time to this volume's running total. Called on a
+     * long-lived, dispose-safe scope (see [moe.antimony.hoshi.navigation.MangaReaderRouteDestination])
+     * rather than a composable-scoped one, since the save needs to actually complete as the reader
+     * screen is being torn down (navigating away), not race its own cancellation.
+     */
+    suspend fun addReadingSeconds(entry: MangaVolumeEntry, deltaSeconds: Double) {
+        if (deltaSeconds <= 0.0) return
+        withContext(ioDispatcher) {
+            val current = repository.loadReadingStats(entry.root)
+            repository.saveReadingStats(entry.root, current.copy(totalSeconds = current.totalSeconds + deltaSeconds))
         }
     }
 }

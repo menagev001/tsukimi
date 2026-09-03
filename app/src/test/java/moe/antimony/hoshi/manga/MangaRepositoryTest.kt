@@ -95,6 +95,24 @@ class MangaRepositoryTest {
     }
 
     @Test
+    fun loadReadingStatsDefaultsToZeroWhenNeverSaved() = runBlocking {
+        val repository = MangaRepository(Files.createTempDirectory("hoshi-manga-stats-default").toFile())
+        val root = repository.createVolumeDirectoryForImportedTitle("volume")
+
+        assertEquals(MangaReadingStats(totalSeconds = 0.0), repository.loadReadingStats(root))
+    }
+
+    @Test
+    fun savesAndLoadsReadingStats() = runBlocking {
+        val repository = MangaRepository(Files.createTempDirectory("hoshi-manga-stats").toFile())
+        val root = repository.createVolumeDirectoryForImportedTitle("volume")
+
+        repository.saveReadingStats(root, MangaReadingStats(totalSeconds = 125.5))
+
+        assertEquals(MangaReadingStats(totalSeconds = 125.5), repository.loadReadingStats(root))
+    }
+
+    @Test
     fun savesAndLoadsHighlights() = runBlocking {
         val repository = MangaRepository(Files.createTempDirectory("hoshi-manga-highlights").toFile())
         val root = repository.createVolumeDirectoryForImportedTitle("volume")

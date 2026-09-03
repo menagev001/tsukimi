@@ -12,6 +12,7 @@ import moe.antimony.hoshi.features.audio.AudioSettingsRepository
 import moe.antimony.hoshi.features.audio.LocalAudioRepository
 import moe.antimony.hoshi.features.backup.HoshiBackupRepository
 import moe.antimony.hoshi.features.dictionary.DictionarySettingsRepository
+import moe.antimony.hoshi.features.furigana.KnownWordsRepository
 import moe.antimony.hoshi.features.reader.ReaderFontManager
 import moe.antimony.hoshi.features.reader.ReaderSettingsRepository
 import moe.antimony.hoshi.manga.MangaRepository
@@ -36,6 +37,7 @@ internal class HoshiUiDependencies @Inject constructor(
     private val bookRepositoryProvider: Lazy<BookRepository>,
     private val mangaRepositoryProvider: Lazy<MangaRepository>,
     private val dictionaryRepositoryProvider: Lazy<DictionaryRepository>,
+    private val knownWordsRepositoryProvider: Lazy<KnownWordsRepository>,
     private val readerSettingsRepositoryProvider: Lazy<ReaderSettingsRepository>,
     private val dictionarySettingsRepositoryProvider: Lazy<DictionarySettingsRepository>,
     private val audioSettingsRepositoryProvider: Lazy<AudioSettingsRepository>,
@@ -63,6 +65,7 @@ internal class HoshiUiDependencies @Inject constructor(
     val bookRepository: BookRepository get() = bookRepositoryProvider.get()
     val mangaRepository: MangaRepository get() = mangaRepositoryProvider.get()
     val dictionaryRepository: DictionaryRepository get() = dictionaryRepositoryProvider.get()
+    val knownWordsRepository: KnownWordsRepository get() = knownWordsRepositoryProvider.get()
     val readerSettingsRepository: ReaderSettingsRepository get() = readerSettingsRepositoryProvider.get()
     val dictionarySettingsRepository: DictionarySettingsRepository get() = dictionarySettingsRepositoryProvider.get()
     val audioSettingsRepository: AudioSettingsRepository get() = audioSettingsRepositoryProvider.get()

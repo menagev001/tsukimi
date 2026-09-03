@@ -14,6 +14,10 @@ internal class ReaderWebViewStateHolder(
     var effectiveSettings by mutableStateOf(initialSettings)
         private set
 
+    /** Bumped by [recalculateFurigana] to force a fresh content reload on demand. */
+    var furiganaRecalculateEpoch by mutableStateOf(0)
+        private set
+
     var showAppearance by mutableStateOf(false)
         private set
 
@@ -141,6 +145,10 @@ internal class ReaderWebViewStateHolder(
 
     fun dismissAppearance() {
         showAppearance = false
+    }
+
+    fun recalculateFurigana() {
+        furiganaRecalculateEpoch++
     }
 
     fun openSasayakiFromMenu(initialTab: SasayakiSheetTab) {
@@ -310,6 +318,7 @@ internal data class ReaderContentReloadKey(
     val selectedFont: String,
     val fontSize: Int,
     val hideFurigana: Boolean,
+    val autoFurigana: Boolean,
     val viewMode: ReaderViewMode,
     val visualNovelScreenMode: VisualNovelScreenMode,
     val visualNovelSentencesPerScreen: Int,
@@ -323,6 +332,9 @@ internal data class ReaderContentReloadKey(
     val lineHeight: Double,
     val characterSpacing: Double,
     val paragraphSpacing: Double,
+    /** Not a persisted setting -- bumped transiently by the "recalculate furigana" action to
+     *  force a reload without changing anything else. See [ReaderWebViewStateHolder.recalculateFurigana]. */
+    val furiganaRecalculateEpoch: Int = 0,
 )
 
 internal fun ReaderSettings.readerContentReloadKey(): ReaderContentReloadKey =
@@ -331,6 +343,7 @@ internal fun ReaderSettings.readerContentReloadKey(): ReaderContentReloadKey =
         selectedFont = selectedFont,
         fontSize = fontSize,
         hideFurigana = hideFurigana,
+        autoFurigana = autoFurigana,
         viewMode = viewMode,
         visualNovelScreenMode = visualNovelScreenMode,
         visualNovelSentencesPerScreen = visualNovelSentencesPerScreen.coerceIn(1, 12),

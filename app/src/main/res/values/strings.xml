@@ -47,20 +47,24 @@
     <string name="import_select_manga_cbz">Select a .cbz manga CBZ archive file.</string>
     <string name="import_select_mokuro_sidecar">Select a .mokuro sidecar file.</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">Books</string>
-    <string name="main_tab_manga">Manga</string>
+    <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">Manga</string>
     <string name="main_tab_dictionary">Dictionary</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">Statistics</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">Settings</string>
     <string name="library_mode_novels">Novels</string>
-    <string name="library_mode_manga">Manga</string>
+    <string name="library_mode_manga" comment="Library mode toggle label, intentionally matching the main tab label.">Manga</string>
     <string name="manga_shelf_open_failed">Unable to open this manga volume.</string>
     <string name="manga_shelf_import_failed">Unable to import this manga volume.</string>
     <string name="manga_shelf_import_folder_empty">No .cbz or .mokuro files were found in that folder.</string>
     <string name="manga_shelf_import_cbz">Import CBZ</string>
-    <string name="manga_shelf_import_folder">Import folder</string>
+    <string name="manga_shelf_import_folder" comment="Intentionally matching the novels shelf's own bookshelf_import_folder label.">Import folder</string>
     <string name="manga_shelf_importing">Importing manga volume…</string>
     <string name="manga_shelf_empty_title">No manga yet</string>
     <string name="manga_shelf_empty_body">Import a .cbz file (with its .mokuro sidecar inside), or a folder of them, to get started.</string>
+    <plurals name="manga_shelf_series_volume_count">
+        <item quantity="one">%d volume</item>
+        <item quantity="other">%d volumes</item>
+    </plurals>
     <string name="statistics_title" comment="Statistics page title, intentionally matching the main tab label.">Statistics</string>
     <string name="statistics_today" comment="Statistics dashboard section title, intentionally matching reader statistics today label.">Today</string>
     <string name="statistics_this_week">This Week</string>
@@ -160,7 +164,7 @@
     <string name="bookshelf_import_failed">Failed to import EPUB.</string>
     <string name="bookshelf_import_failed_list_format" comment="Bookshelf batch import failure summary; intentionally matches the dictionary batch import format.">Failed to import:\n%1$s</string>
     <string name="bookshelf_import_files">Import files</string>
-    <string name="bookshelf_import_folder">Import folder</string>
+    <string name="bookshelf_import_folder" comment="Intentionally matching the manga shelf's own manga_shelf_import_folder label.">Import folder</string>
     <string name="bookshelf_scanning_folder">Scanning folder...</string>
     <string name="bookshelf_no_epub_files_found">No EPUB files found.</string>
     <string name="bookshelf_importing_epub">Importing EPUB...</string>
@@ -389,6 +393,7 @@
     <string name="reader_appearance_theme_sepia">Sepia</string>
     <string name="reader_appearance_theme_custom" comment="Reader Appearance theme option, distinct from dictionary collapse custom mode.">Custom</string>
     <string name="reader_appearance_eink_mode">E-ink Mode</string>
+    <string name="reader_appearance_eink_reduce_ghosting">Reduce Ghosting (Onyx/Boox)</string>
     <string name="reader_appearance_use_sepia_light_theme">Use Sepia as Light Theme</string>
     <string name="reader_appearance_invert_sepia_dark">Invert in System Dark Theme</string>
     <string name="reader_appearance_interface">Interface</string>
@@ -411,6 +416,13 @@
     <string name="reader_appearance_importing" comment="Generic import progress label, intentionally shared with ッツ backup import.">Importing...</string>
     <string name="reader_appearance_font_size">Font Size</string>
     <string name="reader_appearance_hide_furigana">Hide Furigana</string>
+    <string name="reader_appearance_auto_furigana" comment="Toggle that generates furigana for words not in the user's known-word list, distinct from the existing readerHideFurigana toggle which only hides/shows furigana already present in the book.">Add Furigana to Unknown Words</string>
+    <string name="reader_appearance_recalculate_furigana" comment="Label for a button that forces a fresh furigana pass over the current chapter, e.g. after marking new words known.">Recalculate Furigana</string>
+    <string name="reader_furigana_scan_progress" comment="Shown under the loading spinner while furigana is being generated for the chapter, e.g. '1,314 / 3,000 characters scanned'. %1$d is characters processed so far, %2$d is the total for this pass.">%1$d / %2$d characters scanned</string>
+    <string name="reader_appearance_import_known_words" comment="Label for a button that imports a Migaku known-words export, so furigana skips words the reader already knows.">Import Known Words</string>
+    <string name="reader_appearance_import_known_words_result" comment="Shown after importing a known-words file. %1$d is how many were newly added by this import, %2$d is the total known-word count afterward.">%1$d new words added (%2$d known total)</string>
+    <string name="reader_appearance_import_known_words_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid Migaku export.">Couldn\'t import that file</string>
+    <string name="action_recalculate">Recalculate</string>
     <string name="reader_appearance_mode" comment="Reader appearance setting label, intentionally matching dictionary mode.">Mode</string>
     <string name="reader_appearance_paginated">Paginated</string>
     <string name="reader_appearance_continuous">Continuous</string>

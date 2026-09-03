@@ -41,11 +41,13 @@ internal class MangaShelfViewModel private constructor(
             val volumes = repository.loadVolumes(sortOption)
             val coverSourcesById = repository.coverSourcesById(volumes)
             val progressById = repository.progressById(volumes)
+            val readingSecondsById = repository.readingSecondsById(volumes)
             _uiState.update {
                 it.copy(
                     volumes = volumes,
                     coverSourcesById = coverSourcesById,
                     progressById = progressById,
+                    readingSecondsById = readingSecondsById,
                     sortOption = sortOption,
                     hasLoadedVolumes = true,
                     isLoading = false,
@@ -152,11 +154,13 @@ internal class MangaShelfViewModel private constructor(
         val volumes = repository.loadVolumes(sortOption)
         val coverSourcesById = repository.coverSourcesById(volumes)
         val progressById = repository.progressById(volumes)
+        val readingSecondsById = repository.readingSecondsById(volumes)
         _uiState.update {
             it.copy(
                 volumes = volumes,
                 coverSourcesById = coverSourcesById,
                 progressById = progressById,
+                readingSecondsById = readingSecondsById,
                 sortOption = sortOption,
                 hasLoadedVolumes = true,
             )

@@ -392,6 +392,8 @@ fun AppShell(
                         volumeId = route.volumeId,
                         stateHolder = mangaReaderRouteStateHolder,
                         readerSettings = currentReaderSettings,
+                        onReaderSettingsChange = currentOnReaderSettingsChange,
+                        onReaderKeyEventHandlerChange = currentOnReaderKeyEventHandlerChange,
                         onClose = ::closeReaderRoute,
                         modifier = Modifier.fillMaxSize(),
                     )

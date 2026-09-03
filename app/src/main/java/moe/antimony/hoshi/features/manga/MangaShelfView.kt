@@ -11,6 +11,8 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +25,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Edit
@@ -40,6 +43,7 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBarDefaults
@@ -55,6 +59,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -65,6 +70,7 @@ import coil3.compose.AsyncImage
 import moe.antimony.hoshi.R
 import moe.antimony.hoshi.features.bookshelf.BookCoverSource
 import moe.antimony.hoshi.features.bookshelf.MainShellLayoutSpec
+import moe.antimony.hoshi.features.statistics.formatStatisticsDuration
 import moe.antimony.hoshi.importing.DirectoryImportContent
 import moe.antimony.hoshi.importing.FileImportContent
 import moe.antimony.hoshi.importing.ImportFileType
@@ -88,6 +94,7 @@ internal fun MangaShelfView(
     var contextMenuTarget by remember { mutableStateOf<MangaVolumeEntry?>(null) }
     var deleteCandidate by remember { mutableStateOf<MangaVolumeEntry?>(null) }
     var renameCandidate by remember { mutableStateOf<MangaVolumeEntry?>(null) }
+    var openSeriesKey by remember { mutableStateOf<String?>(null) }
     val renameTextState = rememberTextFieldState()
 
     // Real mokuro-processed CBZ downloads already bundle the .mokuro sidecar as a root-level
@@ -118,6 +125,11 @@ internal fun MangaShelfView(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.main_tab_manga)) },
+                // The Novels/Manga toggle above this bar already claims the status bar inset via
+                // its own statusBarsPadding() -- the top bar's own default windowInsets would
+                // otherwise reserve that space a second time, showing up as a large gap between
+                // the toggle and this bar.
+                windowInsets = WindowInsets(0, 0, 0, 0),
                 actions = {
                     IconButton(
                         onClick = { cbzPicker.launch(ImportFileType.MangaCbz.mimeTypes) },
@@ -147,55 +159,101 @@ internal fun MangaShelfView(
                 uiState.hasLoadedVolumes && uiState.volumes.isEmpty() -> MangaEmptyShelfView(
                     modifier = Modifier.align(Alignment.Center).fillMaxWidth().padding(horizontal = layoutSpec.pageHorizontalPaddingDp.dp),
                 )
-                else -> LazyVerticalGrid(
-                    columns = GridCells.Fixed(layoutSpec.bookGridColumns(contentWidthDp)),
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .widthIn(max = layoutSpec.contentMaxWidthDp.dp)
-                        .fillMaxSize(),
-                    contentPadding = PaddingValues(
-                        start = layoutSpec.pageHorizontalPaddingDp.dp,
-                        end = layoutSpec.pageHorizontalPaddingDp.dp,
-                        top = layoutSpec.bookGridTopPaddingDp.dp,
-                        bottom = layoutSpec.bookGridBottomPaddingDp.dp,
-                    ),
-                    horizontalArrangement = Arrangement.spacedBy(layoutSpec.bookGridSpacingDp.dp),
-                    verticalArrangement = Arrangement.spacedBy(layoutSpec.bookGridVerticalSpacingDp.dp),
-                ) {
-                    items(
-                        items = uiState.volumes,
-                        key = { it.metadata.id },
-                        contentType = { "manga-volume" },
-                    ) { entry ->
-                        Box {
-                            MangaVolumeGridCell(
-                                entry = entry,
-                                progress = uiState.progressById[entry.metadata.id] ?: 0.0,
-                                coverSource = uiState.coverSourcesById[entry.metadata.id],
-                                onOpen = { viewModel.openVolume(entry) },
-                                onLongPress = { contextMenuTarget = entry },
-                            )
-                            DropdownMenu(
-                                expanded = contextMenuTarget?.metadata?.id == entry.metadata.id,
-                                onDismissRequest = { contextMenuTarget = null },
+                else -> {
+                    val groups = remember(uiState.volumes) { groupMangaVolumesBySeries(uiState.volumes) }
+                    val activeGroup = openSeriesKey?.let { key -> groups.firstOrNull { it.seriesKey == key } }
+                    Column(modifier = Modifier.align(Alignment.TopCenter).widthIn(max = layoutSpec.contentMaxWidthDp.dp).fillMaxSize()) {
+                        if (activeGroup != null) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth()
+                                    .padding(horizontal = layoutSpec.pageHorizontalPaddingDp.dp, vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_rename)) },
-                                    leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
-                                    onClick = {
-                                        contextMenuTarget = null
-                                        renameCandidate = entry
-                                        renameTextState.replaceTextAndSelectStart(entry.displayTitle)
-                                    },
+                                IconButton(onClick = { openSeriesKey = null }) {
+                                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.action_back))
+                                }
+                                Text(
+                                    text = activeGroup.seriesKey.orEmpty(),
+                                    style = MaterialTheme.typography.titleMedium,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
                                 )
-                                DropdownMenuItem(
-                                    text = { Text(stringResource(R.string.action_delete)) },
-                                    leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
-                                    onClick = {
-                                        contextMenuTarget = null
-                                        deleteCandidate = entry
-                                    },
-                                )
+                            }
+                        }
+                        LazyVerticalGrid(
+                            columns = GridCells.Fixed(layoutSpec.bookGridColumns(contentWidthDp)),
+                            modifier = Modifier.fillMaxSize(),
+                            contentPadding = PaddingValues(
+                                start = layoutSpec.pageHorizontalPaddingDp.dp,
+                                end = layoutSpec.pageHorizontalPaddingDp.dp,
+                                top = layoutSpec.bookGridTopPaddingDp.dp,
+                                bottom = layoutSpec.bookGridBottomPaddingDp.dp,
+                            ),
+                            horizontalArrangement = Arrangement.spacedBy(layoutSpec.bookGridSpacingDp.dp),
+                            verticalArrangement = Arrangement.spacedBy(layoutSpec.bookGridVerticalSpacingDp.dp),
+                        ) {
+                            if (activeGroup != null) {
+                                items(
+                                    items = activeGroup.volumes,
+                                    key = { it.metadata.id },
+                                    contentType = { "manga-volume" },
+                                ) { entry ->
+                                    MangaVolumeGridItem(
+                                        entry = entry,
+                                        progress = uiState.progressById[entry.metadata.id] ?: 0.0,
+                                        readingSeconds = uiState.readingSecondsById[entry.metadata.id] ?: 0.0,
+                                        coverSource = uiState.coverSourcesById[entry.metadata.id],
+                                        isContextMenuOpen = contextMenuTarget?.metadata?.id == entry.metadata.id,
+                                        onOpen = { viewModel.openVolume(entry) },
+                                        onLongPress = { contextMenuTarget = entry },
+                                        onDismissContextMenu = { contextMenuTarget = null },
+                                        onRename = {
+                                            contextMenuTarget = null
+                                            renameCandidate = entry
+                                            renameTextState.replaceTextAndSelectStart(entry.displayTitle)
+                                        },
+                                        onDelete = {
+                                            contextMenuTarget = null
+                                            deleteCandidate = entry
+                                        },
+                                    )
+                                }
+                            } else {
+                                items(
+                                    items = groups,
+                                    key = { it.seriesKey ?: it.volumes.single().metadata.id },
+                                    contentType = { if (it.seriesKey == null) "manga-volume" else "manga-series" },
+                                ) { group ->
+                                    if (group.seriesKey == null) {
+                                        val entry = group.volumes.single()
+                                        MangaVolumeGridItem(
+                                            entry = entry,
+                                            progress = uiState.progressById[entry.metadata.id] ?: 0.0,
+                                            readingSeconds = uiState.readingSecondsById[entry.metadata.id] ?: 0.0,
+                                            coverSource = uiState.coverSourcesById[entry.metadata.id],
+                                            isContextMenuOpen = contextMenuTarget?.metadata?.id == entry.metadata.id,
+                                            onOpen = { viewModel.openVolume(entry) },
+                                            onLongPress = { contextMenuTarget = entry },
+                                            onDismissContextMenu = { contextMenuTarget = null },
+                                            onRename = {
+                                                contextMenuTarget = null
+                                                renameCandidate = entry
+                                                renameTextState.replaceTextAndSelectStart(entry.displayTitle)
+                                            },
+                                            onDelete = {
+                                                contextMenuTarget = null
+                                                deleteCandidate = entry
+                                            },
+                                        )
+                                    } else {
+                                        MangaSeriesGridCell(
+                                            group = group,
+                                            coverSource = uiState.coverSourcesById[group.volumes.first().metadata.id],
+                                            totalReadingSeconds = group.volumes.sumOf { uiState.readingSecondsById[it.metadata.id] ?: 0.0 },
+                                            onOpen = { openSeriesKey = group.seriesKey },
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -294,10 +352,118 @@ private fun MangaEmptyShelfView(modifier: Modifier = Modifier) {
     }
 }
 
+/** Cell + long-press context menu, shared between the top-level grid and a drilled-in series. */
+@Composable
+private fun MangaVolumeGridItem(
+    entry: MangaVolumeEntry,
+    progress: Double,
+    readingSeconds: Double,
+    coverSource: BookCoverSource?,
+    isContextMenuOpen: Boolean,
+    onOpen: () -> Unit,
+    onLongPress: () -> Unit,
+    onDismissContextMenu: () -> Unit,
+    onRename: () -> Unit,
+    onDelete: () -> Unit,
+) {
+    Box {
+        MangaVolumeGridCell(
+            entry = entry,
+            progress = progress,
+            readingSeconds = readingSeconds,
+            coverSource = coverSource,
+            onOpen = onOpen,
+            onLongPress = onLongPress,
+        )
+        DropdownMenu(
+            expanded = isContextMenuOpen,
+            onDismissRequest = onDismissContextMenu,
+        ) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_rename)) },
+                leadingIcon = { Icon(Icons.Rounded.Edit, contentDescription = null) },
+                onClick = onRename,
+            )
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.action_delete)) },
+                leadingIcon = { Icon(Icons.Rounded.Delete, contentDescription = null) },
+                onClick = onDelete,
+            )
+        }
+    }
+}
+
+/** A stacked card for 2+ volumes sharing a series title; opens into [MangaVolumeGridItem]s. */
+@Composable
+private fun MangaSeriesGridCell(
+    group: MangaSeriesGroup,
+    coverSource: BookCoverSource?,
+    totalReadingSeconds: Double,
+    onOpen: () -> Unit,
+) {
+    Column(modifier = Modifier.combinedClickable(onClick = onOpen)) {
+        val outerShape = RoundedCornerShape(7.dp)
+        val innerShape = RoundedCornerShape(6.dp)
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(0.709f)
+                .clip(outerShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.42f))
+                .border(BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant), outerShape)
+                .padding(3.dp),
+        ) {
+            val coverModifier = Modifier.fillMaxSize().clip(innerShape)
+            if (coverSource != null) {
+                AsyncImage(
+                    model = coverSource,
+                    contentDescription = null,
+                    contentScale = ContentScale.Crop,
+                    modifier = coverModifier.background(Color.Gray.copy(alpha = 0.3f)),
+                )
+            } else {
+                Box(modifier = coverModifier.background(Color.Gray.copy(alpha = 0.3f)))
+            }
+            Surface(
+                modifier = Modifier.align(Alignment.BottomEnd).padding(8.dp),
+                shape = RoundedCornerShape(4.dp),
+                color = MaterialTheme.colorScheme.primary,
+                contentColor = MaterialTheme.colorScheme.onPrimary,
+            ) {
+                Text(
+                    text = pluralStringResource(
+                        R.plurals.manga_shelf_series_volume_count,
+                        group.volumes.size,
+                        group.volumes.size,
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+        }
+        Text(
+            text = group.seriesKey.orEmpty(),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onBackground,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.padding(top = 6.dp),
+        )
+        if (totalReadingSeconds > 0.0) {
+            Text(
+                text = formatStatisticsDuration(totalReadingSeconds),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+    }
+}
+
 @Composable
 private fun MangaVolumeGridCell(
     entry: MangaVolumeEntry,
     progress: Double,
+    readingSeconds: Double,
     coverSource: BookCoverSource?,
     onOpen: () -> Unit,
     onLongPress: () -> Unit,
@@ -333,6 +499,10 @@ private fun MangaVolumeGridCell(
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0.0, 1.0).toFloat() },
                 modifier = Modifier.fillMaxWidth().padding(top = 6.dp),
+                // Material3's default draws a small stop-indicator dot at the very end of the
+                // track regardless of progress -- that's the "blue on the right side too" look;
+                // this bar should only ever show progress from the left.
+                drawStopIndicator = {},
             )
         }
         Text(
@@ -343,5 +513,12 @@ private fun MangaVolumeGridCell(
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.padding(top = 6.dp),
         )
+        if (readingSeconds > 0.0) {
+            Text(
+                text = formatStatisticsDuration(readingSeconds),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

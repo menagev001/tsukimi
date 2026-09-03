@@ -31,6 +31,18 @@ class ReaderLookupPopupBridgeMessageTest {
         )
 
         assertEquals(
+            ReaderLookupPopupBridgeMessage.MarkKnown(
+                popupId = "root",
+                messageId = null,
+                expression = "食べる",
+                reading = "たべる",
+            ),
+            ReaderLookupPopupBridgeMessage.fromJson(
+                """{"name":"markKnown","popupId":"root","body":{"expression":"食べる","reading":"たべる"}}""",
+            ),
+        )
+
+        assertEquals(
             ReaderLookupPopupBridgeMessage.PlayWordAudio(
                 popupId = "root",
                 messageId = null,

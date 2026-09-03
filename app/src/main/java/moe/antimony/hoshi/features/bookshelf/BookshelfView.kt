@@ -593,7 +593,7 @@ private fun LibraryModeSegmentedToggle(
         modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
+            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
     ) {
         LibraryMode.entries.forEachIndexed { index, entry ->
             SegmentedButton(
@@ -1231,6 +1231,10 @@ private fun BooksTopAppBar(
     var moveMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
     CenterAlignedTopAppBar(
+        // The Novels/Manga toggle above this bar already claims the status bar inset via its own
+        // statusBarsPadding() -- the top bar's own default windowInsets would otherwise reserve
+        // that space a second time, showing up as a large gap between the toggle and this bar.
+        windowInsets = WindowInsets(0, 0, 0, 0),
         title = {
             Text(
                 text = if (isSelecting) {

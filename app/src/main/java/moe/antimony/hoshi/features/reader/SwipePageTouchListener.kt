@@ -16,10 +16,15 @@ internal const val READER_DOUBLE_TAP_TIMEOUT_MS = 180L
 abstract class SwipePageTouchListener(
     swipeDistance: Float = DEFAULT_SWIPE_DISTANCE,
     private val doubleTapEnabled: Boolean = false,
+    doubleTapTimeoutMs: Long = READER_DOUBLE_TAP_TIMEOUT_MS,
+    minSwipeVelocityPxPerSecond: Float = ReaderSwipeGestureTracker.DEFAULT_MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND,
 ) : View.OnTouchListener {
-    private val tracker = ReaderSwipeGestureTracker(minDistance = swipeDistance)
+    private val tracker = ReaderSwipeGestureTracker(
+        minDistance = swipeDistance,
+        minEarlySwipeVelocityPxPerSecond = minSwipeVelocityPxPerSecond,
+    )
     private val tapDispatcher = ReaderTapDispatcher(
-        doubleTapTimeoutMs = READER_DOUBLE_TAP_TIMEOUT_MS,
+        doubleTapTimeoutMs = doubleTapTimeoutMs,
         onTap = ::onTap,
         onDoubleTap = ::onDoubleTap,
     )
@@ -46,23 +51,31 @@ abstract class SwipePageTouchListener(
     open fun onDoubleTap(x: Float, y: Float) = Unit
     open fun shouldIgnoreReaderGesture(event: MotionEvent): Boolean = false
 
+    /**
+     * Exposed so a subclass with its own alternate release path for a stationary touch (manga's
+     * pan-mode tap, taken when zoomed instead of going through [tracker]/[dispatch] at all) can
+     * still resolve through the same double-tap-aware dispatch -- calling [onTap] directly there
+     * bypassed [tapDispatcher] entirely, so a double-tap could never be recognized while zoomed.
+     */
+    protected fun dispatchTapOrDoubleTap(view: View, x: Float, y: Float) {
+        if (doubleTapEnabled) {
+            tapDispatcher.dispatchTap(
+                x = x,
+                y = y,
+                eventTimeMs = SystemClock.uptimeMillis(),
+                postDelayed = view::postDelayed,
+                removeCallback = view::removeCallbacks,
+            )
+        } else {
+            onTap(x, y)
+        }
+    }
+
     private fun dispatch(view: View, result: ReaderSwipeGestureTracker.Result) {
         when (result) {
             ReaderSwipeGestureTracker.Result.LeftSwipe -> onLeftSwipe()
             ReaderSwipeGestureTracker.Result.RightSwipe -> onRightSwipe()
-            is ReaderSwipeGestureTracker.Result.Tap -> {
-                if (doubleTapEnabled) {
-                    tapDispatcher.dispatchTap(
-                        x = result.x,
-                        y = result.y,
-                        eventTimeMs = SystemClock.uptimeMillis(),
-                        postDelayed = view::postDelayed,
-                        removeCallback = view::removeCallbacks,
-                    )
-                } else {
-                    onTap(result.x, result.y)
-                }
-            }
+            is ReaderSwipeGestureTracker.Result.Tap -> dispatchTapOrDoubleTap(view, result.x, result.y)
             ReaderSwipeGestureTracker.Result.None -> Unit
         }
     }
@@ -74,6 +87,7 @@ abstract class SwipePageTouchListener(
 
 internal class ReaderSwipeGestureTracker(
     private val minDistance: Float,
+    private val minEarlySwipeVelocityPxPerSecond: Float = DEFAULT_MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND,
 ) {
     private var downX = 0f
     private var downY = 0f
@@ -101,7 +115,7 @@ internal class ReaderSwipeGestureTracker(
         if (
             !hasPageDistance && !hasFastFlickDistance ||
             elapsedMs > MAX_EARLY_SWIPE_DURATION_MS ||
-            velocityX < MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND
+            velocityX < minEarlySwipeVelocityPxPerSecond
         ) {
             return Result.None
         }
@@ -148,12 +162,12 @@ internal class ReaderSwipeGestureTracker(
         data class Tap(val x: Float, val y: Float) : Result()
     }
 
-    private companion object {
-        const val TAP_SLOP = 72f
-        const val MIN_FAST_FLICK_VELOCITY_PX_PER_SECOND = 900f
-        const val MAX_EARLY_SWIPE_DURATION_MS = 300L
-        const val MAX_TAP_DURATION_MS = 500L
-        const val MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND = 360f
+    companion object {
+        const val DEFAULT_MIN_EARLY_SWIPE_VELOCITY_PX_PER_SECOND = 360f
+        private const val TAP_SLOP = 72f
+        private const val MIN_FAST_FLICK_VELOCITY_PX_PER_SECOND = 900f
+        private const val MAX_EARLY_SWIPE_DURATION_MS = 300L
+        private const val MAX_TAP_DURATION_MS = 500L
     }
 }
 

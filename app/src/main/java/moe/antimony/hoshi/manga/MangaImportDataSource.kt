@@ -129,19 +129,52 @@ class MangaImportDataSource(
             throw IllegalArgumentException("Unable to parse .mokuro sidecar", it)
         }
 
-    private suspend fun importVolume(
+    /**
+     * Whether [existingRoot] (a previously-imported volume whose folder collided with the one
+     * being imported now) is the *same* volume, not just a different volume sharing a title.
+     * When either side lacks a `volume_uuid` (mokuro doesn't always emit one), this can't be
+     * confirmed -- treated as "not the same volume" rather than risk silently dropping a
+     * genuinely different import, since that's the far more common and far more confusing
+     * failure of the two.
+     */
+    private fun isSameVolumeAlreadyImported(existingRoot: File, volumeUuid: String?): Boolean {
+        if (volumeUuid == null) return false
+        val existingMokuro = existingRoot.resolve(MOKURO_FILE_NAME).takeIf { it.isFile } ?: return false
+        val existingVolumeUuid = runCatching { MokuroParser.parse(existingMokuro) }.getOrNull()?.volumeUuid
+        return existingVolumeUuid != null && existingVolumeUuid == volumeUuid
+    }
+
+    internal suspend fun importVolume(
         fallbackTitle: String,
         volume: MokuroVolume,
         mokuroFile: File,
         resolvePage: (imgPath: String, destination: File) -> Boolean,
     ): File {
-        val title = volume.title?.takeIf { it.isNotBlank() }
-            ?: volume.volume?.takeIf { it.isNotBlank() }
-            ?: fallbackTitle
-        val targetRoot = fileDataSource.createVolumeDirectoryForImportedTitle(title)
-        if (targetRoot.listFiles()?.isNotEmpty() == true) {
-            // Already imported (concurrent/duplicate import attempt) -- leave it as-is.
-            return targetRoot
+        // Real mokuro output sets `title` to the *series* name, shared verbatim across every
+        // volume of that series (confirmed against a real sample: "All You Need Is Kill" /
+        // "オール・ユー・ニード・イズ・キル 第01巻") -- using it alone would give every volume of
+        // the same series an identical displayed title, and identical sanitized folder names.
+        val seriesTitle = volume.title?.takeIf { it.isNotBlank() }
+        val volumeLabel = volume.volume?.takeIf { it.isNotBlank() }
+        val title = when {
+            seriesTitle != null && volumeLabel != null && volumeLabel != seriesTitle -> "$seriesTitle ($volumeLabel)"
+            seriesTitle != null -> seriesTitle
+            volumeLabel != null -> volumeLabel
+            else -> fallbackTitle
+        }
+
+        var targetRoot = fileDataSource.createVolumeDirectoryForImportedTitle(title)
+        var suffix = 2
+        while (targetRoot.listFiles()?.isNotEmpty() == true) {
+            if (isSameVolumeAlreadyImported(targetRoot, volume.volumeUuid)) {
+                // Genuinely a re-import of the same volume (matched by its stable volume_uuid,
+                // when mokuro provided one) -- leave the existing copy as-is.
+                return targetRoot
+            }
+            // A different volume landed on the same sanitized title -- most commonly another
+            // volume of the same series -- so claim the next available folder instead of
+            // colliding with (and silently no-oping on top of) what's already there.
+            targetRoot = fileDataSource.createVolumeDirectoryForImportedTitle("$title (${suffix++})")
         }
 
         targetRoot.mkdirs()
@@ -167,6 +200,7 @@ class MangaImportDataSource(
             lastAccess = clock.currentAppleReferenceDateSeconds(),
             mokuro = MOKURO_FILE_NAME,
             pageCount = volume.pages.size,
+            seriesTitle = seriesTitle,
         )
         MangaSidecarDataSource(ioDispatcher).saveMetadata(targetRoot, metadata)
         return targetRoot

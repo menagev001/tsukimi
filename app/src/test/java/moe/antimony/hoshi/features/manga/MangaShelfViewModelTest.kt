@@ -132,6 +132,7 @@ private class FakeMangaLibraryRepository(
     private val volumes: List<MangaVolumeEntry> = emptyList(),
     private val coverSourcesById: Map<String, BookCoverSource> = emptyMap(),
     private val progressById: Map<String, Double> = emptyMap(),
+    private val readingSecondsById: Map<String, Double> = emptyMap(),
     private val openVolumeId: String? = null,
     private val openVolumeError: Throwable? = null,
     private val volumesAfterImport: List<MangaVolumeEntry>? = null,
@@ -149,6 +150,8 @@ private class FakeMangaLibraryRepository(
         coverSourcesById
 
     override suspend fun progressById(entries: List<MangaVolumeEntry>): Map<String, Double> = progressById
+
+    override suspend fun readingSecondsById(entries: List<MangaVolumeEntry>): Map<String, Double> = readingSecondsById
 
     override suspend fun openVolume(entry: MangaVolumeEntry): String {
         openVolumeError?.let { throw it }

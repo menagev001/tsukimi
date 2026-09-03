@@ -567,6 +567,7 @@ fun DictionarySearchView(
             is ReaderLookupPopupBridgeMessage.SasayakiTogglePlayback,
             is ReaderLookupPopupBridgeMessage.SasayakiPlayForward,
             is ReaderLookupPopupBridgeMessage.AskAi,
+            is ReaderLookupPopupBridgeMessage.MarkKnown,
             -> Unit
         }
     }

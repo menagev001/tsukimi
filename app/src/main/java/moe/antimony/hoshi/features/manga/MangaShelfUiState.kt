@@ -9,6 +9,7 @@ internal data class MangaShelfUiState(
     val volumes: List<MangaVolumeEntry> = emptyList(),
     val coverSourcesById: Map<String, BookCoverSource> = emptyMap(),
     val progressById: Map<String, Double> = emptyMap(),
+    val readingSecondsById: Map<String, Double> = emptyMap(),
     val sortOption: MangaSortOption = MangaSortOption.Recent,
     val hasLoadedVolumes: Boolean = false,
     val isLoading: Boolean = false,

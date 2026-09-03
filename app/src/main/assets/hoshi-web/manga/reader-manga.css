@@ -16,14 +16,19 @@ html, body {
 .hoshi-manga-viewport {
     position: fixed;
     inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     overflow: hidden;
 }
 
+/* Deliberately not flex-centered: reader-manga.js's zoom-anchor math assumes the page's
+   untransformed layout position is exactly (0, 0) so that `translate()/scale()` alone can express
+   both centering and the live gesture transform. Flex-centering would add a second, hidden offset
+   outside that math, which is what produced a growing drift ("jump to one side") over the course
+   of a pinch -- see showPage()/resetZoom() computing the centering offset directly into
+   translateX/Y instead. */
 .hoshi-manga-page {
-    position: relative;
+    position: absolute;
+    left: 0;
+    top: 0;
     transform-origin: 0 0;
     will-change: transform;
 }
@@ -36,6 +41,13 @@ html:not([data-hoshi-reader-eink-mode="true"]) .hoshi-manga-page.hoshi-manga-pag
 }
 html[data-hoshi-reader-eink-mode="true"] .hoshi-manga-page {
     transition: none !important;
+}
+
+/* One slot per potential spread page (up to 2); positioned side by side via `left` set in JS.
+   Absolute so each slot's own image + overlay lay out independent of the others' actual size. */
+.hoshi-manga-slot {
+    position: absolute;
+    top: 0;
 }
 
 .hoshi-manga-page-image {
@@ -68,4 +80,35 @@ html[data-hoshi-reader-eink-mode="true"] .hoshi-manga-page {
     color: transparent;
     white-space: nowrap;
     overflow: hidden;
+}
+
+/* Used when a block has no precise per-line coordinates (see buildOverlay/blockFontSizePx in
+   reader-manga.js): the block container itself is sized/positioned to the OCR box, and its lines
+   are left in normal document flow instead of being absolutely positioned -- letting the browser's
+   own text layout place each line using its real rendered width, matching mokuro's own reference
+   overlay technique. This is what fixes lines of uneven length landing on an evenly-subdivided
+   (and therefore wrong) guessed rectangle. */
+.hoshi-manga-block-flow {
+    overflow: hidden;
+}
+.hoshi-manga-line-flow {
+    position: static;
+    white-space: nowrap;
+}
+
+/* Manga art is almost always black-and-white halftone, so the EPUB reader's subtle grey
+   selection wash (readable on a plain white page) all but disappears here -- a saturated color
+   is used instead so it stays visible against art of any tone. Text stays invisible either way
+   (overlay glyphs are purely for hit-testing), so `color` only matters if it were ever changed. */
+html:not([data-hoshi-reader-eink-mode="true"]) ::highlight(hoshi-selection) {
+    background-color: rgba(255, 152, 0, 0.55) !important;
+    color: inherit;
+}
+html[data-hoshi-reader-eink-mode="true"] ::highlight(hoshi-selection) {
+    background-color: transparent !important;
+    color: inherit;
+    text-decoration-line: underline;
+    text-decoration-color: var(--hoshi-eink-line-color);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 1px;
 }

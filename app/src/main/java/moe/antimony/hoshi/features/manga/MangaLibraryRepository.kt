@@ -26,6 +26,7 @@ internal interface MangaLibraryRepository {
     suspend fun loadVolumes(sortOption: MangaSortOption = MangaSortOption.Recent): List<MangaVolumeEntry>
     suspend fun coverSourcesById(entries: List<MangaVolumeEntry>): Map<String, BookCoverSource>
     suspend fun progressById(entries: List<MangaVolumeEntry>): Map<String, Double>
+    suspend fun readingSecondsById(entries: List<MangaVolumeEntry>): Map<String, Double>
     suspend fun openVolume(entry: MangaVolumeEntry): String
     /** Self-contained CBZ (the common case): its `.mokuro` sidecar is bundled inside. */
     suspend fun importCbz(cbzUri: Uri): String
@@ -65,6 +66,13 @@ internal class AndroidMangaLibraryRepository @Inject constructor(
                     0.0
                 }
                 entry.metadata.id to progress
+            }
+        }
+
+    override suspend fun readingSecondsById(entries: List<MangaVolumeEntry>): Map<String, Double> =
+        withContext(ioDispatcher) {
+            entries.associate { entry ->
+                entry.metadata.id to mangaRepository.loadReadingStats(entry.root).totalSeconds
             }
         }
 
