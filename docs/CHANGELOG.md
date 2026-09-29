@@ -6,6 +6,12 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+### Fixed
+
+- Use the volume thumbnail bundled in a mokuro CBZ as the manga shelf cover,
+  instead of the first page, which is often a two-page spread cropped down to
+  its middle. Volumes without a bundled thumbnail keep the first page.
+
 ## [v1.4.0] - 2026-09-03
 
 ### Added

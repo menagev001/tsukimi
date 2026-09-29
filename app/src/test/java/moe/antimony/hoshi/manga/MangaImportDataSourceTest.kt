@@ -90,6 +90,50 @@ class MangaImportDataSourceTest {
         assertEquals(firstRoot.canonicalFile, secondRoot.canonicalFile)
     }
 
+    @Test
+    fun importVolumeUsesBundledCoverImageInsteadOfFirstPage() = runBlocking {
+        val importDataSource = newImportDataSource()
+        val coverSource = Files.createTempFile("hoshi-manga-cover", ".webp").toFile().apply {
+            writeBytes(byteArrayOf(7, 7))
+        }
+
+        val root = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = MokuroVolume(
+                title = "Adolf ni Tsugu",
+                volume = "adolf_ni_tsugu_1",
+                pages = listOf(MokuroPage(imgWidth = 20, imgHeight = 10, imgPath = "001.webp", blocks = emptyList())),
+            ),
+            mokuroFile = tempMokuroFile(),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(1)); true },
+            coverSource = coverSource,
+        )
+
+        val metadata = MangaSidecarDataSource(Dispatchers.IO).loadMetadata(root)
+        assertEquals("cover.webp", metadata?.cover)
+        assertTrue(root.resolve("cover.webp").readBytes().contentEquals(byteArrayOf(7, 7)))
+    }
+
+    @Test
+    fun importVolumeFallsBackToFirstPageCoverWithoutBundledCover() = runBlocking {
+        val importDataSource = newImportDataSource()
+
+        val root = importDataSource.importVolume(
+            fallbackTitle = "fallback",
+            volume = MokuroVolume(
+                title = "20th Century Boys",
+                pages = listOf(
+                    MokuroPage(imgWidth = 10, imgHeight = 10, imgPath = "vol/001.webp", blocks = emptyList()),
+                    MokuroPage(imgWidth = 10, imgHeight = 10, imgPath = "vol/002.webp", blocks = emptyList()),
+                ),
+            ),
+            mokuroFile = tempMokuroFile(),
+            resolvePage = { _, destination -> destination.writeBytes(byteArrayOf(1)); true },
+        )
+
+        assertEquals("pages/vol/001.webp", MangaSidecarDataSource(Dispatchers.IO).loadMetadata(root)?.cover)
+    }
+
     private fun newImportDataSource(): MangaImportDataSource {
         val filesDir = Files.createTempDirectory("hoshi-manga-import-volume").toFile()
         return MangaImportDataSource(
@@ -211,6 +255,33 @@ class MangaImportDataSourceTest {
         root.resolve("001.jpg").writeText("not a mokuro file")
 
         assertNull(findBundledMokuroFile(root))
+    }
+
+    @Test
+    fun findBundledCoverImageFindsVolumeNamedImageBesidePageFolder() {
+        // Real mokuro CBZ layout: "<volume>/" pages, "<volume>.mokuro" and a "<volume>.webp" thumbnail.
+        val root = Files.createTempDirectory("hoshi-manga-bundled-cover").toFile()
+        root.resolve("adolf_ni_tsugu_1").mkdirs()
+        root.resolve("adolf_ni_tsugu_1/001.webp").writeBytes(byteArrayOf(1))
+        root.resolve("adolf_ni_tsugu_1.mokuro").writeText("{}")
+        root.resolve("adolf_ni_tsugu_1.webp").writeBytes(byteArrayOf(2))
+        root.resolve("series.json").writeText("{}")
+
+        assertEquals(
+            root.resolve("adolf_ni_tsugu_1.webp").canonicalFile,
+            findBundledCoverImage(root, setOf("adolf_ni_tsugu_1"))?.canonicalFile,
+        )
+    }
+
+    @Test
+    fun findBundledCoverImageIgnoresPagesAndNonImages() {
+        val root = Files.createTempDirectory("hoshi-manga-bundled-cover-missing").toFile()
+        root.resolve("Volume 1").mkdirs()
+        root.resolve("Volume 1/001.jpg").writeBytes(byteArrayOf(1))
+        root.resolve("Volume 1.mokuro").writeText("{}")
+
+        assertNull(findBundledCoverImage(root, setOf("Volume 1")))
+        assertNull(findBundledCoverImage(root, emptySet()))
     }
 
     @Test

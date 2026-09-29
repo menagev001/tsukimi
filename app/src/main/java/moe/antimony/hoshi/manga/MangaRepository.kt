@@ -273,6 +273,7 @@ object SystemMangaClock : MangaClock {
 
 internal const val MOKURO_FILE_NAME = "mokuro.json"
 internal const val PAGES_DIRECTORY_NAME = "pages"
+internal const val COVER_FILE_STEM = "cover"
 private const val METADATA_FILE_NAME = "metadata.json"
 private const val BOOKMARK_FILE_NAME = "bookmark.json"
 private const val HIGHLIGHTS_FILE_NAME = "highlights.json"

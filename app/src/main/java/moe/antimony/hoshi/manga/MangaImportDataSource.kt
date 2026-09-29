@@ -54,6 +54,7 @@ class MangaImportDataSource(
                 volume = volume,
                 mokuroFile = mokuroFile,
                 resolvePage = { imgPath, destination -> copyExtractedPage(extractedRoot, imgPath, destination) },
+                coverSource = findBundledCoverImage(extractedRoot, setOfNotNull(mokuroFile.nameWithoutExtension, volume.volume)),
             )
         } finally {
             importRoot.deleteRecursively()
@@ -82,6 +83,7 @@ class MangaImportDataSource(
                     volume = volume,
                     mokuroFile = mokuroFile,
                     resolvePage = { imgPath, destination -> copyExtractedPage(extractedRoot, imgPath, destination) },
+                    coverSource = findBundledCoverImage(extractedRoot, setOfNotNull(volume.volume)),
                 )
             } finally {
                 importRoot.deleteRecursively()
@@ -149,6 +151,7 @@ class MangaImportDataSource(
         volume: MokuroVolume,
         mokuroFile: File,
         resolvePage: (imgPath: String, destination: File) -> Boolean,
+        coverSource: File? = null,
     ): File {
         // Real mokuro output sets `title` to the *series* name, shared verbatim across every
         // volume of that series (confirmed against a real sample: "All You Need Is Kill" /
@@ -191,11 +194,16 @@ class MangaImportDataSource(
         }
 
         mokuroFile.copyTo(targetRoot.resolve(MOKURO_FILE_NAME))
+        val coverRelativePath = coverSource?.let { source ->
+            val name = "$COVER_FILE_STEM.${source.extension.lowercase()}"
+            source.copyTo(targetRoot.resolve(name), overwrite = true)
+            name
+        } ?: firstPageRelativePath?.let { "$PAGES_DIRECTORY_NAME/$it" }
 
         val metadata = MangaVolumeMetadata(
             id = UUID.randomUUID().toString(),
             title = title,
-            cover = firstPageRelativePath?.let { "$PAGES_DIRECTORY_NAME/$it" },
+            cover = coverRelativePath,
             folder = targetRoot.name,
             lastAccess = clock.currentAppleReferenceDateSeconds(),
             mokuro = MOKURO_FILE_NAME,
@@ -243,6 +251,23 @@ internal fun findBundledMokuroFile(extractedRoot: File): File? =
     extractedRoot.walkTopDown()
         .filter { it.isFile && it.extension.equals("mokuro", ignoreCase = true) }
         .minByOrNull { it.toRelativeString(extractedRoot).count { c -> c == File.separatorChar } }
+
+/**
+ * Finds the volume thumbnail mokuro bundles next to its page folder: an image named after the
+ * volume (`<volume>.webp` beside `<volume>/` and `<volume>.mokuro`). Preferred over the first page
+ * as the shelf cover because the first page is often a two-page spread, which the portrait cover
+ * slot crops down to its middle.
+ */
+internal fun findBundledCoverImage(extractedRoot: File, volumeNames: Set<String>): File? {
+    if (volumeNames.isEmpty()) return null
+    return extractedRoot.walkTopDown()
+        .filter { file ->
+            file.isFile &&
+                ImportFileType.MangaPageImage.matchesDisplayName(file.name) &&
+                volumeNames.any { it.equals(file.nameWithoutExtension, ignoreCase = true) }
+        }
+        .minByOrNull { it.toRelativeString(extractedRoot).count { c -> c == File.separatorChar } }
+}
 
 /**
  * Guards a page destination path derived from a `.mokuro` file's untrusted `img_path` value.
