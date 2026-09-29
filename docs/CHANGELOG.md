@@ -20,6 +20,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 - Retry an "Explain Word" or "Sentence Breakdown" request automatically when
   the AI provider is briefly overloaded, and keep long AI answers scrollable
   instead of pushing the popup's buttons off screen.
+- Clear the e-ink ghosting left on screen after the lookup popup closes when
+  the reduce-ghosting setting is on, using a brief full-screen flash.
 
 ## [v1.4.0] - 2026-09-03
 

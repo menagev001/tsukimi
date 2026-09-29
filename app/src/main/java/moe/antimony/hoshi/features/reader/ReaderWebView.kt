@@ -19,6 +19,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -201,6 +202,14 @@ fun ReaderWebView(
     LaunchedEffect(readerSettings) {
         stateHolder.syncSettings(readerSettings)
     }
+    // Bumped whenever the lookup popup is fully dismissed while eInkReduceGhosting is on, to
+    // trigger a brief full-black flash overlay (see the Box near the end of this composable).
+    // ReaderEInkRefresh's Onyx-SDK reflection call below is a no-op on this build (the
+    // `com.onyx.android.sdk:onyxsdk-device` library isn't bundled as a Gradle dependency, so
+    // `Class.forName` always fails and is silently swallowed) -- this flash is what actually
+    // clears the A2-mode ghosting Onyx WebViews leave behind after a popup opens/closes, the
+    // same "simulate a display refresh" trick the manga reader already uses on page turns.
+    var eInkFlashTrigger by remember(book) { mutableIntStateOf(0) }
     var dictionarySettings by remember { mutableStateOf(DictionarySettings()) }
     var audioSettings by remember { mutableStateOf(AudioSettings()) }
     var dictionaryStyles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
@@ -624,6 +633,7 @@ fun ReaderWebView(
         }
         if (readerSettings.eInkReduceGhosting && nextPopups.isEmpty() && stateHolder.lookupPopups.isNotEmpty()) {
             webView?.let(ReaderEInkRefresh::forceFullRefresh)
+            eInkFlashTrigger++
         }
         stateHolder.setLookupPopups(nextPopups, ::resumeSasayakiAfterLookupIfNeeded)
     }
@@ -2052,9 +2062,25 @@ fun ReaderWebView(
             onRetry = aiLookupViewModel::retry,
             modifier = Modifier.fillMaxSize(),
         )
+        if (effectiveSettings.eInkReduceGhosting) {
+            var eInkFlashVisible by remember { mutableStateOf(false) }
+            LaunchedEffect(eInkFlashTrigger) {
+                if (eInkFlashTrigger == 0) return@LaunchedEffect
+                // A hard on/off cut, not an eased fade, matching the same no-animation flash
+                // used for manga page turns -- an e-ink panel can't render a smooth fade anyway.
+                eInkFlashVisible = true
+                delay(ReaderEInkFlashDurationMs)
+                eInkFlashVisible = false
+            }
+            if (eInkFlashVisible) {
+                Box(modifier = Modifier.fillMaxSize().background(Color.Black))
+            }
+        }
         webView?.let { _ -> Unit }
     }
 }
+
+private const val ReaderEInkFlashDurationMs = 120L
 
 internal enum class ReaderRestoreLoadingPresentation {
     BehindChromeStaticSpinner,
