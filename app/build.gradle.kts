@@ -136,6 +136,9 @@ android {
     lint {
         disable += "DirectSystemCurrentTimeMillisUsage"
     }
+    testOptions {
+        unitTests.isReturnDefaultValues = true
+    }
     externalNativeBuild {
         cmake {
             path = file("src/main/cpp/CMakeLists.txt")

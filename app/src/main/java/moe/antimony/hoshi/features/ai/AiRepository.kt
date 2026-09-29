@@ -1,10 +1,13 @@
 package moe.antimony.hoshi.features.ai
 
 import android.content.Context
+import android.util.Log
 import dagger.hilt.android.qualifiers.ApplicationContext
+import java.io.IOException
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
@@ -55,22 +58,35 @@ class AiRepository @Inject constructor(
         promptOverride: (AiSettings) -> String,
         userMessage: String,
     ): Result<String> = withContext(ioDispatcher) {
-        runCatching {
-            val currentSettings = settingsRepository.settings.first()
-            if (currentSettings.apiKey.isBlank()) {
-                throw AiRequestException("No API key configured")
+        var result: Result<String>
+        var attempt = 1
+        while (true) {
+            result = runCatching {
+                val currentSettings = settingsRepository.settings.first()
+                if (currentSettings.apiKey.isBlank()) {
+                    throw AiRequestException("No API key configured")
+                }
+                val systemPrompt = promptOverride(currentSettings).takeIf(String::isNotBlank)
+                    ?: loadPromptAsset(promptAsset)
+                client.ask(
+                    baseUrl = currentSettings.baseUrl,
+                    model = currentSettings.model,
+                    apiKey = currentSettings.apiKey,
+                    systemPrompt = systemPrompt,
+                    userMessage = userMessage,
+                )
             }
-            val systemPrompt = promptOverride(currentSettings).takeIf(String::isNotBlank)
-                ?: loadPromptAsset(promptAsset)
-            client.ask(
-                baseUrl = currentSettings.baseUrl,
-                model = currentSettings.model,
-                apiKey = currentSettings.apiKey,
-                systemPrompt = systemPrompt,
-                userMessage = userMessage,
-            )
+            val error = result.exceptionOrNull() ?: break
+            if (attempt >= MaxAttempts || !isRetryable(error)) break
+            Log.w(Tag, "AI request failed on attempt $attempt/$MaxAttempts, retrying: ${error.message}")
+            delay(attempt * RetryBackoffMillis)
+            attempt++
         }
+        result
     }
+
+    private fun isRetryable(error: Throwable): Boolean =
+        error is IOException || (error as? AiRequestException)?.retryable == true
 
     private fun loadPromptAsset(promptAsset: String): String =
         promptCache.getOrPut(promptAsset) {
@@ -78,6 +94,9 @@ class AiRepository @Inject constructor(
         }
 
     private companion object {
+        const val Tag = "AiRepository"
+        const val MaxAttempts = 3
+        const val RetryBackoffMillis = 750L
         const val WordNuancePromptAsset = "ai-prompts/word_nuance.md"
         const val SentenceBreakdownPromptAsset = "ai-prompts/sentence_breakdown.md"
     }

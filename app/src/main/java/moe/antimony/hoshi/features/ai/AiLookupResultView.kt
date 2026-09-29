@@ -110,7 +110,10 @@ fun AiLookupOverlay(
                         }
                     }
                     is AiLookupState.Success -> {
-                        ScrollableResponseText(text = state.response)
+                        ScrollableResponseText(
+                            text = state.response,
+                            modifier = Modifier.weight(1f, fill = false),
+                        )
                     }
                     is AiLookupState.Error -> {
                         Column {

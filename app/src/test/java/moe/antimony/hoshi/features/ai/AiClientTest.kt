@@ -60,5 +60,85 @@ class AiClientTest {
 
         assertTrue(error is AiRequestException)
         assertEquals("bad request", error?.message)
+        assertEquals(false, (error as AiRequestException).retryable)
+    }
+
+    @Test
+    fun askMarksOverloadedErrorAsRetryable() {
+        val transport = FakeAiTransport(
+            """{"type":"error","error":{"type":"overloaded_error","message":"Overloaded"}}""",
+        )
+        val client = AiClient(transport)
+
+        val error = runCatching {
+            client.ask(
+                baseUrl = "https://api.anthropic.com",
+                model = "claude-sonnet-5",
+                apiKey = "test-key",
+                systemPrompt = "system",
+                userMessage = "user",
+            )
+        }.exceptionOrNull() as? AiRequestException
+
+        assertTrue(error?.retryable == true)
+    }
+
+    @Test
+    fun askThrowsRetryableExceptionWithDiagnosticsOnEmptyContent() {
+        val transport = FakeAiTransport(
+            """{"content":[{"type":"thinking","thinking":"..."}],"stop_reason":"end_turn"}""",
+        )
+        val client = AiClient(transport)
+
+        val error = runCatching {
+            client.ask(
+                baseUrl = "https://api.anthropic.com",
+                model = "claude-sonnet-5",
+                apiKey = "test-key",
+                systemPrompt = "system",
+                userMessage = "user",
+            )
+        }.exceptionOrNull() as? AiRequestException
+
+        assertTrue(error != null)
+        assertTrue(error?.retryable == true)
+        assertTrue(error?.message?.contains("end_turn") == true)
+    }
+
+    @Test
+    fun askAppendsTruncationNoticeWhenStoppedAtMaxTokens() {
+        val transport = FakeAiTransport(
+            """{"content":[{"type":"text","text":"partial response"}],"stop_reason":"max_tokens"}""",
+        )
+        val client = AiClient(transport)
+
+        val result = client.ask(
+            baseUrl = "https://api.anthropic.com",
+            model = "claude-sonnet-5",
+            apiKey = "test-key",
+            systemPrompt = "system",
+            userMessage = "user",
+        )
+
+        assertTrue(result.startsWith("partial response"))
+        assertTrue(result.contains("cut off"))
+    }
+
+    @Test
+    fun askThrowsRetryableExceptionOnMalformedJson() {
+        val transport = FakeAiTransport("not json")
+        val client = AiClient(transport)
+
+        val error = runCatching {
+            client.ask(
+                baseUrl = "https://api.anthropic.com",
+                model = "claude-sonnet-5",
+                apiKey = "test-key",
+                systemPrompt = "system",
+                userMessage = "user",
+            )
+        }.exceptionOrNull() as? AiRequestException
+
+        assertTrue(error?.retryable == true)
     }
 }

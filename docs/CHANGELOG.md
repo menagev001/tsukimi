@@ -6,11 +6,20 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+### Changed
+
+- Make "Explain Word" and "Sentence Breakdown" answers shorter and more
+  focused: grammar notes only where something needs explaining, the dictionary
+  form of hard-to-reverse conjugations, and closing notes only when warranted.
+
 ### Fixed
 
 - Use the volume thumbnail bundled in a mokuro CBZ as the manga shelf cover,
   instead of the first page, which is often a two-page spread cropped down to
   its middle. Volumes without a bundled thumbnail keep the first page.
+- Retry an "Explain Word" or "Sentence Breakdown" request automatically when
+  the AI provider is briefly overloaded, and keep long AI answers scrollable
+  instead of pushing the popup's buttons off screen.
 
 ## [v1.4.0] - 2026-09-03
 
