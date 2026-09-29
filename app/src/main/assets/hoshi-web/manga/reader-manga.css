@@ -1,6 +1,7 @@
 :root {
     --hoshi-background-color: __HOSHI_MANGA_BACKGROUND_COLOR__;
     --hoshi-eink-line-color: __HOSHI_MANGA_EINK_LINE_COLOR__;
+    --hoshi-manga-overlay-text-color: __HOSHI_MANGA_TEXT_COLOR__;
 }
 
 html, body {
@@ -87,9 +88,15 @@ html[data-hoshi-reader-eink-mode="true"] .hoshi-manga-page {
    are left in normal document flow instead of being absolutely positioned -- letting the browser's
    own text layout place each line using its real rendered width, matching mokuro's own reference
    overlay technique. This is what fixes lines of uneven length landing on an evenly-subdivided
-   (and therefore wrong) guessed rectangle. */
+   (and therefore wrong) guessed rectangle.
+
+   `overflow` is deliberately `visible`, not `hidden`: the block is sized to the OCR box, but the
+   rendered run is synthesized text in a different typeface, so it can still overshoot that box by
+   a character even after fittedFontSizePx(). Clipping made those characters silently
+   unselectable -- the end of a long line simply did not respond to taps -- which is worse than
+   letting a glyph hang a few pixels outside its card in "text" mode. */
 .hoshi-manga-block-flow {
-    overflow: hidden;
+    overflow: visible;
 }
 .hoshi-manga-line-flow {
     position: static;
@@ -111,4 +118,40 @@ html[data-hoshi-reader-eink-mode="true"] ::highlight(hoshi-selection) {
     text-decoration-color: var(--hoshi-eink-line-color);
     text-decoration-thickness: 2px;
     text-underline-offset: 1px;
+}
+
+
+/* ---------------------------------------------------------------------------------------------
+   Revealed block (see selectTextAt / blockTapAction in reader-manga.js). The page shows clean
+   artwork; tapping a block reveals just that one as its recognised text drawn opaquely over the
+   art, so the glyphs being read are exactly the glyphs being hit-tested and a lookup cannot land
+   on a neighbouring character. Tapping another block or clear of every block hides it again.
+   --------------------------------------------------------------------------------------------- */
+
+/* `outline`, not `border`: a border would grow the block by 2px and shift its padding box, which
+   on the precise-lines_coords path moves every absolutely positioned line inside it off the
+   coordinates it was given. Orange for the same reason ::highlight(hoshi-selection) is orange (see
+   above): manga art is black-and-white halftone, so a grey or near-black hairline disappears
+   against roughly half the pages it is drawn on. */
+.hoshi-manga-block.hoshi-manga-block-active {
+    z-index: 1;
+    color: var(--hoshi-manga-overlay-text-color);
+    background-color: var(--hoshi-background-color);
+    outline: 1px dotted rgba(255, 152, 0, 0.9);
+    border-radius: 3px;
+}
+
+/* `.hoshi-manga-line` sets `color: transparent` on itself rather than inheriting it, so the block
+   rule above is not enough to reveal the glyphs. `overflow` only matters on the
+   precise-lines_coords path, where each line clips to a fixed-size span: invisible text can be
+   clipped harmlessly, text the reader is meant to read cannot. */
+.hoshi-manga-block-active .hoshi-manga-line {
+    color: var(--hoshi-manga-overlay-text-color);
+    overflow: visible;
+}
+
+/* E-ink panels render the orange as an indistinct mid-grey, so the outline falls back to the
+   reader's own high-contrast line colour. */
+html[data-hoshi-reader-eink-mode="true"] .hoshi-manga-block.hoshi-manga-block-active {
+    outline: 1px dotted var(--hoshi-eink-line-color);
 }

@@ -86,6 +86,7 @@ import moe.antimony.hoshi.features.reader.ReaderLookupPopupWebBridge
 import moe.antimony.hoshi.features.reader.ReaderPopupHistoryCounts
 import moe.antimony.hoshi.features.reader.ReaderRootSelectionHighlight
 import moe.antimony.hoshi.features.reader.ReaderSelectionBridge
+import moe.antimony.hoshi.features.reader.ReaderSelectionBridgePayload
 import moe.antimony.hoshi.features.reader.ReaderSelectionCommand
 import moe.antimony.hoshi.features.reader.ReaderSelectionData
 import moe.antimony.hoshi.features.reader.ReaderSelectionRect
@@ -163,11 +164,20 @@ internal fun MangaReaderWebView(
         initialValue = SasayakiSettings(),
     )
     var showAppearance by remember(volumeId) { mutableStateOf(false) }
-    // Chrome (back + settings buttons) is hidden by default so it never obstructs manga art;
-    // tapping the blank center third of the page (the existing dead zone between the left/right
-    // page-turn tap targets) toggles it, matching the common manga-reader convention of tapping
-    // the middle of the screen to reveal reading UI.
-    var showChrome by remember(volumeId) { mutableStateOf(false) }
+    // Chrome (back and settings buttons) is toggled by tapping the blank center
+    // third of the page (the existing dead zone between the left/right page-turn tap targets),
+    // matching the common manga-reader convention of tapping the middle of the screen to reveal
+    // reading UI.
+    //
+    // It starts *visible* and auto-hides, rather than starting hidden: that centre third is only a
+    // third of the screen wide and is often covered by speech bubbles (which take the tap for a
+    // lookup instead), so a reader who does not already know the gesture has no way to discover
+    // that the toolbar -- and therefore the reader's settings at all -- exists.
+    var showChrome by remember(volumeId) { mutableStateOf(true) }
+    LaunchedEffect(volumeId) {
+        delay(ChromeAutoHideDelayMs)
+        showChrome = false
+    }
     val scope = rememberCoroutineScope()
 
     // Landscape auto-switches to a 2-page spread (matching how most manga readers handle this --
@@ -204,6 +214,9 @@ internal fun MangaReaderWebView(
     var lookupPopups by remember(volumeId) { mutableStateOf<List<LookupPopupItem>>(emptyList()) }
     var readerPopupHistories by remember(volumeId) { mutableStateOf<Map<String, ReaderPopupHistoryCounts>>(emptyMap()) }
     var rootSelectionHighlight by remember(volumeId) { mutableStateOf<ReaderRootSelectionHighlight?>(null) }
+    // The character count behind the current root highlight. Kept so the highlight can be
+    // re-measured after a zoom/pan -- see refreshRootSelectionHighlight below.
+    var rootSelectionHighlightCount by remember(volumeId) { mutableIntStateOf(0) }
     val snackbarHostState = remember { SnackbarHostState() }
 
     val ankiViewModel: AnkiViewModel = hiltViewModel()
@@ -324,6 +337,7 @@ internal fun MangaReaderWebView(
         val lookup = lookupRootPopup(selection) ?: return
         val (popup, highlightCount) = lookup
         rootSelectionHighlight = ReaderRootSelectionHighlight(popupId = popup.id, rects = null)
+        rootSelectionHighlightCount = highlightCount
         setLookupPopups(listOf(popup))
         selectionRects(highlightCount) { rects ->
             if (lookupPopups.none { it.id == popup.id }) return@selectionRects
@@ -536,6 +550,7 @@ internal fun MangaReaderWebView(
             eInkMode = eInkMode,
             rtl = mangaReadingDirectionRtlDefault(),
             backgroundColorCss = readerJavaScriptColorCss(readerSettings.backgroundColor(systemDarkTheme)),
+            textColorCss = readerSettings.textColorCss(systemDarkTheme),
             eInkLineColorCss = eInkLineColorCss,
             assets = MangaReaderWebAssets.load(context),
         )
@@ -558,6 +573,43 @@ internal fun MangaReaderWebView(
                 page.imgPath.split('/').joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
         }
         view.evaluateJavascript(mangaShowPageScript(currentPageIndex, pagesJson, imageUrls), null)
+    }
+
+    /**
+     * The root selection highlight is drawn by the popup host layer, which sits *outside*
+     * `.hoshi-manga-page` and therefore does not receive the page's zoom/pan CSS transform. Its
+     * rects are viewport coordinates measured once, at selection time, so any pan or zoom leaves
+     * the box behind -- it appears pinned near the popup while the word it belongs to slides away.
+     *
+     * Rather than teach the popup layer about the page transform, the rects are simply re-measured
+     * from the live DOM once the gesture settles. `hide` is used during the gesture itself: an
+     * empty rect list draws nothing, whereas a null list would mark the highlight *pending*, which
+     * the host treats as "still loading" and uses to block the popup from being revealed.
+     */
+    fun refreshRootSelectionHighlight(hide: Boolean) {
+        val highlight = rootSelectionHighlight ?: return
+        val popupId = highlight.popupId
+        if (hide) {
+            rootSelectionHighlight = ReaderRootSelectionHighlight(popupId = popupId, rects = emptyList())
+            return
+        }
+        val view = webView ?: return
+        val count = rootSelectionHighlightCount
+        if (count <= 0) return
+        // Deferred past the settle transition in reader-manga.css: measuring the instant the
+        // gesture ends reads the page's pre-animation position, putting the box back in the wrong
+        // place for a second time.
+        view.postDelayed(
+            {
+                view.evaluateJavascript(ReaderSelectionCommand.SelectionRects(count).source) { result ->
+                    if (lookupPopups.none { it.id == popupId }) return@evaluateJavascript
+                    val rects = ReaderSelectionBridgePayload.rectsFromJavascriptResult(result)
+                    if (rects.isEmpty()) return@evaluateJavascript
+                    rootSelectionHighlight = ReaderRootSelectionHighlight(popupId = popupId, rects = rects)
+                }
+            },
+            PageSettleTransitionMs,
+        )
     }
 
     fun resetZoomToFit(view: WebView) {
@@ -639,20 +691,29 @@ internal fun MangaReaderWebView(
         onDispose { onReaderKeyEventHandlerChange(null) }
     }
 
+    /**
+     * `onBlankTap` fires only for a tap that was genuinely nowhere near OCR text while no block was
+     * revealed. A tap on or within snapping distance of an OCR block -- which reveals it, or looks
+     * up text in the already-revealed one -- and a tap that hides the revealed block are handled
+     * entirely inside the WebView (see `selectTextAt` in `reader-manga.js`) and must not fall
+     * through to the blank-tap behaviour, or they would also reset the zoom or turn the page.
+     */
     fun selectAt(x: Float, y: Float, sentenceOnly: Boolean = false, onBlankTap: () -> Unit) {
         val view = webView ?: return
         val density = view.resources.displayMetrics.density
         view.evaluateJavascript(
-            ReaderSelectionCommand.SelectText(
+            mangaSelectTextScript(
                 x = androidPixelsToCssPixels(x, density),
                 y = androidPixelsToCssPixels(y, density),
                 maxLength = readerSelectionMaxLength(dictionarySettings),
                 sentenceOnly = sentenceOnly,
-            ).source,
+            ),
         ) { result ->
-            val selectionResult = moe.antimony.hoshi.features.reader.ReaderSelectionResult.fromWebViewResult(result)
+            val selectionResult = MangaSelectionResult.fromWebViewResult(result)
             when {
-                selectionResult.isImageTap || selectionResult.isLinkTap -> Unit
+                // The popup belonged to the block that was just revealed over or hidden.
+                selectionResult.blockToggled -> dismissRootLookupPopup()
+                selectionResult.isImageTap || selectionResult.isLinkTap || selectionResult.nearText -> Unit
                 selectionResult.selectedNothing -> onBlankTap()
             }
         }
@@ -736,6 +797,7 @@ internal fun MangaReaderWebView(
 
                         override fun onZoom(scaleFactor: Float, focalX: Float, focalY: Float, panDx: Float, panDy: Float, settling: Boolean) {
                             zoomScale[0] = (zoomScale[0] * scaleFactor).coerceIn(1f, 6f)
+                            refreshRootSelectionHighlight(hide = true)
                             val density = webViewInstance.resources.displayMetrics.density
                             webViewInstance.evaluateJavascript(
                                 "window.hoshiManga && window.hoshiManga.setZoom(" +
@@ -748,9 +810,11 @@ internal fun MangaReaderWebView(
 
                         override fun onZoomGestureEnd() {
                             if (zoomScale[0] <= 1.05f) resetZoomToFit(webViewInstance)
+                            refreshRootSelectionHighlight(hide = false)
                         }
 
                         override fun onPan(dx: Float, dy: Float, settling: Boolean) {
+                            refreshRootSelectionHighlight(hide = !settling)
                             val density = webViewInstance.resources.displayMetrics.density
                             webViewInstance.evaluateJavascript(
                                 "window.hoshiManga && window.hoshiManga.panBy(" +
@@ -944,6 +1008,12 @@ private fun readerJavaScriptColorCss(argb: Long): String {
 private fun mangaReadingDirectionRtlDefault(): Boolean = true
 
 private const val EInkFlashDurationMs = 120L
+
+// How long the reader chrome stays up when a volume is opened, before auto-hiding.
+private const val ChromeAutoHideDelayMs = 3500L
+
+// Matches the `.hoshi-manga-page-settling` transform transition in reader-manga.css, plus a frame.
+private const val PageSettleTransitionMs = 160L
 
 private tailrec fun Context.findActivity(): Activity? = when (this) {
     is Activity -> this

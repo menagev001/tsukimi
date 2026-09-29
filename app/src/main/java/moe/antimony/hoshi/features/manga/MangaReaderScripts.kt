@@ -14,6 +14,7 @@ internal fun mangaReaderSetupScript(
     eInkMode: Boolean,
     rtl: Boolean,
     backgroundColorCss: String,
+    textColorCss: String,
     eInkLineColorCss: String,
     assets: MangaReaderWebAssets,
 ): String {
@@ -24,6 +25,7 @@ internal fun mangaReaderSetupScript(
     val css = readerJavaScriptStringLiteral(
         assets.readerMangaCss
             .replace("__HOSHI_MANGA_BACKGROUND_COLOR__", backgroundColorCss)
+            .replace("__HOSHI_MANGA_TEXT_COLOR__", textColorCss)
             .replace("__HOSHI_MANGA_EINK_LINE_COLOR__", eInkLineColorCss),
     )
     val selectionSupportScript = assets.selectionSupportJs(contentLanguageProfile)
@@ -75,4 +77,48 @@ internal fun mangaShowPageScript(pageIndex: Int, pagesJson: List<String>, imageU
           window.hoshiManga && window.hoshiManga.showPage($pageIndex, $pagesArrayLiteral, $urlsArrayLiteral);
         })();
     """.trimIndent()
+}
+
+/**
+ * Tap entry point for the manga reader. Unlike the EPUB reader's direct `hoshiSelection.selectText`
+ * call, a first tap on an OCR block only reveals it as readable text, and lookups on the revealed
+ * block snap a near-miss to its closest character -- see `selectTextAt` in `reader-manga.js` for
+ * the return contract consumed by [MangaSelectionResult].
+ */
+internal fun mangaSelectTextScript(x: Float, y: Float, maxLength: Int, sentenceOnly: Boolean): String =
+    "window.hoshiManga ? window.hoshiManga.selectTextAt($x, $y, $maxLength, $sentenceOnly) : null"
+
+/**
+ * Result of [mangaSelectTextScript].
+ *
+ * [nearText] and [blockToggled] are the distinctions the EPUB-side `ReaderSelectionResult` has no
+ * need for. [nearText]: a tap on the revealed OCR block that produced no new selection (a
+ * deliberate tap-again-to-dismiss, or glyphs that could not be resolved). [blockToggled]: a tap
+ * that only revealed an OCR block as readable text, or hid the revealed one again. Treating either
+ * as "tapped blank artwork" would snap the page out of zoom or turn it.
+ */
+internal data class MangaSelectionResult(
+    val selectedNothing: Boolean,
+    val nearText: Boolean = false,
+    val blockToggled: Boolean = false,
+    val isImageTap: Boolean = false,
+    val isLinkTap: Boolean = false,
+) {
+    companion object {
+        const val NEAR_TEXT_TOKEN: String = "near-text"
+        const val BLOCK_TOGGLED_TOKEN: String = "block-toggled"
+
+        fun fromWebViewResult(result: String?): MangaSelectionResult {
+            val value = result?.trim()
+            val isNull = value == null || value == "null" || value == "undefined"
+            val token = value?.removeSurrounding("\"")
+            return MangaSelectionResult(
+                selectedNothing = isNull,
+                nearText = token == NEAR_TEXT_TOKEN,
+                blockToggled = token == BLOCK_TOGGLED_TOKEN,
+                isImageTap = token == "image",
+                isLinkTap = token == "link",
+            )
+        }
+    }
 }

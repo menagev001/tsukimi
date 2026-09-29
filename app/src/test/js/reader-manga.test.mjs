@@ -192,3 +192,203 @@ test('lineRects ignores a lines_coords length mismatch and falls back to subdivi
     assert.equal(rects.length, 3);
     assert.deepEqual(plain(rects[0]), { x1: 0, y1: 0, x2: 100, y2: 10 });
 });
+
+// --- tap snapping -----------------------------------------------------------------------------
+// The overlay's glyphs are synthesized from OCR boxes in a typeface that is not the printed one,
+// so they never sit exactly on the artwork. These cover the geometry that makes a near-miss land
+// on the intended character anyway (see selectTextAt in reader-manga.js).
+
+function rect(left, top, width, height) {
+    return { left, top, width, height, right: left + width, bottom: top + height };
+}
+
+test('rectDistance is zero anywhere inside a rect, including its edges', () => {
+    const geometry = loadMangaGeometry();
+    const r = rect(10, 20, 100, 50);
+
+    assert.equal(geometry.rectDistance(r, 60, 45), 0);
+    assert.equal(geometry.rectDistance(r, 10, 20), 0);
+    assert.equal(geometry.rectDistance(r, 110, 70), 0);
+});
+
+test('rectDistance measures the gap to the nearest edge, diagonally at the corners', () => {
+    const geometry = loadMangaGeometry();
+    const r = rect(10, 20, 100, 50);
+
+    assert.equal(geometry.rectDistance(r, 130, 45), 20);
+    assert.equal(geometry.rectDistance(r, 60, 5), 15);
+    // Off the bottom-right corner: a 3-4-5 triangle.
+    assert.equal(geometry.rectDistance(r, 113, 74), 5);
+});
+
+test('nearestRectIndex picks the containing rect over a merely close one', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(0, 0, 10, 10), rect(100, 100, 40, 40), rect(145, 100, 40, 40)];
+
+    assert.equal(geometry.nearestRectIndex(rects, 120, 120, 24), 1);
+});
+
+test('nearestRectIndex snaps to a block the tap narrowly missed', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(0, 0, 10, 10), rect(100, 100, 40, 40)];
+
+    // 8px past the right edge -- inside the finger-slop tolerance.
+    assert.equal(geometry.nearestRectIndex(rects, 148, 120, 24), 1);
+});
+
+test('nearestRectIndex rejects a tap beyond the tolerance so blank art stays blank', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(100, 100, 40, 40)];
+
+    // 60px clear of every block: this is the tap that should still reset the zoom.
+    assert.equal(geometry.nearestRectIndex(rects, 200, 120, 24), -1);
+});
+
+test('nearestRectIndex returns -1 when there are no blocks at all', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.nearestRectIndex([], 50, 50, 24), -1);
+});
+
+test('nearestRectCenter returns null when the point is already on a glyph', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(0, 0, 20, 20), rect(0, 20, 20, 20)];
+
+    // Direct hit -- the original selectText call was accurate, so a miss was not bad aim and
+    // must not be retried (that would defeat tap-again-to-dismiss).
+    assert.equal(geometry.nearestRectCenter(rects, 10, 30), null);
+});
+
+test('nearestRectCenter returns the centre of the closest character rect', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(0, 0, 20, 20), rect(0, 30, 20, 20), rect(0, 60, 20, 20)];
+
+    // In the gap between the second and third glyph of a vertical column, 4px below the second
+    // and 6px above the third -- the kind of inter-character miss the overlay's drift produces.
+    assert.deepEqual(plain(geometry.nearestRectCenter(rects, 10, 54)), { x: 10, y: 40 });
+});
+
+test('nearestRectCenter ignores zero-area rects from collapsed ranges', () => {
+    const geometry = loadMangaGeometry();
+    const rects = [rect(0, 0, 0, 0), rect(100, 100, 20, 20)];
+
+    assert.deepEqual(plain(geometry.nearestRectCenter(rects, 5, 5)), { x: 110, y: 110 });
+});
+
+test('nearestRectCenter returns null when a block has no usable glyph rects', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.nearestRectCenter([rect(0, 0, 0, 0)], 5, 5), null);
+});
+
+// --- font fitting -----------------------------------------------------------------------------
+// Japanese glyphs are full-width (one em of advance each), so a line's font size is pinned by its
+// own extent divided by its own character count. Getting this wrong is what left the last
+// character of a line sitting outside the overlay and therefore untappable.
+
+test('glyphCount counts code points, not UTF-16 units', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.glyphCount('ねこ'), 2);
+    // A supplementary-plane kanji is one glyph despite being a surrogate pair.
+    assert.equal(geometry.glyphCount('\u{20BB7}'), 1);
+    assert.equal(geometry.glyphCount('ね\u{20BB7}こ'), 3);
+    assert.equal(geometry.glyphCount(''), 0);
+});
+
+test('longestLineGlyphCount reports the longest line in a block', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.longestLineGlyphCount(['あ', 'あいうえお', 'あいう']), 5);
+    assert.equal(geometry.longestLineGlyphCount([]), 0);
+});
+
+test('fittedFontSizePx makes an n-character run exactly span its extent', () => {
+    const geometry = loadMangaGeometry();
+
+    // 5 characters down a 100px-tall column 20px wide: one em per character is exactly 20px, so
+    // the run ends precisely at the bottom of the OCR line rather than short of it.
+    assert.equal(geometry.fittedFontSizePx(100, 20, 5), 20);
+});
+
+test('fittedFontSizePx caps at the cross axis so a merged OCR box cannot blow up', () => {
+    const geometry = loadMangaGeometry();
+
+    // A tall box holding only two characters would imply a 60px font; the 14px column width is
+    // the real constraint.
+    assert.equal(geometry.fittedFontSizePx(120, 14, 2), 14);
+});
+
+test('fittedFontSizePx ignores a non-positive cross axis instead of collapsing', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.fittedFontSizePx(100, 0, 4), 25);
+});
+
+test('fittedFontSizePx never returns a size too small to hit-test', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.fittedFontSizePx(10, 2, 40), 6);
+});
+
+test('fittedFontSizePx returns 0 for degenerate geometry so the caller can fall back', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.equal(geometry.fittedFontSizePx(100, 20, 0), 0);
+    assert.equal(geometry.fittedFontSizePx(0, 20, 5), 0);
+});
+
+// --- block reveal -----------------------------------------------------------------------------
+// Pages show clean artwork; a first tap on an OCR block only reveals it as readable text, and
+// lookups happen on the revealed text (see blockTapAction in reader-manga.js).
+
+function loadMangaTap() {
+    const source = fs.readFileSync(readerMangaUrl, 'utf8');
+    const window = {};
+    vm.runInNewContext(source, { window });
+    return window.hoshiMangaTap;
+}
+
+test('blockTapAction reveals a block on the first single tap instead of looking anything up', () => {
+    const tap = loadMangaTap();
+    const a = {};
+
+    assert.equal(tap.blockTapAction(a, null, false), 'reveal');
+});
+
+test('blockTapAction looks up text on the already-revealed block', () => {
+    const tap = loadMangaTap();
+    const a = {};
+
+    assert.equal(tap.blockTapAction(a, a, false), 'select');
+});
+
+test('blockTapAction moves the reveal to another block without looking anything up', () => {
+    const tap = loadMangaTap();
+    const a = {};
+    const b = {};
+
+    assert.equal(tap.blockTapAction(b, a, false), 'reveal');
+});
+
+test('blockTapAction only hides the revealed block on a single tap clear of every block', () => {
+    const tap = loadMangaTap();
+
+    // Not 'blank': closing the block must not also turn the page or reset the zoom.
+    assert.equal(tap.blockTapAction(null, {}, false), 'dismiss');
+});
+
+test('blockTapAction leaves a blank tap blank when nothing is revealed', () => {
+    const tap = loadMangaTap();
+
+    assert.equal(tap.blockTapAction(null, null, false), 'blank');
+});
+
+test('blockTapAction keeps double-tap sentence lookup and page turns independent of the reveal', () => {
+    const tap = loadMangaTap();
+    const a = {};
+
+    assert.equal(tap.blockTapAction(a, null, true), 'select');
+    assert.equal(tap.blockTapAction(a, {}, true), 'select');
+    assert.equal(tap.blockTapAction(null, a, true), 'blank');
+});

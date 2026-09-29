@@ -99,6 +99,17 @@
         axisAlignedBoxFromPoints: axisAlignedBoxFromPoints,
         lineRects: lineRects,
         blockFontSizePx: blockFontSizePx,
+        fittedFontSizePx: fittedFontSizePx,
+        glyphCount: glyphCount,
+        longestLineGlyphCount: longestLineGlyphCount,
+        rectDistance: rectDistance,
+        nearestRectIndex: nearestRectIndex,
+        nearestRectCenter: nearestRectCenter,
+    };
+
+    // Kept pure (blocks in, action out) for the same reason as hoshiMangaGeometry.
+    window.hoshiMangaTap = {
+        blockTapAction: blockTapAction,
     };
 
     var state = {
@@ -115,6 +126,8 @@
     var viewportEl = null;
     var pageEl = null;
     var slots = []; // { el, imageEl, overlayEl }, one per potential spread slot
+    // The one OCR block currently revealed as readable text (see selectTextAt), or null.
+    var activeBlockEl = null;
 
     function ensureDom() {
         if (viewportEl) return;
@@ -145,16 +158,49 @@
         document.body.appendChild(viewportEl);
     }
 
-    // mokuro's own reference reader (mokuro/legacy/overlay_generator.py + styles.css) doesn't try
-    // to guess individual line positions when precise per-line coordinates aren't available --
-    // it sizes one container to the whole block's bounding box and lets the *browser's own text
-    // layout* place each line, using the real rendered glyph widths. Evenly subdividing the block
-    // into N equal columns/rows (what this used to do) assumes every line is the same length,
-    // which real OCR'd dialogue never is -- a short line and a long line sharing one block get
-    // the same subdivided width, so the short line's synthesized box sits offset from where its
-    // glyphs actually are. That mismatch is the direct cause of taps needing to land "slightly
-    // off" from the visible word. Font size similarly prefers the OCR's own reported font_size
-    // (mokuro clips this the same way) over a guess derived from a possibly-wrong subdivided rect.
+    // Number of code points, so a surrogate pair counts as the one full-width glyph it renders as.
+    function glyphCount(line) {
+        var count = 0;
+        for (var i = 0; i < line.length; i++) {
+            var code = line.charCodeAt(i);
+            if (code >= 0xd800 && code <= 0xdbff && i + 1 < line.length) i++;
+            count++;
+        }
+        return count;
+    }
+
+    function longestLineGlyphCount(lines) {
+        var longest = 0;
+        for (var i = 0; i < lines.length; i++) {
+            var count = glyphCount(lines[i]);
+            if (count > longest) longest = count;
+        }
+        return longest;
+    }
+
+    // Japanese text is full-width: every glyph advances exactly one em, so a run of `glyphs`
+    // characters spanning a known extent pins the font size at `longExtent / glyphs` with no
+    // measurement at all.
+    //
+    // This is what makes a synthesized run end where the printed run ends. mokuro's reported
+    // `font_size` is a per-block average of OCR'd glyph heights measured in a typeface we do not
+    // render in, and the previous per-line estimate used the column's *width* scaled by a
+    // constant -- the axis the text does not run along -- so neither had any way to make an
+    // n-character run come out n characters long. Both produced a run that started in the right
+    // place and finished short, leaving the last character or two of every line outside the box
+    // and therefore untappable.
+    //
+    // `crossExtent` caps the result, since the glyphs also have to fit across the line; that stops
+    // one malformed or merged OCR box from rendering enormous text. Returns 0 when the block's
+    // geometry cannot produce a size, so callers can fall back.
+    function fittedFontSizePx(longExtent, crossExtent, glyphs) {
+        if (!(glyphs > 0) || !(longExtent > 0)) return 0;
+        var alongRun = longExtent / glyphs;
+        var size = crossExtent > 0 ? Math.min(alongRun, crossExtent) : alongRun;
+        return Math.max(6, size);
+    }
+
+    // Fallback only, for a block whose own geometry cannot produce a size (see fittedFontSizePx).
     function blockFontSizePx(block, displayScale) {
         if (typeof block.font_size === 'number' && block.font_size > 0) {
             return Math.max(6, block.font_size * displayScale);
@@ -167,6 +213,11 @@
         return Math.max(6, (extent / n) * displayScale * 0.9);
     }
 
+    // Both branches below size the block <p> to the OCR box itself. That box -- unlike the
+    // synthesized glyph positions inside it -- is real data straight from the OCR, so it is the
+    // only part of the overlay guaranteed to line up with the printed art. It therefore serves
+    // as both the tap target that reveals a block and the opaque card drawn once it is revealed
+    // (see selectTextAt).
     function buildOverlay(overlayEl, pageJson, displayScale) {
         overlayEl.textContent = '';
         var blocks = pageJson.blocks || [];
@@ -175,6 +226,11 @@
             if (!block.box || block.box.length !== 4 || !block.lines || !block.lines.length) continue;
             var writingMode = block.vertical ? 'vertical-rl' : 'horizontal-tb';
             var hasPreciseCoords = block.lines_coords && block.lines_coords.length === block.lines.length;
+            var box = block.box;
+            var boxLeft = box[0] * displayScale;
+            var boxTop = box[1] * displayScale;
+            var boxWidth = Math.max(1, (box[2] - box[0]) * displayScale);
+            var boxHeight = Math.max(1, (box[3] - box[1]) * displayScale);
 
             var blockEl = document.createElement('p');
             // Kept a <p> either way -- hoshiSelection.findParagraph() (shared/selection.js) scopes
@@ -182,10 +238,17 @@
             // so this tag is load-bearing regardless of which positioning strategy is used below.
             blockEl.className = 'hoshi-manga-block';
             blockEl.style.writingMode = writingMode;
+            blockEl.style.left = boxLeft + 'px';
+            blockEl.style.top = boxTop + 'px';
+            blockEl.style.width = boxWidth + 'px';
+            blockEl.style.height = boxHeight + 'px';
 
             if (hasPreciseCoords) {
                 // Real per-line polygon data available -- keep exact per-line absolute
-                // positioning, already accurate since it's not a guess.
+                // positioning, already accurate since it's not a guess. Line offsets are relative
+                // to the block's own box now that the block carries `left`/`top` of its own (it
+                // previously collapsed to a zero-sized element pinned at the overlay origin, so
+                // page-space line coordinates happened to work; they would double-count today).
                 var rects = lineRects(block);
                 for (var i = 0; i < block.lines.length; i++) {
                     var rect = rects[i];
@@ -194,17 +257,19 @@
                     var height = Math.max(1, (rect.y2 - rect.y1) * displayScale);
                     var lineEl = document.createElement('span');
                     lineEl.className = 'hoshi-manga-line';
-                    lineEl.style.left = (rect.x1 * displayScale) + 'px';
-                    lineEl.style.top = (rect.y1 * displayScale) + 'px';
+                    lineEl.style.left = (rect.x1 * displayScale - boxLeft) + 'px';
+                    lineEl.style.top = (rect.y1 * displayScale - boxTop) + 'px';
                     lineEl.style.width = width + 'px';
                     lineEl.style.height = height + 'px';
                     lineEl.style.writingMode = writingMode;
-                    // Text glyphs must actually cover the tap region (not just the span's box) so
-                    // caretPositionFromPoint/elementFromPoint hit-test correctly anywhere inside
-                    // it -- sizing relative to the precise rect's own narrow dimension fills it
-                    // reasonably via the browser's own text layout, without per-character
-                    // placement.
-                    var fontSizePx = block.vertical ? width * 0.92 : height * 0.78;
+                    // This line's own polygon is real OCR data, so its long axis is exactly the
+                    // extent the printed run occupies -- dividing that by this line's own glyph
+                    // count lands every character on its printed counterpart.
+                    var fontSizePx = fittedFontSizePx(
+                        block.vertical ? height : width,
+                        block.vertical ? width : height,
+                        glyphCount(block.lines[i]),
+                    ) || (block.vertical ? width * 0.92 : height * 0.78);
                     lineEl.style.fontSize = Math.max(6, fontSizePx) + 'px';
                     lineEl.textContent = block.lines[i];
                     blockEl.appendChild(lineEl);
@@ -215,13 +280,16 @@
                 // each line: in a vertical-rl container, block-level children automatically stack
                 // as right-to-left columns using their own real rendered width, matching mokuro's
                 // own approach and manga's own reading order, with no subdivision guess involved.
-                var box = block.box;
                 blockEl.classList.add('hoshi-manga-block-flow');
-                blockEl.style.left = (box[0] * displayScale) + 'px';
-                blockEl.style.top = (box[1] * displayScale) + 'px';
-                blockEl.style.width = Math.max(1, (box[2] - box[0]) * displayScale) + 'px';
-                blockEl.style.height = Math.max(1, (box[3] - box[1]) * displayScale) + 'px';
-                blockEl.style.fontSize = blockFontSizePx(block, displayScale) + 'px';
+                // No per-line data here, so the box's long axis belongs to whichever line is
+                // longest, and its cross axis has to hold one column per line.
+                blockEl.style.fontSize = (
+                    fittedFontSizePx(
+                        block.vertical ? boxHeight : boxWidth,
+                        (block.vertical ? boxWidth : boxHeight) / Math.max(1, block.lines.length),
+                        longestLineGlyphCount(block.lines),
+                    ) || blockFontSizePx(block, displayScale)
+                ) + 'px';
                 for (var j = 0; j < block.lines.length; j++) {
                     var flowLineEl = document.createElement('span');
                     flowLineEl.className = 'hoshi-manga-line hoshi-manga-line-flow';
@@ -231,6 +299,119 @@
             }
             overlayEl.appendChild(blockEl);
         }
+    }
+
+    // The overlay's glyphs are synthesized, so they can never sit exactly on the printed ones.
+    // Rather than chase that, taps are made tolerant: a tap that misses every glyph but lands in
+    // (or just outside) an OCR block is retried against the visually nearest character in that
+    // block. The tolerance is in viewport CSS pixels, so it stays a constant physical slop
+    // regardless of how far the page is zoomed in -- it models the finger, not the artwork.
+    var SNAP_TOLERANCE_PX = 24;
+
+    function rectDistance(rect, x, y) {
+        var dx = Math.max(rect.left - x, 0, x - rect.right);
+        var dy = Math.max(rect.top - y, 0, y - rect.bottom);
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    // Index of the rect nearest (x, y), or -1 when even the nearest is further away than
+    // `tolerance`. Kept pure (rects in, index out) so the snapping decision is testable without a
+    // DOM; the callers below supply the rects.
+    function nearestRectIndex(rects, x, y, tolerance) {
+        var best = -1;
+        var bestDistance = Infinity;
+        for (var i = 0; i < rects.length; i++) {
+            var distance = rectDistance(rects[i], x, y);
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = i;
+            }
+            if (bestDistance === 0) break;
+        }
+        return bestDistance <= tolerance ? best : -1;
+    }
+
+    // Centre of the rect nearest (x, y) -- or null when (x, y) already lies *inside* one of them,
+    // which tells the caller the original hit test was accurate and that a miss therefore means
+    // something other than bad aim (see selectTextAt). Zero-area rects are skipped: a collapsed
+    // range (a line break, an empty text node) has no glyph to aim at.
+    function nearestRectCenter(rects, x, y) {
+        var best = null;
+        var bestDistance = Infinity;
+        for (var i = 0; i < rects.length; i++) {
+            var rect = rects[i];
+            if (!rect.width || !rect.height) continue;
+            var distance = rectDistance(rect, x, y);
+            if (distance === 0) return null;
+            if (distance < bestDistance) {
+                bestDistance = distance;
+                best = { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 };
+            }
+        }
+        return best;
+    }
+
+    function nearestBlockElement(x, y, tolerance) {
+        // The revealed block wins any tie with a neighbour whose box overlaps it: it is the one
+        // the reader can see, so it is the one they are aiming at.
+        if (activeBlockEl && activeBlockEl.isConnected &&
+            rectDistance(activeBlockEl.getBoundingClientRect(), x, y) === 0) {
+            return activeBlockEl;
+        }
+        var els = document.querySelectorAll('.hoshi-manga-block');
+        var rects = [];
+        for (var i = 0; i < els.length; i++) {
+            rects.push(els[i].getBoundingClientRect());
+        }
+        var index = nearestRectIndex(rects, x, y, tolerance);
+        return index < 0 ? null : els[index];
+    }
+
+    // Mokuro-style tap handling. The page shows clean artwork; the synthesized glyphs cannot line
+    // up with the printed ones, so a lookup straight off the invisible overlay picks a neighbouring
+    // character too often. Instead, a first tap on a block only reveals it as readable text, and
+    // lookups happen on that revealed text, where what the reader aims at is what gets hit.
+    //
+    //   'reveal'  -- single tap on a block that is not revealed: reveal it, look nothing up.
+    //   'select'  -- tap on the revealed block, or a double-tap (sentence) on any block: look up.
+    //                A sentence lookup is not precision-sensitive, so it needs no reveal first.
+    //   'dismiss' -- single tap clear of every block while one is revealed: just hide it.
+    //   'blank'   -- anything else clear of every block: the caller's blank-tap behaviour
+    //                (zoom reset / page turn / chrome), so double-tap page turns always work.
+    function blockTapAction(hitBlock, activeBlock, sentenceOnly) {
+        if (!hitBlock) return activeBlock && !sentenceOnly ? 'dismiss' : 'blank';
+        if (hitBlock === activeBlock || sentenceOnly) return 'select';
+        return 'reveal';
+    }
+
+    function setActiveBlock(blockEl) {
+        if (activeBlockEl === blockEl) return;
+        if (activeBlockEl) activeBlockEl.classList.remove('hoshi-manga-block-active');
+        activeBlockEl = blockEl;
+        if (blockEl) blockEl.classList.add('hoshi-manga-block-active');
+    }
+
+    function characterRects(blockEl) {
+        var walker = document.createTreeWalker(blockEl, NodeFilter.SHOW_TEXT, null);
+        var range = document.createRange();
+        var collected = [];
+        var node;
+        while ((node = walker.nextNode())) {
+            var text = node.textContent;
+            for (var i = 0; i < text.length;) {
+                // Step by code point so a surrogate pair is never split across two probes.
+                var code = text.charCodeAt(i);
+                var end = (code >= 0xd800 && code <= 0xdbff && i + 1 < text.length) ? i + 2 : i + 1;
+                range.setStart(node, i);
+                range.setEnd(node, end);
+                var rects = range.getClientRects();
+                for (var r = 0; r < rects.length; r++) {
+                    collected.push(rects[r]);
+                }
+                i = end;
+            }
+        }
+        return collected;
     }
 
     function applyTransform(settling) {
@@ -276,6 +457,8 @@
                 return img;
             });
             var commit = function () {
+                // Its element is about to be discarded by buildOverlay.
+                activeBlockEl = null;
                 var offsetX = 0;
                 for (var i = 0; i < n; i++) {
                     var slot = slots[i];
@@ -358,6 +541,40 @@
 
         isZoomed: function () {
             return state.scale > 1.001;
+        },
+
+        // The manga reader's entry point for taps, replacing a direct
+        // hoshiSelection.selectText() call; see blockTapAction for when a tap reveals a block
+        // versus looks text up. Return values, all consumed by Kotlin's MangaSelectionResult: the
+        // selected text on success; 'image'/'link' passed through from hoshiSelection;
+        // 'block-toggled' when the tap only revealed or hid a block; 'near-text' when the tap was
+        // on the revealed block but produced no new selection (a deliberate tap-again-to-dismiss,
+        // or glyphs that could not be resolved); and null only for a blank tap. Everything but
+        // null must NOT be treated as tapping blank art.
+        selectTextAt: function (x, y, maxLength, sentenceOnly) {
+            var selection = window.hoshiSelection;
+            if (!selection) return null;
+            var blockEl = nearestBlockElement(x, y, SNAP_TOLERANCE_PX);
+            var action = blockTapAction(blockEl, activeBlockEl, !!sentenceOnly);
+            if (action === 'blank') {
+                setActiveBlock(null);
+                return null;
+            }
+            if (action === 'dismiss') {
+                setActiveBlock(null);
+                return 'block-toggled';
+            }
+            setActiveBlock(blockEl);
+            if (action === 'reveal') return 'block-toggled';
+
+            var direct = selection.selectText(x, y, maxLength, x, y, !!sentenceOnly);
+            if (direct !== null && direct !== undefined) return direct;
+            var point = nearestRectCenter(characterRects(blockEl), x, y);
+            if (point) {
+                var snapped = selection.selectText(point.x, point.y, maxLength, point.x, point.y, !!sentenceOnly);
+                if (snapped !== null && snapped !== undefined) return snapped;
+            }
+            return 'near-text';
         },
     };
 })();

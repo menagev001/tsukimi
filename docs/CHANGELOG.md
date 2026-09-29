@@ -6,6 +6,14 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+### Added
+
+- Tap a speech bubble in the manga reader to reveal its recognised text over
+  the artwork, outlined with a thin dotted border, then tap the word you want to
+  look up in that text, so a lookup always lands on the character you aimed at.
+  Tapping another bubble moves the reveal there; tapping clear of every bubble
+  hides it again. Double-tapping a bubble still opens its sentence breakdown.
+
 ### Changed
 
 - Make "Explain Word" and "Sentence Breakdown" answers shorter and more
@@ -14,6 +22,20 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Fixed
 
+- Fix manga reader taps landing "just off" the printed text, and the end of a
+  line being untappable entirely. Each line's text is now sized so its character
+  count spans exactly the extent the OCR recorded for it, instead of being
+  derived from the OCR's own font-size estimate; taps also snap to the nearest
+  character in the OCR region they land in or beside, and the end of a long line
+  is no longer clipped out of the tappable area.
+- Fix the manga reader's selection box staying put when the page is zoomed or
+  panned, leaving it stranded beside the popup instead of on its word.
+- Show the manga reader's toolbar briefly when a volume is opened. It is
+  otherwise revealed only by tapping the middle third of the page, which is
+  easily mistaken for the page-turn zones on either side.
+- Fix a manga reader tap that missed the text -- or a second tap on an
+  already-open word -- zooming the page back out or turning the page. Only a tap
+  clear of every OCR region now does that.
 - Use the volume thumbnail bundled in a mokuro CBZ as the manga shelf cover,
   instead of the first page, which is often a two-page spread cropped down to
   its middle. Volumes without a bundled thumbnail keep the first page.
