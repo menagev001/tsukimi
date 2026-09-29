@@ -13,6 +13,12 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   look up in that text, so a lookup always lands on the character you aimed at.
   Tapping another bubble moves the reveal there; tapping clear of every bubble
   hides it again. Double-tapping a bubble still opens its sentence breakdown.
+- Add page-margin cropping to the manga reader (crop button in the toolbar),
+  on Auto by default: the white border around scanned pages is detected once
+  per volume and removed consistently on every page, so the art and text fill
+  more of the screen. Manual mode sets the top, bottom, left and right crop in
+  1% steps, starting from the detected values, and Off shows pages as scanned.
+  The choice applies to every volume in a series.
 
 ### Changed
 

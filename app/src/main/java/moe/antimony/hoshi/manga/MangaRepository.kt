@@ -50,6 +50,8 @@ class MangaRepository private constructor(
         ioDispatcher = ioDispatcher,
     )
 
+    private val autoCropDataSource = MangaAutoCropDataSource(ioDispatcher)
+
     val mangaDirectory: File get() = fileDataSource.mangaDirectory
 
     /** Self-contained CBZ: its `.mokuro` sidecar is bundled inside the archive itself. */
@@ -122,6 +124,10 @@ class MangaRepository private constructor(
         val file = fileDataSource.mokuroFile(volumeRoot) ?: return@withContext null
         runCatching { MokuroParser.parse(file) }.getOrNull()
     }
+
+    /** Detected once per volume and cached beside it; see [MangaAutoCropDataSource]. */
+    suspend fun loadOrDetectAutoCrop(volumeRoot: File, volume: MokuroVolume): MangaVolumeAutoCrop =
+        autoCropDataSource.loadOrDetect(volumeRoot, volume) { imgPath -> fileDataSource.pageFile(volumeRoot, imgPath) }
 
     suspend fun deleteVolume(volumeRoot: File) {
         fileDataSource.deleteVolume(volumeRoot)

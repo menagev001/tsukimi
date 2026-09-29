@@ -37,6 +37,57 @@
         };
     }
 
+    // Largest share of a page any one edge may hide, and the smallest share of each axis that
+    // must stay visible -- a malformed crop can shrink the page, never make it vanish.
+    var MAX_CROP_EDGE = 0.45;
+    var MIN_VISIBLE_FRACTION = 0.1;
+
+    // Crops arrive as fractions of the page image's own width (left/right) and height
+    // (top/bottom). Missing or invalid values mean "no crop" for that edge.
+    function normalizedCrop(crop) {
+        function edge(value) {
+            return typeof value === 'number' && isFinite(value) ? Math.min(MAX_CROP_EDGE, Math.max(0, value)) : 0;
+        }
+        var c = crop || {};
+        var left = edge(c.left), right = edge(c.right), top = edge(c.top), bottom = edge(c.bottom);
+        var horizontalExcess = left + right - (1 - MIN_VISIBLE_FRACTION);
+        if (horizontalExcess > 0) {
+            left -= horizontalExcess / 2;
+            right -= horizontalExcess / 2;
+        }
+        var verticalExcess = top + bottom - (1 - MIN_VISIBLE_FRACTION);
+        if (verticalExcess > 0) {
+            top -= verticalExcess / 2;
+            bottom -= verticalExcess / 2;
+        }
+        return { left: left, top: top, right: right, bottom: bottom };
+    }
+
+    // The part of a page that is fitted to the screen, in the page's natural pixels.
+    function croppedPageSize(page, crop) {
+        var c = normalizedCrop(crop);
+        return {
+            width: page.width * (1 - c.left - c.right),
+            height: page.height * (1 - c.top - c.bottom),
+        };
+    }
+
+    // Where the whole page image sits inside its (cropped, clipping) slot once the visible part
+    // is scaled by displayScale: the image and the OCR overlay keep full-page coordinates and are
+    // just shifted up/left, so cropping never changes any overlay geometry.
+    function pageCropLayout(page, crop, displayScale) {
+        var c = normalizedCrop(crop);
+        var visible = croppedPageSize(page, c);
+        return {
+            slotWidth: visible.width * displayScale,
+            slotHeight: visible.height * displayScale,
+            imageLeft: -c.left * page.width * displayScale,
+            imageTop: -c.top * page.height * displayScale,
+            imageWidth: page.width * displayScale,
+            imageHeight: page.height * displayScale,
+        };
+    }
+
     function fitDisplaySize(naturalWidth, naturalHeight, viewportWidth, viewportHeight) {
         var spread = fitSpreadDisplaySize([{ width: naturalWidth, height: naturalHeight }], viewportWidth, viewportHeight);
         return { width: spread.totalWidth, height: spread.totalHeight, scale: spread.scale };
@@ -96,6 +147,10 @@
     window.hoshiMangaGeometry = {
         fitDisplaySize: fitDisplaySize,
         fitSpreadDisplaySize: fitSpreadDisplaySize,
+        normalizedCrop: normalizedCrop,
+        croppedPageSize: croppedPageSize,
+        pageCropLayout: pageCropLayout,
+        visibleRect: visibleRect,
         axisAlignedBoxFromPoints: axisAlignedBoxFromPoints,
         lineRects: lineRects,
         blockFontSizePx: blockFontSizePx,
@@ -351,6 +406,18 @@
         return best;
     }
 
+    // The part of `rect` inside `clip`, or a rect infinitely far away when none of it is.
+    function visibleRect(rect, clip) {
+        var left = Math.max(rect.left, clip.left);
+        var top = Math.max(rect.top, clip.top);
+        var right = Math.min(rect.right, clip.right);
+        var bottom = Math.min(rect.bottom, clip.bottom);
+        if (right <= left || bottom <= top) {
+            return { left: Infinity, top: Infinity, right: Infinity, bottom: Infinity };
+        }
+        return { left: left, top: top, right: right, bottom: bottom };
+    }
+
     function nearestBlockElement(x, y, tolerance) {
         // The revealed block wins any tie with a neighbour whose box overlaps it: it is the one
         // the reader can see, so it is the one they are aiming at.
@@ -361,7 +428,11 @@
         var els = document.querySelectorAll('.hoshi-manga-block');
         var rects = [];
         for (var i = 0; i < els.length; i++) {
-            rects.push(els[i].getBoundingClientRect());
+            // A cropped-away block is clipped out of sight by its slot, so it must not win a snap
+            // either; one straddling the crop edge competes with only its visible part.
+            var slotEl = els[i].closest('.hoshi-manga-slot');
+            var rect = els[i].getBoundingClientRect();
+            rects.push(slotEl ? visibleRect(rect, slotEl.getBoundingClientRect()) : rect);
         }
         var index = nearestRectIndex(rects, x, y, tolerance);
         return index < 0 ? null : els[index];
@@ -431,14 +502,20 @@
         // pagesJson/imageUrls are arrays of 1 (single page) or 2 (spread) entries, already in
         // final left-to-right *visual* order -- the caller (Kotlin) resolves RTL reading-order
         // into display order once, so this stays a plain "lay these out left to right" renderer
-        // with no reading-direction logic of its own.
-        showPage: function (pageIndex, pagesJson, imageUrls) {
+        // with no reading-direction logic of its own. `crops` (optional, same order) hides page
+        // margins: only the cropped part of each page is fitted to the screen.
+        showPage: function (pageIndex, pagesJson, imageUrls, crops) {
             ensureDom();
             var pages = Array.isArray(pagesJson) ? pagesJson : [pagesJson];
             var urls = Array.isArray(imageUrls) ? imageUrls : [imageUrls];
             var n = Math.min(pages.length, MAX_SLOTS);
+            var pageCrops = pages.slice(0, n).map(function (p, i) {
+                return normalizedCrop(Array.isArray(crops) ? crops[i] : null);
+            });
             var fit = fitSpreadDisplaySize(
-                pages.slice(0, n).map(function (p) { return { width: p.img_width, height: p.img_height }; }),
+                pages.slice(0, n).map(function (p, i) {
+                    return croppedPageSize({ width: p.img_width, height: p.img_height }, pageCrops[i]);
+                }),
                 window.innerWidth,
                 window.innerHeight,
             );
@@ -462,17 +539,24 @@
                 var offsetX = 0;
                 for (var i = 0; i < n; i++) {
                     var slot = slots[i];
-                    var width = fit.widths[i];
-                    var height = fit.heights[i];
+                    var layout = pageCropLayout(
+                        { width: pages[i].img_width, height: pages[i].img_height },
+                        pageCrops[i],
+                        fit.scales[i],
+                    );
                     slot.el.style.display = '';
                     slot.el.style.left = offsetX + 'px';
-                    slot.imageEl.style.width = width + 'px';
-                    slot.imageEl.style.height = height + 'px';
-                    slot.overlayEl.style.width = width + 'px';
-                    slot.overlayEl.style.height = height + 'px';
+                    slot.el.style.width = layout.slotWidth + 'px';
+                    slot.el.style.height = layout.slotHeight + 'px';
+                    [slot.imageEl, slot.overlayEl].forEach(function (el) {
+                        el.style.left = layout.imageLeft + 'px';
+                        el.style.top = layout.imageTop + 'px';
+                        el.style.width = layout.imageWidth + 'px';
+                        el.style.height = layout.imageHeight + 'px';
+                    });
                     slot.imageEl.src = urls[i];
                     buildOverlay(slot.overlayEl, pages[i], fit.scales[i]);
-                    offsetX += width;
+                    offsetX += layout.slotWidth;
                 }
                 for (var j = n; j < slots.length; j++) {
                     slots[j].el.style.display = 'none';

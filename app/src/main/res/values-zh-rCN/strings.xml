@@ -58,6 +58,24 @@
     <string name="manga_shelf_import_folder_empty">在该文件夹中未找到 .cbz 或 .mokuro 文件。</string>
     <string name="manga_shelf_import_cbz">导入 CBZ</string>
     <string name="manga_shelf_import_folder" comment="Intentionally matching the novels shelf's own bookshelf_import_folder label.">导入文件夹</string>
+    <string name="manga_crop_action">裁剪页边</string>
+    <string name="manga_crop_title">裁剪页边</string>
+    <string name="manga_crop_mode_off" comment="Manga crop mode segment label; intentionally matches other off labels.">关闭</string>
+    <string name="manga_crop_mode_auto" comment="Manga crop mode segment label; intentionally matches other Auto labels.">自动</string>
+    <string name="manga_crop_mode_manual" comment="Manga crop mode segment label; intentionally matches other Manual labels.">手动</string>
+    <string name="manga_crop_off_description">按扫描原样显示页面。</string>
+    <string name="manga_crop_auto_description">去除本卷中检测到的白边。</string>
+    <string name="manga_crop_auto_detecting">正在检测页边…</string>
+    <string name="manga_crop_manual_description">所有页面使用相同的裁剪。</string>
+    <string name="manga_crop_edge_top" comment="Manga crop edge label; intentionally matches other Top labels.">上</string>
+    <string name="manga_crop_edge_bottom" comment="Manga crop edge label; intentionally matches other Bottom labels.">下</string>
+    <string name="manga_crop_edge_left">左</string>
+    <string name="manga_crop_edge_right">右</string>
+    <string name="manga_crop_percent" comment="Manga crop edge value; intentionally matches other whole-percent formats.">%1$d%%</string>
+    <string name="manga_crop_decrease">减少%1$s裁剪</string>
+    <string name="manga_crop_increase">增加%1$s裁剪</string>
+    <string name="manga_crop_reset">重置为检测值</string>
+    <string name="manga_crop_series_note">应用于本系列的所有卷。</string>
     <string name="manga_shelf_importing">正在导入漫画卷…</string>
     <string name="manga_shelf_empty_title">暂无漫画</string>
     <string name="manga_shelf_empty_body">导入 .cbz 文件（内含 .mokuro 附属文件），或包含它们的文件夹，即可开始。</string>
@@ -112,7 +130,7 @@
     <string name="statistics_duration_target_format">%1$s</string>
     <string name="statistics_characters_value_format" comment="Generic character metric value, intentionally matching daily character target value.">%1$s 字</string>
     <string name="statistics_speed_value_format">%1$s/h</string>
-    <string name="statistics_percent_format">%1$d%%</string>
+    <string name="statistics_percent_format" comment="Whole-percent format; intentionally matches the manga crop percent format.">%1$d%%</string>
     <string name="statistics_duration_minutes_format">%1$dm</string>
     <string name="statistics_duration_hours_format">%1$dh</string>
     <string name="statistics_duration_hours_minutes_format">%1$dh %2$dm</string>
@@ -457,8 +475,8 @@
     <string name="reader_appearance_always_show_progress">始终显示进度</string>
     <string name="reader_appearance_show_back_button">显示返回按钮</string>
     <string name="reader_appearance_progress_position">进度位置</string>
-    <string name="reader_appearance_progress_top">顶部</string>
-    <string name="reader_appearance_progress_bottom">底部</string>
+    <string name="reader_appearance_progress_top" comment="Progress position value; intentionally matches the manga crop Top edge label.">顶部</string>
+    <string name="reader_appearance_progress_bottom" comment="Progress position value; intentionally matches the manga crop Bottom edge label.">底部</string>
     <string name="reader_appearance_show_statistics_toggle">显示统计开关</string>
     <string name="reader_appearance_show_reading_speed">显示阅读速度</string>
     <string name="reader_appearance_show_reading_time">显示阅读时间</string>
@@ -491,8 +509,8 @@
     <string name="sync_clear_cache_confirmation">Hoshi 将清除已缓存的 Google Drive 文件夹 ID 和远程封面缩略图。本地书籍不会被删除。</string>
     <string name="sync_sign_out_title">退出 Google Drive？</string>
     <string name="sync_sign_out_confirmation">Hoshi 将断开 Google Drive 并清除已缓存的 Drive 文件夹。本地书籍不会被删除。</string>
-    <string name="sync_mode_auto">自动</string>
-    <string name="sync_mode_manual">手动</string>
+    <string name="sync_mode_auto" comment="Sync mode value; intentionally matches the manga crop Auto label.">自动</string>
+    <string name="sync_mode_manual" comment="Sync mode value; intentionally matches the manga crop Manual label.">手动</string>
     <string name="sync_google_drive" comment="Sync provider label, intentionally matching the bookshelf remote Google Drive section.">Google Drive</string>
     <string name="sync_device_client_id">设备客户端 ID</string>
     <string name="sync_device_client_secret">设备客户端密钥</string>

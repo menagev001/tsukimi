@@ -27,6 +27,8 @@ import moe.antimony.hoshi.features.bookshelf.BookshelfSettingsRepository
 import moe.antimony.hoshi.features.bookshelf.bookshelfSettingsRepository
 import moe.antimony.hoshi.features.dictionary.DictionarySettingsRepository
 import moe.antimony.hoshi.features.dictionary.dictionarySettingsRepository
+import moe.antimony.hoshi.features.manga.MangaCropSettingsRepository
+import moe.antimony.hoshi.features.manga.mangaCropSettingsRepository
 import moe.antimony.hoshi.features.reader.ReaderSettingsRepository
 import moe.antimony.hoshi.features.reader.readerSettingsRepository
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettingsRepository
@@ -137,6 +139,11 @@ internal object HoshiAppModule {
     @Singleton
     fun provideAiSettingsRepository(@ApplicationContext context: Context): AiSettingsRepository =
         context.aiSettingsRepository()
+
+    @Provides
+    @Singleton
+    fun provideMangaCropSettingsRepository(@ApplicationContext context: Context): MangaCropSettingsRepository =
+        context.mangaCropSettingsRepository()
 
     @Provides
     fun provideAiTransport(): AiTransport = HttpAiTransport()

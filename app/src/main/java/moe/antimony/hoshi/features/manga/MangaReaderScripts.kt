@@ -2,6 +2,7 @@ package moe.antimony.hoshi.features.manga
 
 import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.features.reader.readerJavaScriptStringLiteral
+import moe.antimony.hoshi.manga.MangaPageCrop
 
 /**
  * Builds the manga reader bootstrap script, mirroring the shape of
@@ -69,15 +70,27 @@ internal fun mangaReaderSetupScript(
  * chapter, not the whole book. `pagesJson`/`imageUrls` must already be in final left-to-right
  * *visual* order (the caller resolves RTL reading order into display order before calling this).
  */
-internal fun mangaShowPageScript(pageIndex: Int, pagesJson: List<String>, imageUrls: List<String>): String {
+internal fun mangaShowPageScript(
+    pageIndex: Int,
+    pagesJson: List<String>,
+    imageUrls: List<String>,
+    crops: List<MangaPageCrop> = emptyList(),
+): String {
     val pagesArrayLiteral = pagesJson.joinToString(prefix = "[", postfix = "]")
     val urlsArrayLiteral = imageUrls.joinToString(prefix = "[", postfix = "]") { readerJavaScriptStringLiteral(it) }
+    val cropsArrayLiteral = crops.joinToString(prefix = "[", postfix = "]") { crop ->
+        "{left:${crop.left.jsNumber()},top:${crop.top.jsNumber()},right:${crop.right.jsNumber()},bottom:${crop.bottom.jsNumber()}}"
+    }
     return """
         (function() {
-          window.hoshiManga && window.hoshiManga.showPage($pageIndex, $pagesArrayLiteral, $urlsArrayLiteral);
+          window.hoshiManga && window.hoshiManga.showPage($pageIndex, $pagesArrayLiteral, $urlsArrayLiteral, $cropsArrayLiteral);
         })();
     """.trimIndent()
 }
+
+// NaN/Infinity would print as bare identifiers; reader-manga.js treats 0 as "no crop" anyway.
+private fun Float.jsNumber(): String = if (isFinite()) toString() else "0"
+
 
 /**
  * Tap entry point for the manga reader. Unlike the EPUB reader's direct `hoshiSelection.selectText`

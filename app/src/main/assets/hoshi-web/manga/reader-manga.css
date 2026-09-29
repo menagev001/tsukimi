@@ -45,13 +45,18 @@ html[data-hoshi-reader-eink-mode="true"] .hoshi-manga-page {
 }
 
 /* One slot per potential spread page (up to 2); positioned side by side via `left` set in JS.
-   Absolute so each slot's own image + overlay lay out independent of the others' actual size. */
+   Absolute so each slot's own image + overlay lay out independent of the others' actual size.
+   Sized to the page's *cropped* area, with the full-size image and overlay shifted inside it (see
+   pageCropLayout in reader-manga.js), so `overflow: hidden` is what hides the cropped margins --
+   including while zoomed or panned. */
 .hoshi-manga-slot {
     position: absolute;
     top: 0;
+    overflow: hidden;
 }
 
 .hoshi-manga-page-image {
+    position: absolute;
     display: block;
     pointer-events: none;
     -webkit-user-select: none;

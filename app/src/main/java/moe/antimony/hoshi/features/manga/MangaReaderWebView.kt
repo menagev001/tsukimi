@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Crop
 import androidx.compose.material.icons.rounded.Tune
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -106,6 +107,7 @@ import moe.antimony.hoshi.features.reader.ReaderHardwareKeyAction
 import moe.antimony.hoshi.features.reader.ReaderNavigationDirection
 import moe.antimony.hoshi.features.reader.readerHardwareKeyEventForKeyEvent
 import moe.antimony.hoshi.features.sasayaki.SasayakiSettings
+import moe.antimony.hoshi.manga.MangaPageCrop
 import moe.antimony.hoshi.manga.MangaVolumeEntry
 import moe.antimony.hoshi.manga.MokuroPage
 import moe.antimony.hoshi.manga.MokuroVolume
@@ -223,6 +225,12 @@ internal fun MangaReaderWebView(
     val ankiUiState by ankiViewModel.uiState.collectAsStateWithLifecycle()
     val aiLookupViewModel: AiLookupViewModel = hiltViewModel()
     val aiLookupState by aiLookupViewModel.state.collectAsStateWithLifecycle()
+    val cropViewModel: MangaCropViewModel = hiltViewModel()
+    LaunchedEffect(volumeId) {
+        cropViewModel.bind(volumeEntry.root, mangaSeriesKey(volumeEntry.metadata), mokuroVolume)
+    }
+    val cropState by cropViewModel.uiState.collectAsStateWithLifecycle()
+    var showCropPanel by remember(volumeId) { mutableStateOf(false) }
 
     var dictionaryStyles by remember { mutableStateOf<Map<String, String>>(emptyMap()) }
     LaunchedEffect(dictionaryRepository) {
@@ -557,22 +565,37 @@ internal fun MangaReaderWebView(
     }
     val currentBootstrapScript = rememberUpdatedState(bootstrapScript)
 
-    fun showCurrentPage(view: WebView) {
+    // The crop each page of the shown group was last laid out with, so a crop-state change that
+    // doesn't affect the visible page (e.g. detection finishing while cropping is Off) doesn't
+    // needlessly re-render it -- a plain holder like zoomScale, not Compose state.
+    val lastShownCrops = remember(volumeId) { arrayOfNulls<Pair<Int, List<MangaPageCrop>>>(1) }
+
+    // `group` is in reading order (ascending page index). Kotlin resolves RTL into final
+    // left-to-right *visual* order here, once, so reader-manga.js's showPage stays a plain
+    // "lay these out left to right" renderer with no reading-direction concept of its own --
+    // for RTL, the earlier-read page displays on the right, i.e. visual order is reversed.
+    fun currentGroupVisualOrder(): List<Int>? {
         val groupIndex = mangaSpreadGroupIndexForPage(spreadGroups, currentPageIndex)
-        val group = spreadGroups.getOrNull(groupIndex) ?: return
-        // `group` is in reading order (ascending page index). Kotlin resolves RTL into final
-        // left-to-right *visual* order here, once, so reader-manga.js's showPage stays a plain
-        // "lay these out left to right" renderer with no reading-direction concept of its own --
-        // for RTL, the earlier-read page displays on the right, i.e. visual order is reversed.
-        val rtl = mangaReadingDirectionRtlDefault()
-        val visualOrder = if (rtl) group.reversed() else group
+        val group = spreadGroups.getOrNull(groupIndex) ?: return null
+        return if (mangaReadingDirectionRtlDefault()) group.reversed() else group
+    }
+
+    fun currentGroupCrops(visualOrder: List<Int>): List<MangaPageCrop> = visualOrder.map { index ->
+        val page = mokuroVolume.pages[index]
+        cropState.cropForPage(index, isWide = page.imgWidth > page.imgHeight)
+    }
+
+    fun showCurrentPage(view: WebView) {
+        val visualOrder = currentGroupVisualOrder() ?: return
         val pages = visualOrder.map { mokuroVolume.pages[it] }
         val pagesJson = pages.map { Json.encodeToString(MokuroPage.serializer(), it) }
         val imageUrls = pages.map { page ->
             "https://appassets.androidplatform.net/manga/pages/" +
                 page.imgPath.split('/').joinToString("/") { java.net.URLEncoder.encode(it, "UTF-8") }
         }
-        view.evaluateJavascript(mangaShowPageScript(currentPageIndex, pagesJson, imageUrls), null)
+        val crops = currentGroupCrops(visualOrder)
+        lastShownCrops[0] = currentPageIndex to crops
+        view.evaluateJavascript(mangaShowPageScript(currentPageIndex, pagesJson, imageUrls, crops), null)
     }
 
     /**
@@ -659,6 +682,18 @@ internal fun MangaReaderWebView(
         val snapped = spreadGroups.getOrNull(groupIndex)?.firstOrNull() ?: currentPageIndex
         if (snapped != currentPageIndex) currentPageIndex = snapped
         webView?.let(::showCurrentPage)
+    }
+
+    // Re-lays out the visible page in place when its crop changes: a mode switch, a manual step,
+    // or Auto detection finishing after the page was first shown uncropped.
+    LaunchedEffect(cropState) {
+        val view = webView ?: return@LaunchedEffect
+        val visualOrder = currentGroupVisualOrder() ?: return@LaunchedEffect
+        if (lastShownCrops[0] == (currentPageIndex to currentGroupCrops(visualOrder))) return@LaunchedEffect
+        zoomScale[0] = 1f
+        // The overlay is rebuilt, so an open lookup's highlight would point at stale elements.
+        dismissRootLookupPopup()
+        showCurrentPage(view)
     }
 
     // Reuses EPUB's exact hardware-key logic (readerHardwareKeyEventForKeyEvent) rather than
@@ -910,17 +945,40 @@ internal fun MangaReaderWebView(
                     tint = Color.White,
                 )
             }
-            IconButton(
-                onClick = { showAppearance = true },
-                modifier = Modifier.background(Color.Black.copy(alpha = 0.35f), CircleShape),
-            ) {
-                Icon(
-                    imageVector = Icons.Rounded.Tune,
-                    contentDescription = stringResource(R.string.reader_menu),
-                    tint = Color.White,
-                )
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                IconButton(
+                    onClick = { showCropPanel = true },
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.35f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Crop,
+                        contentDescription = stringResource(R.string.manga_crop_action),
+                        tint = Color.White,
+                    )
+                }
+                IconButton(
+                    onClick = { showAppearance = true },
+                    modifier = Modifier.background(Color.Black.copy(alpha = 0.35f), CircleShape),
+                ) {
+                    Icon(
+                        imageVector = Icons.Rounded.Tune,
+                        contentDescription = stringResource(R.string.reader_menu),
+                        tint = Color.White,
+                    )
+                }
             }
         }
+    }
+
+    if (showCropPanel) {
+        MangaCropPanel(
+            state = cropState,
+            onModeChange = cropViewModel::setMode,
+            onAdjust = cropViewModel::adjust,
+            onResetToDetected = cropViewModel::resetManualToDetected,
+            onDismiss = { showCropPanel = false },
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
     }
 
     if (eInkMode) {

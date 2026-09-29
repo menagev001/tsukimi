@@ -1,6 +1,7 @@
 package moe.antimony.hoshi.features.manga
 
 import moe.antimony.hoshi.manga.MangaVolumeEntry
+import moe.antimony.hoshi.manga.MangaVolumeMetadata
 
 /**
  * One shelf grid entry: either a single ungrouped volume ([seriesKey] null, matching today's
@@ -23,12 +24,17 @@ internal data class MangaSeriesGroup(
 internal fun groupMangaVolumesBySeries(volumes: List<MangaVolumeEntry>): List<MangaSeriesGroup> {
     val byKey = linkedMapOf<String, MutableList<MangaVolumeEntry>>()
     for (entry in volumes) {
-        // Volumes lacking a series title (not yet re-imported since this field was added, or a
-        // genuine one-shot) key off their own id so they never accidentally group with anything.
-        val key = entry.metadata.seriesTitle?.takeIf { it.isNotBlank() } ?: "single:${entry.metadata.id}"
-        byKey.getOrPut(key) { mutableListOf() }.add(entry)
+        byKey.getOrPut(mangaSeriesKey(entry.metadata)) { mutableListOf() }.add(entry)
     }
     return byKey.map { (key, members) ->
         MangaSeriesGroup(seriesKey = if (members.size > 1) key else null, volumes = members)
     }
 }
+
+/**
+ * Identifies the series a volume belongs to, for grouping and for per-series reader settings.
+ * Volumes lacking a series title (not yet re-imported since this field was added, or a genuine
+ * one-shot) key off their own id so they never accidentally group with anything.
+ */
+internal fun mangaSeriesKey(metadata: MangaVolumeMetadata): String =
+    metadata.seriesTitle?.takeIf { it.isNotBlank() } ?: "single:${metadata.id}"

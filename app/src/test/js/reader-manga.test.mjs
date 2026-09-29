@@ -392,3 +392,63 @@ test('blockTapAction keeps double-tap sentence lookup and page turns independent
     assert.equal(tap.blockTapAction(a, {}, true), 'select');
     assert.equal(tap.blockTapAction(null, a, true), 'blank');
 });
+
+test('normalizedCrop treats missing or invalid edges as uncropped', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.deepEqual(plain(geometry.normalizedCrop(null)), { left: 0, top: 0, right: 0, bottom: 0 });
+    assert.deepEqual(
+        plain(geometry.normalizedCrop({ left: 0.1, top: 'x', right: -0.2, bottom: NaN })),
+        { left: 0.1, top: 0, right: 0, bottom: 0 },
+    );
+});
+
+test('normalizedCrop always leaves part of the page visible', () => {
+    const geometry = loadMangaGeometry();
+
+    const crop = geometry.normalizedCrop({ left: 0.45, top: 0.9, right: 0.45, bottom: 0.45 });
+
+    assert.ok(1 - crop.left - crop.right >= 0.1 - 1e-9);
+    assert.ok(1 - crop.top - crop.bottom >= 0.1 - 1e-9);
+    assert.ok(Math.abs(crop.left - crop.right) < 1e-9);
+});
+
+test('a cropped page is fitted larger than the same page uncropped', () => {
+    const geometry = loadMangaGeometry();
+    const page = { width: 869, height: 1240 };
+    const crop = { left: 0.08, top: 0.06, right: 0.1, bottom: 0.07 };
+
+    const uncropped = geometry.fitSpreadDisplaySize([page], 1264, 1680);
+    const cropped = geometry.fitSpreadDisplaySize([geometry.croppedPageSize(page, crop)], 1264, 1680);
+
+    assert.ok(cropped.scale > uncropped.scale);
+    assert.ok(cropped.totalHeight <= 1680 + 1e-9 && cropped.totalWidth <= 1264 + 1e-9);
+});
+
+test('pageCropLayout shifts the full page so the crop origin lands on the slot origin', () => {
+    const geometry = loadMangaGeometry();
+
+    const layout = geometry.pageCropLayout(
+        { width: 1000, height: 2000 },
+        { left: 0.1, top: 0.05, right: 0.2, bottom: 0.15 },
+        0.5,
+    );
+
+    assert.ok(Math.abs(layout.slotWidth - 1000 * 0.7 * 0.5) < 1e-9);
+    assert.ok(Math.abs(layout.slotHeight - 2000 * 0.8 * 0.5) < 1e-9);
+    assert.ok(Math.abs(layout.imageLeft - -50) < 1e-9);
+    assert.ok(Math.abs(layout.imageTop - -50) < 1e-9);
+    assert.equal(layout.imageWidth, 500);
+    assert.equal(layout.imageHeight, 1000);
+});
+
+test('visibleRect keeps only the part of a block inside its slot', () => {
+    const geometry = loadMangaGeometry();
+    const slot = { left: 0, top: 0, right: 100, bottom: 100 };
+
+    assert.deepEqual(
+        plain(geometry.visibleRect({ left: 80, top: 10, right: 120, bottom: 30 }, slot)),
+        { left: 80, top: 10, right: 100, bottom: 30 },
+    );
+    assert.equal(geometry.visibleRect({ left: 110, top: 10, right: 130, bottom: 30 }, slot).left, Infinity);
+});
