@@ -6,6 +6,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+## [v1.5.0] - 2026-09-29
+
 ### Added
 
 - Tap a speech bubble in the manga reader to reveal its recognised text over
