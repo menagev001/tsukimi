@@ -14,3 +14,6 @@ local.properties
 .claude/
 /.superpowers/
 /docs/superpowers/
+
+# Local manga test volumes
+example/
