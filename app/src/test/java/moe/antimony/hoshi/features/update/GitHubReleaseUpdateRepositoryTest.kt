@@ -12,12 +12,12 @@ class GitHubReleaseUpdateRepositoryTest {
             """
             {
               "tag_name": "v0.3.5",
-              "html_url": "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/tag/v0.3.5",
+              "html_url": "https://github.com/menagev001/tsukimi/releases/tag/v0.3.5",
               "assets": [
                 {
-                  "name": "Hoshi-Reader-v0.3.5.apk",
+                  "name": "Tsukimi-v0.3.5.apk",
                   "digest": "sha256:7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b",
-                  "browser_download_url": "https://example.com/Hoshi-Reader-v0.3.5.apk"
+                  "browser_download_url": "https://example.com/Tsukimi-v0.3.5.apk"
                 },
                 {
                   "name": "LICENSE",
@@ -32,8 +32,8 @@ class GitHubReleaseUpdateRepositoryTest {
 
         requireNotNull(update)
         assertEquals("0.3.5", update.versionName)
-        assertEquals("Hoshi-Reader-v0.3.5.apk", update.assetName)
-        assertEquals("https://example.com/Hoshi-Reader-v0.3.5.apk", update.downloadUrl)
+        assertEquals("Tsukimi-v0.3.5.apk", update.assetName)
+        assertEquals("https://example.com/Tsukimi-v0.3.5.apk", update.downloadUrl)
         assertEquals("7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b", update.sha256)
     }
 
@@ -41,14 +41,14 @@ class GitHubReleaseUpdateRepositoryTest {
     fun fallsBackToMirroredLatestReleaseAndPrefersMirroredDownloads() = runBlocking {
         val client = FakeGitHubHttpClient(
             responses = mapOf(
-                "https://ghproxy.vip/https://api.github.com/repos/HuangAntimony/Hoshi-Reader-Android/releases/latest" to """
+                "https://ghproxy.vip/https://api.github.com/repos/menagev001/tsukimi/releases/latest" to """
                     {
                       "tag_name": "v0.3.5",
-                      "html_url": "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/tag/v0.3.5",
+                      "html_url": "https://github.com/menagev001/tsukimi/releases/tag/v0.3.5",
                       "assets": [
                         {
-                          "name": "Hoshi-Reader-v0.3.5.apk",
-                          "browser_download_url": "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk"
+                          "name": "Tsukimi-v0.3.5.apk",
+                          "browser_download_url": "https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk"
                         }
                       ]
                     }
@@ -65,15 +65,15 @@ class GitHubReleaseUpdateRepositoryTest {
         assertEquals(
             listOf(
                 GitHubReleaseUpdateRepository.LatestReleaseUrl,
-                "https://ghproxy.vip/https://api.github.com/repos/HuangAntimony/Hoshi-Reader-Android/releases/latest",
+                "https://ghproxy.vip/https://api.github.com/repos/menagev001/tsukimi/releases/latest",
             ),
             client.requestedUrls.take(2),
         )
         assertEquals(
-            "https://gh-proxy.com/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+            "https://gh-proxy.com/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             update.downloadUrl,
         )
-        assertTrue(update.fallbackDownloadUrls.contains("https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk"))
+        assertTrue(update.fallbackDownloadUrls.contains("https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk"))
     }
 
     @Test
@@ -83,11 +83,11 @@ class GitHubReleaseUpdateRepositoryTest {
                 GitHubReleaseUpdateRepository.LatestReleaseUrl to """
                     {
                       "tag_name": "v0.3.5",
-                      "html_url": "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/tag/v0.3.5",
+                      "html_url": "https://github.com/menagev001/tsukimi/releases/tag/v0.3.5",
                       "assets": [
                         {
-                          "name": "Hoshi-Reader-v0.3.5.apk",
-                          "browser_download_url": "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk"
+                          "name": "Tsukimi-v0.3.5.apk",
+                          "browser_download_url": "https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk"
                         }
                       ]
                     }
@@ -100,10 +100,10 @@ class GitHubReleaseUpdateRepositoryTest {
 
         requireNotNull(update)
         assertEquals(
-            "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+            "https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             update.downloadUrl,
         )
-        assertTrue(update.fallbackDownloadUrls.contains("https://gh-proxy.com/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk"))
+        assertTrue(update.fallbackDownloadUrls.contains("https://gh-proxy.com/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk"))
     }
 
     @Test
@@ -111,22 +111,22 @@ class GitHubReleaseUpdateRepositoryTest {
         val update = AvailableUpdate(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
-            downloadUrl = "https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
+            downloadUrl = "https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = listOf(
-                "https://gh-proxy.com/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
-                "https://gh.llkk.cc/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+                "https://gh-proxy.com/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
+                "https://gh.llkk.cc/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             ),
             sha256 = null,
         )
 
         assertEquals(update.downloadUrl, update.downloadUrlAfterFailed(null))
         assertEquals(
-            "https://gh-proxy.com/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+            "https://gh-proxy.com/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             update.downloadUrlAfterFailed(update.downloadUrl),
         )
         assertEquals(
-            "https://gh.llkk.cc/https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/download/v0.3.5/Hoshi-Reader-v0.3.5.apk",
+            "https://gh.llkk.cc/https://github.com/menagev001/tsukimi/releases/download/v0.3.5/Tsukimi-v0.3.5.apk",
             update.downloadUrlAfterFailed(update.fallbackDownloadUrls.first()),
         )
     }
@@ -161,8 +161,8 @@ class GitHubReleaseUpdateRepositoryTest {
         )
 
         requireNotNull(update)
-        assertEquals("Hoshi-Reader-v0.3.5-arm64-v8a.apk", update.assetName)
-        assertEquals("https://example.com/Hoshi-Reader-v0.3.5-arm64-v8a.apk", update.downloadUrl)
+        assertEquals("Tsukimi-v0.3.5-arm64-v8a.apk", update.assetName)
+        assertEquals("https://example.com/Tsukimi-v0.3.5-arm64-v8a.apk", update.downloadUrl)
     }
 
     @Test
@@ -175,7 +175,7 @@ class GitHubReleaseUpdateRepositoryTest {
         )
 
         requireNotNull(update)
-        assertEquals("Hoshi-Reader-v0.3.5-armeabi-v7a.apk", update.assetName)
+        assertEquals("Tsukimi-v0.3.5-armeabi-v7a.apk", update.assetName)
     }
 
     @Test
@@ -183,8 +183,8 @@ class GitHubReleaseUpdateRepositoryTest {
         val release = splitAbiRelease().copy(
             assets = listOf(
                 GitHubReleaseAsset(
-                    name = "Hoshi-Reader-v0.3.5.apk",
-                    browserDownloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+                    name = "Tsukimi-v0.3.5.apk",
+                    browserDownloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
                     digest = null,
                 ),
             ) + splitAbiRelease().assets,
@@ -196,7 +196,7 @@ class GitHubReleaseUpdateRepositoryTest {
         )
 
         requireNotNull(update)
-        assertEquals("Hoshi-Reader-v0.3.5-armeabi-v7a.apk", update.assetName)
+        assertEquals("Tsukimi-v0.3.5-armeabi-v7a.apk", update.assetName)
     }
 
     @Test
@@ -244,13 +244,13 @@ class GitHubReleaseUpdateRepositoryTest {
             htmlUrl = "https://example.com/releases/tag/v0.3.5",
             assets = listOf(
                 GitHubReleaseAsset(
-                    name = "Hoshi-Reader-v0.3.5-arm64-v8a.apk",
-                    browserDownloadUrl = "https://example.com/Hoshi-Reader-v0.3.5-arm64-v8a.apk",
+                    name = "Tsukimi-v0.3.5-arm64-v8a.apk",
+                    browserDownloadUrl = "https://example.com/Tsukimi-v0.3.5-arm64-v8a.apk",
                     digest = null,
                 ),
                 GitHubReleaseAsset(
-                    name = "Hoshi-Reader-v0.3.5-armeabi-v7a.apk",
-                    browserDownloadUrl = "https://example.com/Hoshi-Reader-v0.3.5-armeabi-v7a.apk",
+                    name = "Tsukimi-v0.3.5-armeabi-v7a.apk",
+                    browserDownloadUrl = "https://example.com/Tsukimi-v0.3.5-armeabi-v7a.apk",
                     digest = null,
                 ),
                 GitHubReleaseAsset(

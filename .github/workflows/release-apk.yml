@@ -250,7 +250,7 @@ jobs:
           PY
 
             apk_source="app/build/outputs/apk/release/app-release.apk"
-            apk_asset="Hoshi-Reader-${tag}-${abi}.apk"
+            apk_asset="Tsukimi-${tag}-${abi}.apk"
 
             if [[ ! -f "${apk_source}" ]]; then
               echo "Expected signed APK was not found at ${apk_source}" >&2

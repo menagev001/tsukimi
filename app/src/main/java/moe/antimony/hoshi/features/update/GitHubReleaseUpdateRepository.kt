@@ -75,7 +75,7 @@ internal fun GitHubRelease.availableUpdateOrNull(
 
     val normalizedVersion = releaseVersion.toString()
     val apkAssets = assets.filter { it.name.endsWith(".apk", ignoreCase = true) }
-    val expectedName = "Hoshi-Reader-v$normalizedVersion.apk"
+    val expectedName = "Tsukimi-v$normalizedVersion.apk"
     val selectedAsset = apkAssets.selectCompatibleAbiAsset(normalizedVersion, supportedAbis)
         ?: apkAssets.firstOrNull { it.name == expectedName }
         ?: apkAssets.singleOrNull()
@@ -94,7 +94,7 @@ private fun List<GitHubReleaseAsset>.selectCompatibleAbiAsset(
     normalizedVersion: String,
     supportedAbis: List<String>,
 ): GitHubReleaseAsset? {
-    val expectedPrefix = "Hoshi-Reader-v$normalizedVersion-"
+    val expectedPrefix = "Tsukimi-v$normalizedVersion-"
     val expectedSuffix = ".apk"
     val assetsByAbi = mapNotNull { asset ->
         val abi = asset.name
@@ -160,7 +160,7 @@ internal class GitHubReleaseUpdateRepository private constructor(
     override suspend fun latestRelease(): GitHubRelease {
         val headers = mapOf(
             "Accept" to "application/vnd.github+json",
-            "User-Agent" to "Hoshi-Reader-Android",
+            "User-Agent" to "Tsukimi",
         )
         var lastError: Throwable? = null
         latestReleaseCandidates().forEachIndexed { index, url ->
@@ -200,7 +200,7 @@ internal class GitHubReleaseUpdateRepository private constructor(
 
     companion object {
         const val LatestReleaseUrl =
-            "https://api.github.com/repos/HuangAntimony/Hoshi-Reader-Android/releases/latest"
+            "https://api.github.com/repos/menagev001/tsukimi/releases/latest"
     }
 }
 

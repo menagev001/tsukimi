@@ -56,7 +56,7 @@ import moe.antimony.hoshi.features.storage.StorageCleanupReport
 import java.io.File
 import java.util.Locale
 
-private const val GitHubRepositoryUrl = "https://github.com/HuangAntimony/Hoshi-Reader-Android"
+private const val GitHubRepositoryUrl = "https://github.com/menagev001/tsukimi"
 
 @Composable
 fun AboutScreen(
