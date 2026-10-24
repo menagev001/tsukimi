@@ -735,6 +735,10 @@
     <string name="watch_subtitle_size_medium">中</string>
     <string name="watch_subtitle_size_large">大</string>
     <string name="watch_subtitle_size_extra_large">特大</string>
+    <string name="watch_resume_after_lookup">查词后继续播放</string>
+    <string name="watch_resume_after_lookup_hint">点按单词会暂停视频，关闭弹窗后继续播放。</string>
+    <string name="watch_seek_back_format">−%1$d 秒</string>
+    <string name="watch_seek_forward_format">+%1$d 秒</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

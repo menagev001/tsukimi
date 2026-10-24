@@ -65,6 +65,12 @@ internal fun watchSubtitleSetupScript(
           });
           ${assets.watchSubtitlesJs}
           ${watchSubtitleConfigureCall(fontSizePx)}
+          if (!document.getElementById('hoshi-reader-popup-host-script')) {
+            var popupHostScript = document.createElement('script');
+            popupHostScript.id = 'hoshi-reader-popup-host-script';
+            popupHostScript.src = 'https://appassets.androidplatform.net/popup/reader-popup-host.js';
+            document.head.appendChild(popupHostScript);
+          }
         })();
     """.trimIndent()
 }
@@ -84,6 +90,12 @@ internal fun watchShowCuesScript(primary: List<String>, secondary: List<String>)
 
 internal fun watchBottomInsetScript(px: Float): String =
     "window.hoshiWatch && window.hoshiWatch.setBottomInset($px);"
+
+/** True when a [watchSelectTextScript] result means the tap selected no text. */
+internal fun watchSelectedNothing(result: String?): Boolean {
+    val value = result?.trim()
+    return value == null || value == "null" || value == "undefined" || value == "\"image\"" || value == "\"link\""
+}
 
 internal fun watchSelectTextScript(x: Float, y: Float, maxLength: Int, sentenceOnly: Boolean): String =
     "window.hoshiWatch ? window.hoshiWatch.selectTextAt($x, $y, $maxLength, $sentenceOnly) : null"

@@ -81,6 +81,10 @@ internal class WatchSettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.updateSubtitleSize(value) }
     }
 
+    fun updateResumeAfterLookup(value: Boolean) {
+        viewModelScope.launch { preferencesRepository.updateResumeAfterLookup(value) }
+    }
+
     fun clearError() {
         transientState.update { it.copy(errorMessage = null) }
     }

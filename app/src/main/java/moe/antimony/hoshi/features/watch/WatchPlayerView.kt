@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.rounded.Add
@@ -53,6 +54,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -82,10 +84,17 @@ import java.math.RoundingMode
 import java.util.Locale
 import kotlinx.coroutines.delay
 import moe.antimony.hoshi.R
+import moe.antimony.hoshi.content.ContentLanguageProfile
+import moe.antimony.hoshi.features.ai.AiLookupState
+import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
+import moe.antimony.hoshi.features.reader.ReaderSettings
+import moe.antimony.hoshi.features.reader.rememberLookupPopupHost
 
 private const val ControlsAutoHideMs = 3_000L
 private const val ProgressTickMs = 500L
 private const val SubtitleOffsetStepMs = 100L
+private const val SeekStepMs = 10_000L
+private const val SeekFlashMs = 700L
 private const val SubtitleVideoMarginFraction = 0.06f
 private const val SubtitleInsetWithControlsDp = 120f
 private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f)
@@ -95,6 +104,7 @@ private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f
 internal fun WatchPlayerView(
     itemId: String,
     title: String,
+    readerSettings: ReaderSettings,
     onClose: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -107,8 +117,32 @@ internal fun WatchPlayerView(
     val isPlaying = !playPauseState.showPlay
     var controlsVisible by remember { mutableStateOf(true) }
     var interactionCount by remember { mutableIntStateOf(0) }
+    var seekFlash by remember { mutableStateOf<WatchSeekFlash?>(null) }
+    val currentLines by rememberUpdatedState(uiState.subtitles.primaryLines)
+    val popupHost = rememberLookupPopupHost(
+        readerSettings = readerSettings,
+        darkInterface = true,
+        eInkMode = false,
+        contentLanguageProfile = ContentLanguageProfile.Japanese,
+        documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
+        rootPopupVertical = false,
+        transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines) },
+    )
+    val aiLookupState by popupHost.aiLookupViewModel.state.collectAsStateWithLifecycle()
+    val lookupActive = popupHost.isOpen || aiLookupState != AiLookupState.Hidden
+    LaunchedEffect(lookupActive) {
+        viewModel.onLookupActiveChanged(lookupActive)
+        if (lookupActive) controlsVisible = false
+    }
+    LaunchedEffect(seekFlash) {
+        if (seekFlash != null) {
+            delay(SeekFlashMs)
+            seekFlash = null
+        }
+    }
 
     BackHandler(onBack = onClose)
+    BackHandler(enabled = popupHost.isOpen, onBack = popupHost::dismiss)
     ImmersiveSystemBars()
     KeepScreenOn(isPlaying)
     LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
@@ -132,6 +166,7 @@ internal fun WatchPlayerView(
                 ?.let { it.width / it.height }
             ContentFrame(player = player, modifier = Modifier.fillMaxSize())
             WatchSubtitleOverlay(
+                popupHost = popupHost,
                 primaryLines = uiState.subtitles.primaryLines,
                 fontSizePx = uiState.subtitles.fontSizePx,
                 bottomInset = subtitleBottomInsetDp(
@@ -141,6 +176,10 @@ internal fun WatchPlayerView(
                     controlsVisible = controlsVisible,
                 ).dp,
                 onBlankTap = { controlsVisible = !controlsVisible },
+                onSideDoubleTap = { forward ->
+                    viewModel.seekBy(if (forward) SeekStepMs else -SeekStepMs)
+                    seekFlash = seekFlash.next(forward)
+                },
             )
 
             when (val source = uiState.source) {
@@ -157,6 +196,10 @@ internal fun WatchPlayerView(
                     )
                     uiState.isBuffering -> CircularProgressIndicator(Modifier.align(Alignment.Center))
                 }
+            }
+
+            seekFlash?.let { flash ->
+                WatchSeekFlashBadge(flash, Modifier.align(if (flash.forward) Alignment.CenterEnd else Alignment.CenterStart))
             }
 
             val ready = uiState.source as? WatchLoadState.Ready
@@ -184,7 +227,48 @@ internal fun WatchPlayerView(
                     onClose = onClose,
                 )
             }
+
+            LookupPopupHostLayers(
+                host = popupHost,
+                viewportWidthDp = maxWidth.value.toDouble(),
+                viewportHeightDp = maxHeight.value.toDouble(),
+                darkInterface = true,
+                eInkMode = false,
+                verticalWriting = false,
+            )
         }
+    }
+}
+
+/** The "−10 s" / "+10 s" badge after a side double tap; repeated taps on one side add up. */
+internal data class WatchSeekFlash(val forward: Boolean, val seconds: Int)
+
+private fun WatchSeekFlash?.next(forward: Boolean): WatchSeekFlash {
+    val stepSeconds = (SeekStepMs / 1000).toInt()
+    return if (this != null && this.forward == forward) {
+        copy(seconds = seconds + stepSeconds)
+    } else {
+        WatchSeekFlash(forward = forward, seconds = stepSeconds)
+    }
+}
+
+@Composable
+private fun WatchSeekFlashBadge(flash: WatchSeekFlash, modifier: Modifier = Modifier) {
+    Box(
+        contentAlignment = Alignment.Center,
+        modifier = modifier
+            .padding(horizontal = 48.dp)
+            .size(112.dp)
+            .background(Color.Black.copy(alpha = 0.45f), CircleShape),
+    ) {
+        Text(
+            text = stringResource(
+                if (flash.forward) R.string.watch_seek_forward_format else R.string.watch_seek_back_format,
+                flash.seconds,
+            ),
+            style = MaterialTheme.typography.titleLarge,
+            color = Color.White,
+        )
     }
 }
 

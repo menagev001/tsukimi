@@ -27,6 +27,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -94,6 +95,7 @@ fun WatchSettingsView(
                         onMeteredQualityChange = viewModel::updateMeteredQuality,
                         onAudioLanguageChange = viewModel::updateAudioLanguage,
                         onSubtitleSizeChange = viewModel::updateSubtitleSize,
+                        onResumeAfterLookupChange = viewModel::updateResumeAfterLookup,
                     )
                 }
             }
@@ -231,6 +233,7 @@ private fun WatchPlaybackCard(
     onMeteredQualityChange: (WatchStreamingQuality) -> Unit,
     onAudioLanguageChange: (WatchAudioLanguage) -> Unit,
     onSubtitleSizeChange: (WatchSubtitleSize) -> Unit,
+    onResumeAfterLookupChange: (Boolean) -> Unit,
 ) {
     WatchSettingsCard {
         Text(
@@ -252,6 +255,15 @@ private fun WatchPlaybackCard(
             selected = preferences.subtitleSize,
             label = { stringResource(it.labelRes) },
             onSelect = onSubtitleSizeChange,
+        )
+        HorizontalDivider()
+        ListItem(
+            colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+            headlineContent = { Text(stringResource(R.string.watch_resume_after_lookup)) },
+            supportingContent = { Text(stringResource(R.string.watch_resume_after_lookup_hint)) },
+            trailingContent = {
+                Switch(checked = preferences.resumeAfterLookup, onCheckedChange = onResumeAfterLookupChange)
+            },
         )
         HorizontalDivider()
         WatchChoiceRow(

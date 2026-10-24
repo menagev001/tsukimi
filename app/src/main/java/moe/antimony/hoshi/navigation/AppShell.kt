@@ -363,6 +363,7 @@ fun AppShell(
                 is AppRoute.WatchPlayerRoute -> WatchPlayerView(
                     itemId = route.itemId,
                     title = route.title,
+                    readerSettings = currentReaderSettings,
                     onClose = ::popRoute,
                     modifier = Modifier.fillMaxSize(),
                 )

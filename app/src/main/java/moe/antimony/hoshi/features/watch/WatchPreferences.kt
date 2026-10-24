@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
@@ -49,6 +50,8 @@ data class WatchPreferences(
     val meteredQuality: WatchStreamingQuality = WatchStreamingQuality.Original,
     val audioLanguage: WatchAudioLanguage = WatchAudioLanguage.Japanese,
     val subtitleSize: WatchSubtitleSize = WatchSubtitleSize.Medium,
+    /** Continue playback when the lookup popup closes; otherwise stay paused. */
+    val resumeAfterLookup: Boolean = true,
 )
 
 internal const val OriginalQualityBitrate = 120_000_000
@@ -66,6 +69,7 @@ class WatchPreferencesRepository(
             meteredQuality = enumOrDefault(preferences[KEY_METERED_QUALITY], WatchStreamingQuality.Original),
             audioLanguage = enumOrDefault(preferences[KEY_AUDIO_LANGUAGE], WatchAudioLanguage.Japanese),
             subtitleSize = enumOrDefault(preferences[KEY_SUBTITLE_SIZE], WatchSubtitleSize.Medium),
+            resumeAfterLookup = preferences[KEY_RESUME_AFTER_LOOKUP] ?: true,
         )
     }
 
@@ -85,6 +89,10 @@ class WatchPreferencesRepository(
         dataStore.edit { it[KEY_SUBTITLE_SIZE] = value.name }
     }
 
+    suspend fun updateResumeAfterLookup(value: Boolean) {
+        dataStore.edit { it[KEY_RESUME_AFTER_LOOKUP] = value }
+    }
+
     suspend fun updateSubtitleOffsetMs(itemId: String, offsetMs: Long) {
         dataStore.edit {
             if (offsetMs == 0L) it.remove(subtitleOffsetKey(itemId)) else it[subtitleOffsetKey(itemId)] = offsetMs
@@ -95,6 +103,7 @@ class WatchPreferencesRepository(
         val KEY_METERED_QUALITY = stringPreferencesKey("meteredQuality")
         val KEY_AUDIO_LANGUAGE = stringPreferencesKey("audioLanguage")
         val KEY_SUBTITLE_SIZE = stringPreferencesKey("subtitleSize")
+        val KEY_RESUME_AFTER_LOOKUP = booleanPreferencesKey("resumeAfterLookup")
 
         fun subtitleOffsetKey(itemId: String) = longPreferencesKey("subtitleOffset.$itemId")
     }

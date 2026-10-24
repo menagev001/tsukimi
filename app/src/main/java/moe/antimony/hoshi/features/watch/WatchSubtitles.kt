@@ -1,5 +1,7 @@
 package moe.antimony.hoshi.features.watch
 
+import moe.antimony.hoshi.features.reader.ReaderSelectionData
+
 /** One subtitle line with its display time. [text] may contain line breaks. */
 data class WatchSubtitleCue(
     val startMs: Long,
@@ -166,3 +168,18 @@ internal fun looksJapanese(cues: List<WatchSubtitleCue>): Boolean {
 
 private const val KanaSampleCues = 60
 private const val MinKanaShare = 0.2
+
+/**
+ * Uses the whole subtitle line that contains the selection as its sentence, as Watch mode looks
+ * words up per line rather than per sentence. Display line breaks are removed and the word's
+ * offset into the sentence follows the change, so cards still mark the right word.
+ */
+internal fun withSubtitleLineSentence(selection: ReaderSelectionData, lines: List<String>): ReaderSelectionData {
+    val line = lines.firstOrNull { selection.sentence.isNotEmpty() && it.contains(selection.sentence) } ?: return selection
+    val sentenceStart = line.indexOf(selection.sentence)
+    val offsetInLine = selection.sentenceOffset?.let { (sentenceStart + it).coerceIn(0, line.length) }
+    return selection.copy(
+        sentence = line.replace("\n", ""),
+        sentenceOffset = offsetInLine?.let { offset -> offset - line.substring(0, offset).count { it == '\n' } },
+    )
+}

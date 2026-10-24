@@ -78,6 +78,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private var isReporting = false
 
     private var primaryCues: List<WatchSubtitleCue> = emptyList()
+    private var resumeAfterLookup = true
+    private var pausedForLookup = false
     private var subtitlesLoadedFor: String? = null
 
     val player: ExoPlayer = ExoPlayer.Builder(context)
@@ -150,6 +152,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         }
         viewModelScope.launch {
             preferencesRepository.preferences.collect { preferences ->
+                resumeAfterLookup = preferences.resumeAfterLookup
                 updateSubtitles { it.copy(fontSizePx = preferences.subtitleSize.fontSizePx) }
             }
         }
@@ -196,6 +199,23 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
                     _uiState.update { it.copy(source = WatchLoadState.Ready(source)) }
                 }
         }
+    }
+
+    /** Pauses while a lookup popup or AI result is open and resumes after it, if set to. */
+    fun onLookupActiveChanged(active: Boolean) {
+        if (active) {
+            if (player.isPlaying) {
+                pausedForLookup = true
+                player.pause()
+            }
+        } else if (pausedForLookup) {
+            pausedForLookup = false
+            if (resumeAfterLookup) player.play()
+        }
+    }
+
+    fun seekBy(deltaMs: Long) {
+        player.seekTo((player.currentPosition + deltaMs).coerceAtLeast(0))
     }
 
     fun selectSubtitleTrack(track: WatchSubtitleTrack?) {

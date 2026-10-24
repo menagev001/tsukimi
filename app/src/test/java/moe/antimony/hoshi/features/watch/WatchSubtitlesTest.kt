@@ -1,5 +1,7 @@
 package moe.antimony.hoshi.features.watch
 
+import moe.antimony.hoshi.features.reader.ReaderSelectionData
+import moe.antimony.hoshi.features.reader.ReaderSelectionRect
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -102,6 +104,42 @@ class WatchSubtitlesTest {
         assertFalse(looksJapanese(listOf(WatchSubtitleCue(0, 1, "今天天气很好"))))
         assertFalse(looksJapanese(listOf(WatchSubtitleCue(0, 1, "Good morning"))))
         assertFalse(looksJapanese(emptyList()))
+    }
+
+    @Test
+    fun lookupSentenceIsTheWholeLineWithoutLineBreaks() {
+        val selection = ReaderSelectionData(
+            text = "スケベ",
+            sentence = "お前らよりは\nスケベなこと考えねえよ",
+            rect = ReaderSelectionRect(0.0, 0.0, 1.0, 1.0),
+            normalizedOffset = null,
+            sentenceOffset = 7,
+        )
+        val lines = listOf("別の行", "ヘッ！　お前らよりは\nスケベなこと考えねえよ　ケケッ")
+
+        val result = withSubtitleLineSentence(selection, lines)
+
+        assertEquals("ヘッ！　お前らよりはスケベなこと考えねえよ　ケケッ", result.sentence)
+        assertEquals("スケベ", result.sentence.substring(result.sentenceOffset!!, result.sentenceOffset!! + 3))
+    }
+
+    @Test
+    fun lookupSentenceStaysWhenNoLineMatches() {
+        val selection = ReaderSelectionData(
+            text = "a",
+            sentence = "not shown",
+            rect = ReaderSelectionRect(0.0, 0.0, 1.0, 1.0),
+            normalizedOffset = null,
+        )
+        assertEquals(selection, withSubtitleLineSentence(selection, listOf("other")))
+    }
+
+    @Test
+    fun selectionResultTokens() {
+        assertTrue(watchSelectedNothing(null))
+        assertTrue(watchSelectedNothing("null"))
+        assertTrue(watchSelectedNothing("\"image\""))
+        assertFalse(watchSelectedNothing("\"言葉\""))
     }
 
     @Test

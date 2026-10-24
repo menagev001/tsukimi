@@ -167,9 +167,10 @@ internal class LookupPopupHost(
     }
 
     fun handleTextSelected(
-        selection: ReaderSelectionData,
+        rawSelection: ReaderSelectionData,
         selectionRects: (Int, (List<ReaderSelectionRect>) -> Unit) -> Unit,
     ) {
+        val selection = inputs.value.transformSelection(rawSelection)
         rootSelectionHighlight = null
         updatePopups(emptyList())
         if (selection.isSentenceOnly) {
@@ -391,6 +392,8 @@ internal data class LookupPopupHostInputs(
     /** Manga OCR text is vertical; subtitles are horizontal. Child popups are always horizontal. */
     val rootPopupVertical: Boolean,
     val aiRequests: LookupPopupAiRequests,
+    /** Adjusts a root text selection before lookup, e.g. to use a whole subtitle line as the sentence. */
+    val transformSelection: (ReaderSelectionData) -> ReaderSelectionData,
     val dictionaryRepository: DictionaryRepository,
     val knownWordsRepository: KnownWordsRepository,
 )
@@ -404,6 +407,7 @@ internal fun rememberLookupPopupHost(
     documentTitle: String,
     rootPopupVertical: Boolean,
     aiRequests: LookupPopupAiRequests = LookupPopupAiRequests,
+    transformSelection: (ReaderSelectionData) -> ReaderSelectionData = { it },
 ): LookupPopupHost {
     val context = LocalContext.current
     val appContainer = LocalHoshiUiDependencies.current
@@ -437,6 +441,7 @@ internal fun rememberLookupPopupHost(
             documentTitle = documentTitle,
             rootPopupVertical = rootPopupVertical,
             aiRequests = aiRequests,
+            transformSelection = transformSelection,
             dictionaryRepository = dictionaryRepository,
             knownWordsRepository = appContainer.knownWordsRepository,
         ),

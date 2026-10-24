@@ -737,6 +737,10 @@
     <string name="watch_subtitle_size_medium">Medium</string>
     <string name="watch_subtitle_size_large">Large</string>
     <string name="watch_subtitle_size_extra_large">Extra Large</string>
+    <string name="watch_resume_after_lookup">Resume After Lookup</string>
+    <string name="watch_resume_after_lookup_hint">Tapping a word pauses the video. When the popup closes, playback continues.</string>
+    <string name="watch_seek_back_format">−%1$d s</string>
+    <string name="watch_seek_forward_format">+%1$d s</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

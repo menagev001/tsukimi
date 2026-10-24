@@ -156,6 +156,13 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   Kotlin owns popup payloads, resource handling, and native service bridges for
   audio, dictionary media, Anki, and external links; do not reintroduce Android
   native overlay popup fallback paths for these flows.
+- Screens that draw their own text in a WebView and load `reader-popup-host.js`
+  into it (manga OCR text, Watch subtitles) share `LookupPopupHost`
+  (`rememberLookupPopupHost` + `LookupPopupHostLayers`): popup stack state, the
+  popup iframe document and resource handler, and replies to popup bridge
+  messages. Screen-specific behaviour enters through its inputs (root popup
+  orientation, selection transform, AI request hooks); do not copy the popup
+  wiring into a new screen.
 - Lookup popup CSS `zoom` coordinate conversion and scrolling are owned by
   `popup.js` through `hoshiPopupGeometry`. Popup term alignment, reduced-motion
   viewport scrolling, history/reset positions, tap selection coordinates, and
@@ -304,6 +311,15 @@ refactor goals belong in `docs/ARCHITECTURE_REFACTORING.md`.
   foreground, so the app must treat long-running background playback in that
   state as a device/user restriction rather than an in-process lifecycle
   guarantee.
+- Watch mode is a Jellyfin client built on the Jellyfin Kotlin SDK: a
+  DataStore-backed session (server URL, user, access token; never the
+  password), browse and playback repositories, and a Media3 ExoPlayer owned by
+  the player route's ViewModel. Playback info uses a device profile derived from
+  hardware decoders, playback start/progress/stop are reported through one
+  ordered queue in the application scope, and ExoPlayer text tracks stay
+  disabled: Japanese subtitles are downloaded as SRT and drawn in a transparent
+  WebView overlay (`hoshi-web/watch`) that uses the shared selection engine and
+  `LookupPopupHost`.
 - Update checks use WorkManager unique work, with worker dependencies supplied
   by Hilt's WorkManager integration.
 

@@ -20,7 +20,12 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   quality can be set for mobile data and phone hotspots. Japanese subtitles
   are shown by Tsukimi itself (white text with a soft outline, four sizes),
   with a subtitle track menu, per-episode timing correction in 0.1 s steps,
-  and buttons to jump to the previous or next line. Tsukimi keeps only
+  and buttons to jump to the previous or next line. Tap a word in a subtitle
+  to pause and open the dictionary popup (Anki, Explain Word, Export and Mark
+  Known included); playback resumes when it closes (Settings → Watch → Resume
+  After Lookup). Double-tap a subtitle for its Sentence Breakdown, or
+  double-tap the left or right side of the video to go back or forward 10
+  seconds. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 
