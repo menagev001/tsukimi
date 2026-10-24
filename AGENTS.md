@@ -1,11 +1,11 @@
-# Hoshi Reader Android Agent 指南
+# Tsukimi Agent 指南
 
-Hoshi Reader Android 是 Hoshi Reader 的 Android/Kotlin/Jetpack Compose 原生复刻项目。目标是按聚焦的垂直切片复刻 iOS 用户可见行为。
+Tsukimi（月見）是基于 Hoshi Reader Android 修改而来的 Android/Kotlin/Jetpack Compose 日语沉浸学习 App，已脱离上游独立维护。Hoshi Reader Android 是 Manhhao 的 Hoshi Reader（iOS）的原生复刻；本项目继承其阅读、查词和制卡行为，并在此之上新增 AI 查词、Migaku 导出、漫画，以及计划中的视频观看。
 
 ## 工作原则
 
-- iOS 用户可见行为和 UI 是唯一真源。开始功能切片或行为修复前，先查看 `reference/Hoshi-Reader-iOS` 中的对应实现，并总结交互、状态流和边界行为。
-- 修复问题时不要叠补丁。先对齐 iOS 行为和状态流；只有平台差异确实需要时，才加入最小 Android 侧适配。
+- iOS 版 Hoshi Reader 不再是唯一真源，只作已有行为的参考（`reference/Hoshi-Reader-iOS`）。修改继承来的阅读、查词、制卡、同步等行为前，先查看 iOS 对应实现，并总结交互、状态流和边界行为；有意偏离时在提交说明中写明原因。Tsukimi 新增功能以 `docs/` 中对应的规格文档为准。
+- 修复问题时不要叠补丁。先理清现有行为和状态流；只有平台差异确实需要时，才加入最小 Android 侧适配。
 - 涉及 Android 平台能力、权限、SAF、WebView、Media3、WorkManager、Google/Jetpack API、打包、安装或后台行为时，优先查 Android/Google/Jetpack 官方文档确认当前推荐做法。
 
 ## 工作区与规划产物
@@ -56,7 +56,7 @@ Hoshi Reader Android 是 Hoshi Reader 的 Android/Kotlin/Jetpack Compose 原生�
 - `docs/ARCHITECTURE.md`：当前 Android 架构事实。
 - `docs/ARCHITECTURE_REFACTORING.md`：未来架构债务和重构方向。
 - `docs/PERFORMANCE.md`：Reader/WebView 等性能问题的基线测量、热点定位和验证流程。
-- `docs/IOS_UPSTREAM_SYNC_QUEUE.md`：当前 iOS upstream 对齐队列。
+- `docs/IOS_UPSTREAM_SYNC_QUEUE.md`：历史 iOS upstream 对齐队列，仅供参考，不再主动跟进。
 
 只有任务改变了对应文档的真源内容时，才更新该文档。
 
@@ -80,7 +80,7 @@ Hoshi Reader Android 是 Hoshi Reader 的 Android/Kotlin/Jetpack Compose 原生�
 
 - 领域事实和当前模块边界以 `docs/ARCHITECTURE.md` 为准；未来拆分方向以 `docs/ARCHITECTURE_REFACTORING.md` 为准。
 - 改动 dictionary、reader、parser、Anki、sync、audio 或 Sasayaki 前，先查对应当前架构边界；除非先记录缺口，否则不要绕过既有 bridge、repository、backend 或 controller 边界。
-- Reader、parser、sync、audio 等用户可见行为先对齐 iOS；Android 平台机制使用 Android/Google/Jetpack 官方做法。
+- Reader、parser、sync、audio 等用户可见行为以现有行为为准，修改前先对照 iOS 参考实现；Android 平台机制使用 Android/Google/Jetpack 官方做法。
 
 ## 测试与提交
 
