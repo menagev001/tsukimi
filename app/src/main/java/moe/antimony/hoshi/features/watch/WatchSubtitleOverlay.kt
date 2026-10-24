@@ -30,9 +30,11 @@ import moe.antimony.hoshi.webview.applyHoshiWebViewSecurityDefaults
  * Transparent WebView over the video that draws the current subtitle lines and hosts the lookup
  * popup. It receives every touch on the player:
  * - touches on an open popup go to the WebView itself,
- * - a tap on a word opens the popup, a double tap on a line asks for its sentence breakdown,
+ * - a tap on a word (in a line or in the line list) opens the popup, a double tap on a line asks
+ *   for its sentence breakdown,
+ * - a tap on a timestamp in the line list calls [onSeekToCue]; drags in the list scroll it,
  * - a double tap elsewhere seeks back (left half) or forward (right half),
- * - any other tap closes an open popup, or else calls [onBlankTap].
+ * - any other tap closes an open popup, or else (outside the list) calls [onBlankTap].
  */
 /**
  * Longer than the reader's 180 ms: two taps on one side of a video come a little slower than on
@@ -40,15 +42,23 @@ import moe.antimony.hoshi.webview.applyHoshiWebViewSecurityDefaults
  */
 private const val WatchDoubleTapTimeoutMs = 250L
 
+/** Seconds of fling velocity turned into list scroll distance. */
+private const val ListFlingDistancePerVelocity = 0.25f
+
 @SuppressLint("ClickableViewAccessibility")
 @Composable
 internal fun WatchSubtitleOverlay(
     popupHost: LookupPopupHost,
     primaryLines: List<String>,
+    cues: List<WatchSubtitleCue>,
+    activeCueIndex: Int?,
+    listVisible: Boolean,
+    listWidth: Dp,
     fontSizePx: Int,
     bottomInset: Dp,
     onBlankTap: () -> Unit,
     onSideDoubleTap: (forward: Boolean) -> Unit,
+    onSeekToCue: (cueIndex: Int) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -57,6 +67,9 @@ internal fun WatchSubtitleOverlay(
     val currentFontSizePx by rememberUpdatedState(fontSizePx)
     val currentOnBlankTap by rememberUpdatedState(onBlankTap)
     val currentOnSideDoubleTap by rememberUpdatedState(onSideDoubleTap)
+    val currentOnSeekToCue by rememberUpdatedState(onSeekToCue)
+    val currentListVisible by rememberUpdatedState(listVisible)
+    val currentListWidth by rememberUpdatedState(listWidth)
     val webView = popupHost.webView
 
     AndroidView(
@@ -79,6 +92,9 @@ internal fun WatchSubtitleOverlay(
                         request.url?.let { uri: Uri -> popupHost.interceptRequest(uri) }
                 }
 
+                fun inList(x: Float): Boolean =
+                    currentListVisible && x >= width - currentListWidth.value * resources.displayMetrics.density
+
                 fun selectAt(x: Float, y: Float, sentenceOnly: Boolean, onNothingSelected: () -> Unit) {
                     val density = resources.displayMetrics.density
                     evaluateJavascript(
@@ -88,7 +104,17 @@ internal fun WatchSubtitleOverlay(
                             maxLength = readerSelectionMaxLength(popupHost.dictionarySettings),
                             sentenceOnly = sentenceOnly,
                         ),
-                    ) { result -> if (watchSelectedNothing(result)) onNothingSelected() }
+                    ) { result ->
+                        when (val tap = WatchTapResult.fromWebViewResult(result)) {
+                            WatchTapResult.Selected -> Unit
+                            WatchTapResult.Nothing -> onNothingSelected()
+                            WatchTapResult.List -> popupHost.dismiss()
+                            is WatchTapResult.SeekToCue -> {
+                                popupHost.dismiss()
+                                currentOnSeekToCue(tap.cueIndex)
+                            }
+                        }
+                    }
                 }
 
                 val taps = ReaderTapDispatcher(
@@ -101,7 +127,7 @@ internal fun WatchSubtitleOverlay(
                     onDoubleTap = { x, y ->
                         selectAt(x, y, sentenceOnly = true) {
                             popupHost.dismiss()
-                            currentOnSideDoubleTap(x >= view.width / 2f)
+                            if (!inList(x)) currentOnSideDoubleTap(x >= view.width / 2f)
                         }
                     },
                 )
@@ -118,6 +144,22 @@ internal fun WatchSubtitleOverlay(
                                 postDelayed = { runnable, delayMs -> view.postDelayed(runnable, delayMs) },
                                 removeCallback = { runnable -> view.removeCallbacks(runnable) },
                             )
+                            return true
+                        }
+
+                        override fun onScroll(start: MotionEvent?, event: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
+                            if (start == null || !inList(start.x)) return false
+                            popupHost.dismiss()
+                            val density = resources.displayMetrics.density
+                            evaluateJavascript(watchScrollListScript(androidPixelsToCssPixels(distanceY, density)), null)
+                            return true
+                        }
+
+                        override fun onFling(start: MotionEvent?, event: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
+                            if (start == null || !inList(start.x)) return false
+                            val density = resources.displayMetrics.density
+                            val distance = -velocityY * ListFlingDistancePerVelocity
+                            evaluateJavascript(watchFlingListScript(androidPixelsToCssPixels(distance, density)), null)
                             return true
                         }
                     },
@@ -166,5 +208,14 @@ internal fun WatchSubtitleOverlay(
     }
     LaunchedEffect(webView, pageReady, primaryLines) {
         if (pageReady) webView?.evaluateJavascript(watchShowCuesScript(primaryLines), null)
+    }
+    LaunchedEffect(webView, pageReady, cues) {
+        if (pageReady) webView?.evaluateJavascript(watchSetCueListScript(cues), null)
+    }
+    LaunchedEffect(webView, pageReady, cues, activeCueIndex) {
+        if (pageReady) webView?.evaluateJavascript(watchSetActiveCueScript(activeCueIndex), null)
+    }
+    LaunchedEffect(webView, pageReady, listVisible, listWidth) {
+        if (pageReady) webView?.evaluateJavascript(watchShowListScript(listVisible, listWidth.value), null)
     }
 }

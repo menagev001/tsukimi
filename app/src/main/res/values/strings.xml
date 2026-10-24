@@ -732,6 +732,8 @@
     <string name="watch_subtitle_later">Show subtitles later</string>
     <string name="watch_player_previous_line">Previous line</string>
     <string name="watch_player_next_line">Next line</string>
+    <string name="watch_player_show_line_list">Show line list</string>
+    <string name="watch_player_hide_line_list">Hide line list</string>
     <string name="watch_subtitle_size">Subtitle Size</string>
     <string name="watch_subtitle_size_small">Small</string>
     <string name="watch_subtitle_size_medium">Medium</string>

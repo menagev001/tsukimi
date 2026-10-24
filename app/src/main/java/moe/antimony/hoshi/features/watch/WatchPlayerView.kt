@@ -23,6 +23,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.List
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.Check
@@ -54,6 +55,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -98,6 +100,8 @@ private const val ProgressTickMs = 500L
 private const val SubtitleOffsetStepMs = 100L
 private const val SeekStepMs = 10_000L
 private const val SeekFlashMs = 700L
+private const val ListMaxWidthDp = 420f
+private const val ListWidthFraction = 0.38f
 private const val SubtitleVideoMarginFraction = 0.06f
 private const val SubtitleInsetWithControlsDp = 120f
 private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f)
@@ -121,7 +125,10 @@ internal fun WatchPlayerView(
     var controlsVisible by remember { mutableStateOf(true) }
     var interactionCount by remember { mutableIntStateOf(0) }
     var seekFlash by remember { mutableStateOf<WatchSeekFlash?>(null) }
+    var listVisible by rememberSaveable { mutableStateOf(false) }
     val currentLines by rememberUpdatedState(uiState.subtitles.primaryLines)
+    val cueTexts = remember(uiState.subtitles.cues) { uiState.subtitles.cues.map { it.text } }
+    val currentCueTexts by rememberUpdatedState(cueTexts)
     val popupHost = rememberLookupPopupHost(
         readerSettings = readerSettings,
         darkInterface = true,
@@ -130,7 +137,8 @@ internal fun WatchPlayerView(
         documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
         rootPopupVertical = false,
         aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
-        transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines) },
+        // Lines on screen first; a lookup in the line list finds its line in the whole track.
+        transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines + currentCueTexts) },
     )
     val aiLookupState by popupHost.aiLookupViewModel.state.collectAsStateWithLifecycle()
     val lookupActive = popupHost.isOpen || aiLookupState != AiLookupState.Hidden
@@ -178,9 +186,15 @@ internal fun WatchPlayerView(
             // Lines stay put while a lookup is open: the popup's highlight is measured once, and
             // the controls hiding would otherwise slide the line away from it.
             val lookupSubtitleInsetDp = remember(lookupActive) { liveSubtitleInsetDp }
+            val hasLines = uiState.subtitles.selectedTrackIndex != null
             WatchSubtitleOverlay(
                 popupHost = popupHost,
                 primaryLines = uiState.subtitles.primaryLines,
+                cues = uiState.subtitles.cues,
+                activeCueIndex = uiState.subtitles.activeCueIndex,
+                listVisible = listVisible && hasLines,
+                listWidth = minOf(ListMaxWidthDp, maxWidth.value * ListWidthFraction).dp,
+                onSeekToCue = viewModel::seekToCue,
                 fontSizePx = uiState.subtitles.fontSizePx,
                 bottomInset = (if (lookupActive) lookupSubtitleInsetDp else liveSubtitleInsetDp).dp,
                 onBlankTap = { controlsVisible = !controlsVisible },
@@ -229,6 +243,8 @@ internal fun WatchPlayerView(
                     onAdjustSubtitleOffset = viewModel::adjustSubtitleOffset,
                     onPreviousLine = viewModel::seekToPreviousLine,
                     onNextLine = viewModel::seekToNextLine,
+                    listVisible = listVisible,
+                    onToggleList = { listVisible = !listVisible },
                     isPlaying = isPlaying,
                     onPlayPause = playPauseState::onClick,
                     onInteraction = { interactionCount++ },
@@ -305,6 +321,8 @@ private fun WatchPlayerControls(
     onAdjustSubtitleOffset: (Long) -> Unit,
     onPreviousLine: () -> Unit,
     onNextLine: () -> Unit,
+    listVisible: Boolean,
+    onToggleList: () -> Unit,
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onInteraction: () -> Unit,
@@ -332,6 +350,16 @@ private fun WatchPlayerControls(
                 Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 subtitle?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            if (showTransport && subtitles.selectedTrackIndex != null) {
+                IconButton(onClick = { onToggleList(); onInteraction() }) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Rounded.List,
+                        contentDescription = stringResource(
+                            if (listVisible) R.string.watch_player_hide_line_list else R.string.watch_player_show_line_list,
+                        ),
+                    )
                 }
             }
             if (showTransport && subtitles.tracks.isNotEmpty()) {

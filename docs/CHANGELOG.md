@@ -26,7 +26,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   After Lookup). Double-tap a subtitle for its Sentence Breakdown, or
   double-tap the left or right side of the video to go back or forward 10
   seconds. Explain Word and Sentence Breakdown from a subtitle also send the
-  two lines before and after it as context. Tsukimi keeps only
+  two lines before and after it as context. A line list panel shows the whole
+  track next to the video, follows playback, jumps to a line when you tap its
+  time, and looks up words like the subtitles do. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

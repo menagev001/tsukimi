@@ -49,6 +49,10 @@ data class WatchSubtitlesUiState(
     val fontSizePx: Int = WatchSubtitleSize.Medium.fontSizePx,
     /** Texts of the Japanese cues shown right now. */
     val primaryLines: List<String> = emptyList(),
+    /** The whole selected track, for the line list. */
+    val cues: List<WatchSubtitleCue> = emptyList(),
+    /** Index in [cues] of the line playing now (or last played), for the line list. */
+    val activeCueIndex: Int? = null,
 )
 
 data class WatchAudioTrackOption(
@@ -219,6 +223,11 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     fun aiContextFor(sentence: String): AiSentenceContext? =
         subtitleAiContext(primaryCues, sentence, player.currentPosition - _uiState.value.subtitles.offsetMs)
 
+    fun seekToCue(cueIndex: Int) {
+        val cue = primaryCues.getOrNull(cueIndex) ?: return
+        player.seekTo((cue.startMs + _uiState.value.subtitles.offsetMs).coerceAtLeast(0))
+    }
+
     fun seekBy(deltaMs: Long) {
         player.seekTo((player.currentPosition + deltaMs).coerceAtLeast(0))
     }
@@ -227,7 +236,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         val source = activeSource ?: return
         if (track == null) {
             primaryCues = emptyList()
-            updateSubtitles { it.copy(selectedTrackIndex = null, isLoading = false) }
+            updateSubtitles { it.copy(selectedTrackIndex = null, isLoading = false, cues = emptyList()) }
             updateActiveCues()
             return
         }
@@ -236,7 +245,9 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             val cues = subtitleRepository.cues(itemId, source.mediaSourceId.orEmpty(), track).getOrNull()
             if (_uiState.value.subtitles.selectedTrackIndex != track.index) return@launch
             primaryCues = cues.orEmpty()
-            updateSubtitles { it.copy(isLoading = false, selectedTrackIndex = track.index.takeIf { cues != null }) }
+            updateSubtitles {
+                it.copy(isLoading = false, selectedTrackIndex = track.index.takeIf { cues != null }, cues = primaryCues)
+            }
             updateActiveCues()
         }
     }
@@ -264,15 +275,23 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         viewModelScope.launch {
             val subtitles = subtitleRepository.load(itemId, source.mediaSourceId.orEmpty(), source.subtitleTracks)
             primaryCues = subtitles.japanese?.cues.orEmpty()
-            updateSubtitles { it.copy(isLoading = false, selectedTrackIndex = subtitles.japanese?.track?.index) }
+            updateSubtitles {
+                it.copy(isLoading = false, selectedTrackIndex = subtitles.japanese?.track?.index, cues = primaryCues)
+            }
             updateActiveCues()
         }
     }
 
     private fun updateActiveCues() {
         val positionMs = player.currentPosition - _uiState.value.subtitles.offsetMs
-        val lines = activeCueIndices(primaryCues, positionMs).map { primaryCues[it].text }
-        if (lines != _uiState.value.subtitles.primaryLines) updateSubtitles { it.copy(primaryLines = lines) }
+        val active = activeCueIndices(primaryCues, positionMs)
+        val lines = active.map { primaryCues[it].text }
+        val activeIndex = active.firstOrNull()
+            ?: primaryCues.indexOfLast { it.startMs <= positionMs }.takeIf { it >= 0 }
+        val current = _uiState.value.subtitles
+        if (lines != current.primaryLines || activeIndex != current.activeCueIndex) {
+            updateSubtitles { it.copy(primaryLines = lines, activeCueIndex = activeIndex) }
+        }
     }
 
     private inline fun updateSubtitles(transform: (WatchSubtitlesUiState) -> WatchSubtitlesUiState) {

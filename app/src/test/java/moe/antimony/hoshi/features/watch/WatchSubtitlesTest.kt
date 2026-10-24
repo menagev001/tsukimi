@@ -158,11 +158,13 @@ class WatchSubtitlesTest {
     }
 
     @Test
-    fun selectionResultTokens() {
-        assertTrue(watchSelectedNothing(null))
-        assertTrue(watchSelectedNothing("null"))
-        assertTrue(watchSelectedNothing("\"image\""))
-        assertFalse(watchSelectedNothing("\"言葉\""))
+    fun tapResultTokens() {
+        assertEquals(WatchTapResult.Nothing, WatchTapResult.fromWebViewResult(null))
+        assertEquals(WatchTapResult.Nothing, WatchTapResult.fromWebViewResult("null"))
+        assertEquals(WatchTapResult.Nothing, WatchTapResult.fromWebViewResult("\"image\""))
+        assertEquals(WatchTapResult.List, WatchTapResult.fromWebViewResult("\"list\""))
+        assertEquals(WatchTapResult.SeekToCue(12), WatchTapResult.fromWebViewResult("\"seek:12\""))
+        assertEquals(WatchTapResult.Selected, WatchTapResult.fromWebViewResult("\"言葉\""))
     }
 
     @Test

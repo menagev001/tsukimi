@@ -5,11 +5,42 @@ import vm from 'node:vm';
 
 const source = fs.readFileSync(new URL('../../main/assets/hoshi-web/watch/watch-subtitles.js', import.meta.url), 'utf8');
 
-function fakeElement(tagName) {
+function fakeClassList(owner) {
+    const classes = () => new Set(owner.className.split(' ').filter(Boolean));
+    const write = (set) => {
+        owner.className = [...set].join(' ');
+    };
     return {
+        add(name) {
+            const set = classes();
+            set.add(name);
+            write(set);
+        },
+        remove(name) {
+            const set = classes();
+            set.delete(name);
+            write(set);
+        },
+        contains: (name) => classes().has(name),
+        toggle(name, force) {
+            const set = classes();
+            const on = force ?? !set.has(name);
+            if (on) set.add(name); else set.delete(name);
+            write(set);
+            return on;
+        },
+    };
+}
+
+function fakeElement(tagName) {
+    const element = {
         tagName,
         className: '',
         children: [],
+        dataset: {},
+        offsetTop: 0,
+        scrollTop: 0,
+        clientHeight: 300,
         _text: '',
         set textContent(value) {
             this._text = value;
@@ -24,15 +55,18 @@ function fakeElement(tagName) {
             return child;
         },
         closest(selector) {
+            const wanted = selector.split(',').map((part) => part.trim().replace('.', ''));
             let node = this;
-            const className = selector.replace('.', '');
             while (node) {
-                if (node.className === className) return node;
+                const classes = node.className.split(' ');
+                if (wanted.some((name) => classes.includes(name))) return node;
                 node = node.parentNode;
             }
             return null;
         },
     };
+    element.classList = fakeClassList(element);
+    return element;
 }
 
 function watchContext({ hitAt = () => null } = {}) {
@@ -40,9 +74,12 @@ function watchContext({ hitAt = () => null } = {}) {
     const selectCalls = [];
     let clearCount = 0;
     const body = fakeElement('body');
+    const rootElement = { className: '' };
+    rootElement.classList = fakeClassList(rootElement);
     const document = {
         body,
         documentElement: {
+            classList: rootElement.classList,
             style: {
                 setProperty(name, value) {
                     styleProperties[name] = value;
@@ -115,4 +152,31 @@ test('configure and setBottomInset set CSS variables', () => {
 
     assert.equal(watch.styleProperties['--hoshi-watch-font-size'], '40px');
     assert.equal(watch.styleProperties['--hoshi-watch-bottom-inset'], '120px');
+});
+
+test('line list renders every cue, marks the active one and maps taps to tokens', () => {
+    let hit = null;
+    const watch = watchContext({ hitAt: () => hit });
+    watch.hoshiWatch.setCueList([
+        { start: 1_000, text: '一つ目' },
+        { start: 3_723_000, text: '二つ目' },
+    ]);
+    watch.hoshiWatch.showList(true);
+    watch.hoshiWatch.setActiveCue(1);
+
+    const list = watch.body.children[1];
+    const [first, second] = list.children;
+    assert.deepEqual(first.children.map((child) => child.textContent), ['0:01', '一つ目']);
+    assert.equal(second.children[0].textContent, '1:02:03');
+    assert.ok(second.className.includes('hoshi-watch-list-active'));
+    assert.ok(!first.className.includes('hoshi-watch-list-active'));
+
+    hit = second.children[0];
+    assert.equal(watch.hoshiWatch.selectTextAt(1, 1, 16, false), 'seek:1');
+
+    hit = second;
+    assert.equal(watch.hoshiWatch.selectTextAt(1, 1, 16, false), 'list');
+
+    hit = second.children[1];
+    assert.equal(watch.hoshiWatch.selectTextAt(1, 1, 16, false), '言葉');
 });

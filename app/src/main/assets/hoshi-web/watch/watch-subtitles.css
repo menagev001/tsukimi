@@ -1,6 +1,7 @@
 :root {
     --hoshi-watch-font-size: 32px;
     --hoshi-watch-bottom-inset: 24px;
+    --hoshi-watch-list-width: 380px;
 }
 
 html,
@@ -26,8 +27,60 @@ body {
     flex-direction: column;
     align-items: center;
     gap: 0.2em;
-    transition: bottom 150ms ease-out;
+    transition: bottom 150ms ease-out, right 150ms ease-out;
     pointer-events: none;
+}
+
+.hoshi-watch-list-open .hoshi-watch-subtitles {
+    right: calc(var(--hoshi-watch-list-width) + 2%);
+}
+
+.hoshi-watch-list {
+    display: none;
+    position: fixed;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: var(--hoshi-watch-list-width);
+    box-sizing: border-box;
+    padding: 64px 12px 96px;
+    overflow-y: hidden;
+    background: rgba(12, 12, 12, 0.88);
+    color: #ddd;
+}
+
+.hoshi-watch-list-open .hoshi-watch-list {
+    display: block;
+}
+
+.hoshi-watch-list-item {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 6px 8px;
+    border-radius: 6px;
+}
+
+.hoshi-watch-list-active {
+    background: rgba(255, 255, 255, 0.14);
+    color: #fff;
+}
+
+.hoshi-watch-list-time {
+    flex: none;
+    min-width: 3.4em;
+    padding: 4px 6px;
+    margin: -4px -6px;
+    font: 500 13px/1.4 sans-serif;
+    color: #9ab;
+    font-variant-numeric: tabular-nums;
+}
+
+.hoshi-watch-list-line {
+    margin: 0;
+    font-size: 19px;
+    line-height: 1.45;
+    white-space: pre-line;
 }
 
 .hoshi-watch-line {
