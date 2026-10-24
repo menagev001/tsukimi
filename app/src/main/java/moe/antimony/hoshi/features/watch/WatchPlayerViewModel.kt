@@ -19,6 +19,7 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
+import moe.antimony.hoshi.features.ai.AiSentenceContext
 import java.util.Locale
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -213,6 +214,10 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             if (resumeAfterLookup) player.play()
         }
     }
+
+    /** The neighbouring subtitle lines of [sentence] for AI lookups, or null when it is not a line. */
+    fun aiContextFor(sentence: String): AiSentenceContext? =
+        subtitleAiContext(primaryCues, sentence, player.currentPosition - _uiState.value.subtitles.offsetMs)
 
     fun seekBy(deltaMs: Long) {
         player.seekTo((player.currentPosition + deltaMs).coerceAtLeast(0))

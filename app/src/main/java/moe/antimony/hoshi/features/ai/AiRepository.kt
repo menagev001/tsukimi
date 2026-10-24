@@ -39,18 +39,18 @@ class AiRepository @Inject constructor(
         loadPromptAsset(SentenceBreakdownPromptAsset)
     }
 
-    suspend fun askWordNuance(word: String, sentence: String): Result<String> =
+    suspend fun askWordNuance(word: String, sentence: String, context: AiSentenceContext? = null): Result<String> =
         ask(
             promptAsset = WordNuancePromptAsset,
             promptOverride = { it.wordNuancePromptOverride },
-            userMessage = "Word: $word\nSentence: $sentence",
+            userMessage = aiUserMessage(word = word, sentence = sentence, context = context),
         )
 
-    suspend fun askSentenceBreakdown(sentence: String): Result<String> =
+    suspend fun askSentenceBreakdown(sentence: String, context: AiSentenceContext? = null): Result<String> =
         ask(
             promptAsset = SentenceBreakdownPromptAsset,
             promptOverride = { it.sentenceBreakdownPromptOverride },
-            userMessage = sentence,
+            userMessage = aiUserMessage(word = null, sentence = sentence, context = context),
         )
 
     private suspend fun ask(

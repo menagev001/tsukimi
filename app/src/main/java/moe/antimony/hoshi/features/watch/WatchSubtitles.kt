@@ -1,5 +1,7 @@
 package moe.antimony.hoshi.features.watch
 
+import kotlin.math.abs
+import moe.antimony.hoshi.features.ai.AiSentenceContext
 import moe.antimony.hoshi.features.reader.ReaderSelectionData
 
 /** One subtitle line with its display time. [text] may contain line breaks. */
@@ -181,5 +183,25 @@ internal fun withSubtitleLineSentence(selection: ReaderSelectionData, lines: Lis
     return selection.copy(
         sentence = line.replace("\n", ""),
         sentenceOffset = offsetInLine?.let { offset -> offset - line.substring(0, offset).count { it == '\n' } },
+    )
+}
+
+/**
+ * The [lineCount] subtitle lines before and after the line whose text is [sentence], as context
+ * for AI lookups. The line shown at [positionMs] wins over identical lines elsewhere.
+ */
+internal fun subtitleAiContext(
+    cues: List<WatchSubtitleCue>,
+    sentence: String,
+    positionMs: Long,
+    lineCount: Int = 2,
+): AiSentenceContext? {
+    fun flat(index: Int) = cues[index].text.replace("\n", "")
+    val index = activeCueIndices(cues, positionMs).firstOrNull { flat(it) == sentence }
+        ?: cues.indices.filter { flat(it) == sentence }.minByOrNull { abs(cues[it].startMs - positionMs) }
+        ?: return null
+    return AiSentenceContext(
+        before = (maxOf(0, index - lineCount) until index).map(::flat),
+        after = (index + 1 until minOf(cues.size, index + 1 + lineCount)).map(::flat),
     )
 }

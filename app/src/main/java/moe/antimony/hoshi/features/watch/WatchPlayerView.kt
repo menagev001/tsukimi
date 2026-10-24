@@ -86,7 +86,10 @@ import kotlinx.coroutines.delay
 import moe.antimony.hoshi.R
 import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.features.ai.AiLookupState
+import moe.antimony.hoshi.features.ai.AiLookupViewModel
+import moe.antimony.hoshi.features.reader.LookupPopupAiRequests
 import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
+import moe.antimony.hoshi.features.reader.ReaderSelectionData
 import moe.antimony.hoshi.features.reader.ReaderSettings
 import moe.antimony.hoshi.features.reader.rememberLookupPopupHost
 
@@ -126,6 +129,7 @@ internal fun WatchPlayerView(
         contentLanguageProfile = ContentLanguageProfile.Japanese,
         documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
         rootPopupVertical = false,
+        aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
         transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines) },
     )
     val aiLookupState by popupHost.aiLookupViewModel.state.collectAsStateWithLifecycle()
@@ -237,6 +241,17 @@ internal fun WatchPlayerView(
                 verticalWriting = false,
             )
         }
+    }
+}
+
+/** AI lookups from subtitles carry the two lines before and after the tapped line. */
+private class WatchAiRequests(private val viewModel: WatchPlayerViewModel) : LookupPopupAiRequests {
+    override fun askWordNuance(ai: AiLookupViewModel, word: String, selection: ReaderSelectionData) {
+        ai.askWordNuance(word = word, sentence = selection.sentence, context = viewModel.aiContextFor(selection.sentence))
+    }
+
+    override fun requestSentenceBreakdown(ai: AiLookupViewModel, selection: ReaderSelectionData) {
+        ai.requestSentenceBreakdown(selection.sentence, viewModel.aiContextFor(selection.sentence))
     }
 }
 

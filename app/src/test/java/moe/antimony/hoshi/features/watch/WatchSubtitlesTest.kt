@@ -135,6 +135,29 @@ class WatchSubtitlesTest {
     }
 
     @Test
+    fun aiContextTakesTwoLinesEachSideOfTheShownLine() {
+        val cues = listOf(
+            WatchSubtitleCue(0, 1_000, "一"),
+            WatchSubtitleCue(1_000, 2_000, "二"),
+            WatchSubtitleCue(2_000, 3_000, "同じ"),
+            WatchSubtitleCue(3_000, 4_000, "四\n行"),
+            WatchSubtitleCue(4_000, 5_000, "五"),
+            WatchSubtitleCue(5_000, 6_000, "六"),
+            WatchSubtitleCue(9_000, 10_000, "同じ"),
+        )
+
+        val context = subtitleAiContext(cues, "同じ", positionMs = 2_500)!!
+        assertEquals(listOf("一", "二"), context.before)
+        assertEquals(listOf("四行", "五"), context.after)
+
+        val later = subtitleAiContext(cues, "同じ", positionMs = 9_500)!!
+        assertEquals(listOf("五", "六"), later.before)
+        assertEquals(emptyList<String>(), later.after)
+
+        assertNull(subtitleAiContext(cues, "ない", positionMs = 0))
+    }
+
+    @Test
     fun selectionResultTokens() {
         assertTrue(watchSelectedNothing(null))
         assertTrue(watchSelectedNothing("null"))

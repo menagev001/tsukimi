@@ -14,8 +14,18 @@ import moe.antimony.hoshi.ui.UiText
 sealed interface AiLookupRequest {
     val sentence: String
 
-    data class WordNuance(val word: String, override val sentence: String) : AiLookupRequest
-    data class SentenceBreakdown(override val sentence: String) : AiLookupRequest
+    val context: AiSentenceContext?
+
+    data class WordNuance(
+        val word: String,
+        override val sentence: String,
+        override val context: AiSentenceContext? = null,
+    ) : AiLookupRequest
+
+    data class SentenceBreakdown(
+        override val sentence: String,
+        override val context: AiSentenceContext? = null,
+    ) : AiLookupRequest
 }
 
 sealed interface AiLookupState {
@@ -33,12 +43,12 @@ internal class AiLookupViewModel @Inject constructor(
     private val _state = MutableStateFlow<AiLookupState>(AiLookupState.Hidden)
     val state: StateFlow<AiLookupState> = _state.asStateFlow()
 
-    fun askWordNuance(word: String, sentence: String) {
-        ask(AiLookupRequest.WordNuance(word, sentence))
+    fun askWordNuance(word: String, sentence: String, context: AiSentenceContext? = null) {
+        ask(AiLookupRequest.WordNuance(word, sentence, context))
     }
 
-    fun requestSentenceBreakdown(sentence: String) {
-        _state.value = AiLookupState.Confirm(AiLookupRequest.SentenceBreakdown(sentence))
+    fun requestSentenceBreakdown(sentence: String, context: AiSentenceContext? = null) {
+        _state.value = AiLookupState.Confirm(AiLookupRequest.SentenceBreakdown(sentence, context))
     }
 
     fun confirmSentenceBreakdown() {
@@ -65,8 +75,8 @@ internal class AiLookupViewModel @Inject constructor(
         _state.value = AiLookupState.Loading(request)
         viewModelScope.launch {
             val result = when (request) {
-                is AiLookupRequest.WordNuance -> repository.askWordNuance(request.word, request.sentence)
-                is AiLookupRequest.SentenceBreakdown -> repository.askSentenceBreakdown(request.sentence)
+                is AiLookupRequest.WordNuance -> repository.askWordNuance(request.word, request.sentence, request.context)
+                is AiLookupRequest.SentenceBreakdown -> repository.askSentenceBreakdown(request.sentence, request.context)
             }
             _state.value = result.fold(
                 onSuccess = { response -> AiLookupState.Success(request, response) },

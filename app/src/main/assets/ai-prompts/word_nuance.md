@@ -27,3 +27,5 @@ Do not give a bare dictionary definition with no register/context information.
 If genuinely uncertain about a judgment, say so in a few words rather than asserting it with false confidence.
 
 Plain text only, no markdown bold or asterisks.
+
+If the input includes "Context before" and "Context after" lines, use them only to understand the situation; analyse only the word as it is used in the Sentence.

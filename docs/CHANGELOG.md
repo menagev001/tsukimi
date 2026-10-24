@@ -25,7 +25,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   Known included); playback resumes when it closes (Settings → Watch → Resume
   After Lookup). Double-tap a subtitle for its Sentence Breakdown, or
   double-tap the left or right side of the video to go back or forward 10
-  seconds. Tsukimi keeps only
+  seconds. Explain Word and Sentence Breakdown from a subtitle also send the
+  two lines before and after it as context. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

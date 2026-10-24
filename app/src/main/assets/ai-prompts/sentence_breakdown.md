@@ -19,3 +19,5 @@ No markdown bold, headers, or asterisks - plain text only.
 This is a scan-and-parse tool, not an essay: keep every chunk's meaning and grammar note to a short phrase, not a full sentence, unless genuine complexity requires more.
 
 If a parse is genuinely ambiguous, say so briefly rather than presenting one reading as the only possibility.
+
+If the input includes "Context before" and "Context after" lines, use them only to understand the situation; break down and translate only the Sentence.
