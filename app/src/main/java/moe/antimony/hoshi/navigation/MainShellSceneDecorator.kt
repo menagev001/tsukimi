@@ -35,6 +35,7 @@ internal fun appRouteUsesMainShell(route: AppRoute): Boolean = when (route) {
     is AppRoute.MangaReaderRoute,
     is AppRoute.WatchLibraryRoute,
     is AppRoute.WatchSeriesRoute,
+    is AppRoute.WatchPlayerRoute,
     is AppRoute.SettingsDetailRoute,
     is AppRoute.AnkiCardFormatRoute,
     AppRoute.AnkiAdvancedRoute,

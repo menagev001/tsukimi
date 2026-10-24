@@ -71,11 +71,13 @@ enum class WatchLoadFailure(@param:StringRes val messageRes: Int) {
     SessionExpired(R.string.watch_error_session_expired),
     ServerUnreachable(R.string.watch_login_error_unreachable),
     SecureConnectionFailed(R.string.watch_login_error_secure_connection),
+    PlaybackUnavailable(R.string.watch_error_playback_unavailable),
     Unknown(R.string.watch_error_load_failed),
 }
 
 internal fun watchLoadFailure(error: Throwable): WatchLoadFailure = when (error) {
     is JellyfinNotSignedInException -> WatchLoadFailure.NotSignedIn
+    is WatchPlaybackUnavailableException -> WatchLoadFailure.PlaybackUnavailable
     is TimeoutException -> WatchLoadFailure.ServerUnreachable
     is SecureConnectionException -> WatchLoadFailure.SecureConnectionFailed
     is InvalidStatusException -> if (error.status == 401) {

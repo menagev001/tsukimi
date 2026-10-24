@@ -10,7 +10,10 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 - Add a Watch tab for a Jellyfin server (version 12 or newer): sign in under
   Settings → Watch, then browse Continue Watching, Next Up and your film and
-  series libraries, with seasons and episodes per series. Tsukimi keeps only
+  series libraries, with seasons and episodes per series, and play films and
+  episodes full screen with ±10 s, a seek bar and playback speed. Files the
+  tablet can decode play directly; anything else (for example 10-bit H.264) is
+  transcoded by Jellyfin. Playback resumes where you stopped. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

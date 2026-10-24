@@ -1,0 +1,322 @@
+package moe.antimony.hoshi.features.watch
+
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import androidx.activity.compose.BackHandler
+import androidx.annotation.OptIn
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawingPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Forward10
+import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.media3.common.Player
+import androidx.media3.common.util.UnstableApi
+import androidx.media3.ui.compose.ContentFrame
+import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
+import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
+import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
+import java.math.BigDecimal
+import java.math.RoundingMode
+import java.util.Locale
+import kotlinx.coroutines.delay
+import moe.antimony.hoshi.R
+
+private const val ControlsAutoHideMs = 3_000L
+private const val ProgressTickMs = 500L
+private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f)
+
+@OptIn(UnstableApi::class)
+@Composable
+internal fun WatchPlayerView(
+    itemId: String,
+    title: String,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val viewModel = hiltViewModel<WatchPlayerViewModel, WatchPlayerViewModel.Factory>(
+        creationCallback = { factory -> factory.create(itemId) },
+    )
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val player = viewModel.player
+    val playPauseState = rememberPlayPauseButtonState(player)
+    val isPlaying = !playPauseState.showPlay
+    var controlsVisible by remember { mutableStateOf(true) }
+    var interactionCount by remember { mutableIntStateOf(0) }
+
+    BackHandler(onBack = onClose)
+    ImmersiveSystemBars()
+    KeepScreenOn(isPlaying)
+    LifecycleEventEffect(Lifecycle.Event.ON_STOP) { viewModel.pause() }
+    DisposableEffect(viewModel) { onDispose { viewModel.pause() } }
+    LaunchedEffect(controlsVisible, isPlaying, interactionCount) {
+        if (controlsVisible && isPlaying) {
+            delay(ControlsAutoHideMs)
+            controlsVisible = false
+        }
+    }
+
+    CompositionLocalProvider(LocalContentColor provides Color.White) {
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(Color.Black)
+                .clickable(interactionSource = null, indication = null) { controlsVisible = !controlsVisible },
+        ) {
+            ContentFrame(player = player, modifier = Modifier.fillMaxSize())
+
+            when (val source = uiState.source) {
+                WatchLoadState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                is WatchLoadState.Failed -> WatchLoadFailureMessage(
+                    failure = source.failure,
+                    onRetry = viewModel::retry,
+                    onOpenSettings = null,
+                )
+                is WatchLoadState.Ready -> when {
+                    uiState.hasPlaybackError -> WatchCenteredMessage(
+                        message = stringResource(R.string.watch_player_error),
+                        primaryAction = stringResource(R.string.action_retry) to viewModel::retry,
+                    )
+                    uiState.isBuffering -> CircularProgressIndicator(Modifier.align(Alignment.Center))
+                }
+            }
+
+            val ready = uiState.source as? WatchLoadState.Ready
+            AnimatedVisibility(
+                visible = controlsVisible || ready == null,
+                enter = fadeIn(),
+                exit = fadeOut(),
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                WatchPlayerControls(
+                    player = player,
+                    title = ready?.value?.item?.let { it.seriesName ?: it.name } ?: title,
+                    subtitle = ready?.value?.item?.let { watchItemSubtitle(it) },
+                    showTransport = ready != null && !uiState.hasPlaybackError,
+                    isPlaying = isPlaying,
+                    onPlayPause = playPauseState::onClick,
+                    onInteraction = { interactionCount++ },
+                    onClose = onClose,
+                )
+            }
+        }
+    }
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun WatchPlayerControls(
+    player: Player,
+    title: String,
+    subtitle: String?,
+    showTransport: Boolean,
+    isPlaying: Boolean,
+    onPlayPause: () -> Unit,
+    onInteraction: () -> Unit,
+    onClose: () -> Unit,
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    0f to Color.Black.copy(alpha = 0.6f),
+                    0.25f to Color.Transparent,
+                    0.75f to Color.Transparent,
+                    1f to Color.Black.copy(alpha = 0.6f),
+                ),
+            )
+            .safeDrawingPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onClose) {
+                Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = stringResource(R.string.action_back))
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 8.dp)) {
+                Text(title, style = MaterialTheme.typography.titleMedium, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                subtitle?.let {
+                    Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        if (showTransport) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(48.dp, Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                IconButton(onClick = { player.seekBack(); onInteraction() }, modifier = Modifier.size(64.dp)) {
+                    Icon(Icons.Rounded.Replay10, stringResource(R.string.watch_player_rewind), Modifier.size(40.dp))
+                }
+                IconButton(onClick = { onPlayPause(); onInteraction() }, modifier = Modifier.size(80.dp)) {
+                    Icon(
+                        imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                        contentDescription = stringResource(if (isPlaying) R.string.watch_player_pause else R.string.watch_player_play),
+                        modifier = Modifier.size(56.dp),
+                    )
+                }
+                IconButton(onClick = { player.seekForward(); onInteraction() }, modifier = Modifier.size(64.dp)) {
+                    Icon(Icons.Rounded.Forward10, stringResource(R.string.watch_player_forward), Modifier.size(40.dp))
+                }
+            }
+        }
+        Spacer(Modifier.weight(1f))
+        if (showTransport) {
+            WatchPlayerTimeline(player = player, onInteraction = onInteraction)
+        }
+    }
+}
+
+@OptIn(UnstableApi::class)
+@Composable
+private fun WatchPlayerTimeline(
+    player: Player,
+    onInteraction: () -> Unit,
+) {
+    val progress = rememberProgressStateWithTickInterval(player, ProgressTickMs)
+    val speedState = rememberPlaybackSpeedState(player)
+    var dragPositionMs by remember { mutableStateOf<Long?>(null) }
+    var speedMenuOpen by remember { mutableStateOf(false) }
+    val durationMs = progress.durationMs.coerceAtLeast(0)
+    val positionMs = dragPositionMs ?: progress.currentPositionMs
+
+    Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+        Text(formatPlaybackTime(positionMs), style = MaterialTheme.typography.labelLarge)
+        Slider(
+            value = if (durationMs > 0) positionMs.toFloat() / durationMs else 0f,
+            onValueChange = { fraction ->
+                dragPositionMs = (fraction * durationMs).toLong()
+                onInteraction()
+            },
+            onValueChangeFinished = {
+                dragPositionMs?.let(player::seekTo)
+                dragPositionMs = null
+            },
+            enabled = durationMs > 0,
+            colors = SliderDefaults.colors(inactiveTrackColor = Color.White.copy(alpha = 0.3f)),
+            modifier = Modifier.weight(1f).padding(horizontal = 12.dp),
+        )
+        Text(formatPlaybackTime(durationMs), style = MaterialTheme.typography.labelLarge)
+        Box {
+            TextButton(onClick = { speedMenuOpen = true; onInteraction() }) {
+                Text(
+                    text = stringResource(R.string.watch_player_speed_format, formatPlaybackSpeed(speedState.playbackSpeed)),
+                    color = Color.White,
+                )
+            }
+            DropdownMenu(expanded = speedMenuOpen, onDismissRequest = { speedMenuOpen = false }) {
+                PlaybackSpeeds.forEach { speed ->
+                    DropdownMenuItem(
+                        text = { Text(stringResource(R.string.watch_player_speed_format, formatPlaybackSpeed(speed))) },
+                        onClick = {
+                            speedState.updatePlaybackSpeed(speed)
+                            speedMenuOpen = false
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImmersiveSystemBars() {
+    val context = LocalContext.current
+    val view = LocalView.current
+    DisposableEffect(context, view) {
+        val controller = context.findActivity()?.window?.let { WindowCompat.getInsetsController(it, view) }
+        val previousBehavior = controller?.systemBarsBehavior
+        controller?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        controller?.hide(WindowInsetsCompat.Type.systemBars())
+        onDispose {
+            if (previousBehavior != null) controller.systemBarsBehavior = previousBehavior
+            controller?.show(WindowInsetsCompat.Type.systemBars())
+        }
+    }
+}
+
+@Composable
+private fun KeepScreenOn(enabled: Boolean) {
+    val view = LocalView.current
+    DisposableEffect(view, enabled) {
+        view.keepScreenOn = enabled
+        onDispose { view.keepScreenOn = false }
+    }
+}
+
+private tailrec fun Context.findActivity(): Activity? = when (this) {
+    is Activity -> this
+    is ContextWrapper -> baseContext.findActivity()
+    else -> null
+}
+
+/** "m:ss", or "h:mm:ss" from one hour on. */
+internal fun formatPlaybackTime(ms: Long): String {
+    val totalSeconds = (ms.coerceAtLeast(0) / 1000)
+    val hours = totalSeconds / 3600
+    val minutes = (totalSeconds % 3600) / 60
+    val seconds = totalSeconds % 60
+    return if (hours > 0) {
+        String.format(Locale.ROOT, "%d:%02d:%02d", hours, minutes, seconds)
+    } else {
+        String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
+    }
+}
+
+/** "1", "1.25", "0.9": no trailing zeros. */
+internal fun formatPlaybackSpeed(speed: Float): String =
+    BigDecimal(speed.toDouble()).setScale(2, RoundingMode.HALF_UP).stripTrailingZeros().toPlainString()

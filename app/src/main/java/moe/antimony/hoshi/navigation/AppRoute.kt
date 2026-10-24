@@ -29,6 +29,12 @@ sealed interface AppRoute : NavKey {
     ) : AppRoute
 
     @Serializable
+    data class WatchPlayerRoute(
+        val itemId: String,
+        val title: String,
+    ) : AppRoute
+
+    @Serializable
     data object DictionaryRoute : AppRoute
 
     @Serializable

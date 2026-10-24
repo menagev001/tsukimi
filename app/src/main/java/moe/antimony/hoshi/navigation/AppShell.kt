@@ -58,6 +58,7 @@ import moe.antimony.hoshi.features.watch.WatchItem
 import moe.antimony.hoshi.features.watch.WatchItemKind
 import moe.antimony.hoshi.features.watch.WatchLibrary
 import moe.antimony.hoshi.features.watch.WatchLibraryView
+import moe.antimony.hoshi.features.watch.WatchPlayerView
 import moe.antimony.hoshi.features.watch.WatchSeriesView
 import moe.antimony.hoshi.features.watch.WatchSettingsView
 import kotlinx.coroutines.launch
@@ -257,7 +258,9 @@ fun AppShell(
             WatchItemKind.Season -> item.seriesId?.let { seriesId ->
                 watchBackStack.add(AppRoute.WatchSeriesRoute(seriesId, item.seriesName ?: item.name))
             }
-            else -> Unit
+            else -> if (item.isPlayable) {
+                watchBackStack.add(AppRoute.WatchPlayerRoute(item.id, item.seriesName ?: item.name))
+            }
         }
     }
 
@@ -354,6 +357,12 @@ fun AppShell(
                     seriesId = route.seriesId,
                     title = route.title,
                     onOpenItem = ::openWatchItem,
+                    onClose = ::popRoute,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                is AppRoute.WatchPlayerRoute -> WatchPlayerView(
+                    itemId = route.itemId,
+                    title = route.title,
                     onClose = ::popRoute,
                     modifier = Modifier.fillMaxSize(),
                 )
@@ -704,7 +713,7 @@ internal fun normalizeStatisticsBackStackForVisibleTabs(
 
 private fun AppRoute.toMainTab(): MainTab = when (this) {
     AppRoute.MainRoute, AppRoute.BooksRoute -> MainTab.Books
-    AppRoute.WatchRoute, is AppRoute.WatchLibraryRoute, is AppRoute.WatchSeriesRoute -> MainTab.Watch
+    AppRoute.WatchRoute, is AppRoute.WatchLibraryRoute, is AppRoute.WatchSeriesRoute, is AppRoute.WatchPlayerRoute -> MainTab.Watch
     AppRoute.DictionaryRoute -> MainTab.Dictionary
     AppRoute.StatisticsRoute -> MainTab.Statistics
     AppRoute.SettingsRoute -> MainTab.Settings

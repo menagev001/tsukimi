@@ -22,7 +22,7 @@ sealed interface WatchLoadState<out T> {
     data class Failed(val failure: WatchLoadFailure) : WatchLoadState<Nothing>
 }
 
-private fun <T> Result<T>.toLoadState(): WatchLoadState<T> = fold(
+internal fun <T> Result<T>.toWatchLoadState(): WatchLoadState<T> = fold(
     onSuccess = { WatchLoadState.Ready(it) },
     onFailure = { WatchLoadState.Failed(watchLoadFailure(it)) },
 )
@@ -59,7 +59,7 @@ internal class WatchHomeViewModel @Inject constructor(
     fun refresh() {
         if (_uiState.value.isSignedIn != true || loadJob?.isActive == true) return
         loadJob = viewModelScope.launch {
-            val result = browseRepository.home().toLoadState()
+            val result = browseRepository.home().toWatchLoadState()
             _uiState.update { current ->
                 if (result is WatchLoadState.Failed && current.home is WatchLoadState.Ready) current else current.copy(home = result)
             }
@@ -87,7 +87,7 @@ internal class WatchLibraryViewModel @AssistedInject constructor(
     fun reload() {
         _uiState.value = WatchLibraryUiState()
         viewModelScope.launch {
-            _uiState.value = WatchLibraryUiState(browseRepository.libraryItems(libraryId, kind).toLoadState())
+            _uiState.value = WatchLibraryUiState(browseRepository.libraryItems(libraryId, kind).toWatchLoadState())
         }
     }
 
@@ -120,7 +120,7 @@ internal class WatchSeriesViewModel @AssistedInject constructor(
         viewModelScope.launch {
             val previousSeasonId = _uiState.value.selectedSeasonId
             _uiState.value = WatchSeriesUiState()
-            val series = browseRepository.series(seriesId).toLoadState()
+            val series = browseRepository.series(seriesId).toWatchLoadState()
             val seasons = (series as? WatchLoadState.Ready)?.value?.seasons.orEmpty()
             val seasonId = seasons.firstOrNull { it.id == previousSeasonId }?.id ?: defaultSeason(seasons)?.id
             _uiState.value = WatchSeriesUiState(series = series, selectedSeasonId = seasonId)
@@ -138,7 +138,7 @@ internal class WatchSeriesViewModel @AssistedInject constructor(
         episodesJob?.cancel()
         _uiState.update { it.copy(episodes = WatchLoadState.Loading) }
         episodesJob = viewModelScope.launch {
-            val episodes = browseRepository.episodes(seriesId, seasonId).toLoadState()
+            val episodes = browseRepository.episodes(seriesId, seasonId).toWatchLoadState()
             _uiState.update { if (it.selectedSeasonId == seasonId) it.copy(episodes = episodes) else it }
         }
     }

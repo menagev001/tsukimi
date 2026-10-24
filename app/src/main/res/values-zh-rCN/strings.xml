@@ -705,6 +705,13 @@
     <string name="watch_error_not_signed_in">尚未登录 Jellyfin。</string>
     <string name="watch_error_session_expired">Jellyfin 会话已失效。请在 设置 → 观看 中重新登录。</string>
     <string name="watch_error_load_failed">无法从 Jellyfin 加载内容。</string>
+    <string name="watch_error_playback_unavailable">Jellyfin 没有本设备可播放的视频流。</string>
+    <string name="watch_player_error">无法播放此视频。</string>
+    <string name="watch_player_play">播放</string>
+    <string name="watch_player_pause">暂停</string>
+    <string name="watch_player_rewind">后退 10 秒</string>
+    <string name="watch_player_forward">前进 10 秒</string>
+    <string name="watch_player_speed_format">%1$s×</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

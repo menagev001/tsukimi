@@ -707,6 +707,13 @@
     <string name="watch_error_not_signed_in">You are not signed in to Jellyfin.</string>
     <string name="watch_error_session_expired">Your Jellyfin session has ended. Sign in again in Settings → Watch.</string>
     <string name="watch_error_load_failed">Could not load from Jellyfin.</string>
+    <string name="watch_error_playback_unavailable">Jellyfin has no stream that this device can play.</string>
+    <string name="watch_player_error">This video could not be played.</string>
+    <string name="watch_player_play">Play</string>
+    <string name="watch_player_pause">Pause</string>
+    <string name="watch_player_rewind">Back 10 seconds</string>
+    <string name="watch_player_forward">Forward 10 seconds</string>
+    <string name="watch_player_speed_format">%1$s×</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>
