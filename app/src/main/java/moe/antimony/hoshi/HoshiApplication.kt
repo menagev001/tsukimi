@@ -41,6 +41,8 @@ class HoshiApplication : Application(), Configuration.Provider, SingletonImageLo
             .build()
 
     override fun onCreate() {
+        // The Jellyfin SDK logs through kotlin-logging, which defaults to SLF4J on Android; the app ships no SLF4J.
+        System.setProperty("kotlin-logging-to-android-native", "true")
         super.onCreate()
         installCrashDiagnostics(this)
         prepareUpdateStartupState()

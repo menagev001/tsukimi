@@ -49,6 +49,7 @@ enum class SettingsDetailSection {
     Dictionaries,
     Anki,
     Ai,
+    Watch,
     Profiles,
     Appearance,
     Behavior,

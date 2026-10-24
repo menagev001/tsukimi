@@ -6,6 +6,12 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+### Added
+
+- Sign in to a Jellyfin server (version 12 or newer) in Settings → Watch, the
+  first step of the coming Watch mode. Tsukimi keeps only the session token,
+  never the password, and Sign out ends the session on the server.
+
 ### Changed
 
 - Rename the app to 月見 Tsukimi. It now has its own application ID

@@ -37,3 +37,6 @@
 
 # JNA also ships desktop AWT integration classes that are unused on Android.
 -dontwarn java.awt.**
+
+# kotlin-logging (used by the Jellyfin SDK) has optional SLF4J code; HoshiApplication selects Android native logging.
+-dontwarn org.slf4j.**

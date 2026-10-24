@@ -53,6 +53,7 @@ import moe.antimony.hoshi.features.sasayaki.SasayakiSettings
 import moe.antimony.hoshi.features.settings.AdvancedSettingsView
 import moe.antimony.hoshi.features.statistics.StatisticsView
 import moe.antimony.hoshi.features.update.AboutScreen
+import moe.antimony.hoshi.features.watch.WatchSettingsView
 import kotlinx.coroutines.launch
 
 private const val ReportIssueUrl = "https://github.com/menagev001/tsukimi/issues"
@@ -549,6 +550,10 @@ private fun SettingsDetailDestination(
             onClose = onClose,
             modifier = Modifier.fillMaxSize(),
         )
+        SettingsDetailSection.Watch -> WatchSettingsView(
+            onClose = onClose,
+            modifier = Modifier.fillMaxSize(),
+        )
         SettingsDetailSection.Profiles -> ProfilesView(
             onClose = onClose,
             modifier = Modifier.fillMaxSize(),
@@ -644,6 +649,7 @@ private fun SettingsDestination.toSection(): SettingsDetailSection = when (this)
     SettingsDestination.Dictionaries -> SettingsDetailSection.Dictionaries
     SettingsDestination.Anki -> SettingsDetailSection.Anki
     SettingsDestination.Ai -> SettingsDetailSection.Ai
+    SettingsDestination.Watch -> SettingsDetailSection.Watch
     SettingsDestination.Profiles -> SettingsDetailSection.Profiles
     SettingsDestination.Appearance -> SettingsDetailSection.Appearance
     SettingsDestination.Behavior -> SettingsDetailSection.Behavior
