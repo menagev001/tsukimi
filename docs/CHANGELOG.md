@@ -1,10 +1,21 @@
 # Changelog
 
-All notable user-visible changes to Hoshi Reader Android are documented here.
+All notable user-visible changes to Tsukimi are documented here.
 The format follows a Keep a Changelog style, and release sections use Semantic Versioning.
 Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_ARCHIVE.md).
 
 ## [Unreleased]
+
+### Changed
+
+- Rename the app to 月見 Tsukimi. It now has its own application ID
+  (`com.feathercomet.tsukimi`), so it installs next to Hoshi Reader instead of
+  updating it: move books and dictionaries with a `.hoshi` backup from
+  Settings; manga volumes and settings such as the AI key and Anki mappings
+  are not part of the backup and need to be imported and set up again. Update
+  checks, the About page and issue reports now use the Tsukimi repository on
+  GitHub, and dictionary deep links use `tsukimi://search?text=...` instead of
+  `hoshi://`.
 
 ## [v1.5.0] - 2026-09-29
 
