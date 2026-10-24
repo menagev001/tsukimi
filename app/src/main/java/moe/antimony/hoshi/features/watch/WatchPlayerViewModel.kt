@@ -7,15 +7,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.common.Format
 import androidx.media3.common.MediaItem
 import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.Tracks
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
+import java.util.Locale
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -31,6 +35,16 @@ data class WatchPlayerUiState(
     val source: WatchLoadState<WatchPlaybackSource> = WatchLoadState.Loading,
     val isBuffering: Boolean = false,
     val hasPlaybackError: Boolean = false,
+    val audioTracks: List<WatchAudioTrackOption> = emptyList(),
+)
+
+data class WatchAudioTrackOption(
+    val label: String,
+    val isSelected: Boolean,
+    /** Index of the player's audio track group, for direct play. */
+    internal val playerGroupIndex: Int? = null,
+    /** Jellyfin stream index, for transcodes that carry a single audio stream. */
+    internal val jellyfinStreamIndex: Int? = null,
 )
 
 @OptIn(UnstableApi::class)
@@ -74,6 +88,10 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
                             Player.STATE_READY -> reportStart()
                             Player.STATE_ENDED -> reportStop()
                         }
+                    }
+
+                    override fun onTracksChanged(tracks: Tracks) {
+                        updateAudioTracks()
                     }
 
                     override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
@@ -122,6 +140,27 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         player.pause()
     }
 
+    fun selectAudioTrack(option: WatchAudioTrackOption) {
+        if (option.isSelected) return
+        option.playerGroupIndex?.let { groupIndex ->
+            val group = player.currentTracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }.getOrNull(groupIndex) ?: return
+            player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+                .setOverrideForType(TrackSelectionOverride(group.mediaTrackGroup, 0))
+                .build()
+            return
+        }
+        val streamIndex = option.jellyfinStreamIndex ?: return
+        viewModelScope.launch {
+            val positionMs = player.currentPosition
+            playbackRepository.prepare(itemId, audioStreamIndex = streamIndex, startPositionMs = positionMs)
+                .onSuccess { source ->
+                    reportStop()
+                    start(source)
+                    _uiState.update { it.copy(source = WatchLoadState.Ready(source)) }
+                }
+        }
+    }
+
     private fun load() {
         _uiState.value = WatchPlayerUiState()
         viewModelScope.launch {
@@ -133,6 +172,10 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
 
     private fun start(source: WatchPlaybackSource) {
         activeSource = source
+        player.trackSelectionParameters = player.trackSelectionParameters.buildUpon()
+            .clearOverridesOfType(C.TRACK_TYPE_AUDIO)
+            .setPreferredAudioLanguage(source.preferredAudioLanguage)
+            .build()
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setDefaultRequestProperties(source.requestHeaders)
             .setAllowCrossProtocolRedirects(true)
@@ -146,6 +189,31 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         )
         player.prepare()
         player.play()
+    }
+
+    private fun updateAudioTracks() {
+        val source = activeSource ?: return
+        val options = if (source.isTranscoding) {
+            source.audioStreams.map { stream ->
+                WatchAudioTrackOption(
+                    label = stream.label,
+                    isSelected = stream.index == source.audioStreamIndex,
+                    jellyfinStreamIndex = stream.index,
+                )
+            }
+        } else {
+            val groups = player.currentTracks.groups.filter { it.type == C.TRACK_TYPE_AUDIO }
+            // Direct play keeps the container's track order, which is also Jellyfin's stream order.
+            val jellyfinLabels = source.audioStreams.map { it.label }.takeIf { it.size == groups.size }
+            groups.mapIndexed { index, group ->
+                WatchAudioTrackOption(
+                    label = jellyfinLabels?.get(index) ?: playerTrackLabel(group.getTrackFormat(0)),
+                    isSelected = group.isSelected,
+                    playerGroupIndex = index,
+                )
+            }
+        }
+        _uiState.update { it.copy(audioTracks = options) }
     }
 
     private fun reportStart() {
@@ -176,6 +244,13 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     interface Factory {
         fun create(itemId: String): WatchPlayerViewModel
     }
+
+    private fun playerTrackLabel(format: Format): String =
+        listOfNotNull(
+            format.label,
+            format.language?.let { Locale.forLanguageTag(it).displayLanguage.ifBlank { it } },
+            format.channelCount.takeIf { it > 0 }?.let { "${it}ch" },
+        ).distinct().joinToString(" · ")
 
     private companion object {
         const val Tag = "WatchPlayer"

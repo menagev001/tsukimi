@@ -15,6 +15,7 @@ import moe.antimony.hoshi.ui.UiText
 
 data class WatchSettingsUiState(
     val settings: JellyfinSettings = JellyfinSettings(),
+    val preferences: WatchPreferences = WatchPreferences(),
     val isLoaded: Boolean = false,
     val isBusy: Boolean = false,
     val errorMessage: UiText? = null,
@@ -28,13 +29,15 @@ private data class WatchSettingsTransientState(
 @HiltViewModel
 internal class WatchSettingsViewModel @Inject constructor(
     private val repository: JellyfinRepository,
+    private val preferencesRepository: WatchPreferencesRepository,
 ) : ViewModel() {
     private val transientState = MutableStateFlow(WatchSettingsTransientState())
 
     val uiState: StateFlow<WatchSettingsUiState> =
-        combine(repository.settings, transientState) { settings, transient ->
+        combine(repository.settings, preferencesRepository.preferences, transientState) { settings, preferences, transient ->
             WatchSettingsUiState(
                 settings = settings,
+                preferences = preferences,
                 isLoaded = true,
                 isBusy = transient.isBusy,
                 errorMessage = transient.errorMessage,
@@ -64,6 +67,14 @@ internal class WatchSettingsViewModel @Inject constructor(
             repository.logout()
             transientState.update { WatchSettingsTransientState() }
         }
+    }
+
+    fun updateMeteredQuality(value: WatchStreamingQuality) {
+        viewModelScope.launch { preferencesRepository.updateMeteredQuality(value) }
+    }
+
+    fun updateAudioLanguage(value: WatchAudioLanguage) {
+        viewModelScope.launch { preferencesRepository.updateAudioLanguage(value) }
     }
 
     fun clearError() {

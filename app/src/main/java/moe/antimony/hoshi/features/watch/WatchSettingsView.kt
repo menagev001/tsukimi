@@ -17,6 +17,8 @@ import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
@@ -26,10 +28,13 @@ import androidx.compose.material3.OutlinedSecureTextField
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -79,6 +84,15 @@ fun WatchSettingsView(
                         errorMessage = uiState.errorMessage,
                         onInputChanged = viewModel::clearError,
                         onLogin = viewModel::login,
+                    )
+                }
+            }
+            if (uiState.isLoaded) {
+                item {
+                    WatchPlaybackCard(
+                        preferences = uiState.preferences,
+                        onMeteredQualityChange = viewModel::updateMeteredQuality,
+                        onAudioLanguageChange = viewModel::updateAudioLanguage,
                     )
                 }
             }
@@ -208,6 +222,70 @@ private fun JellyfinLoginCard(
             Triple(serverUrlState.text.toString(), usernameState.text.toString(), passwordState.text.toString())
         }.collect { onInputChanged() }
     }
+}
+
+@Composable
+private fun WatchPlaybackCard(
+    preferences: WatchPreferences,
+    onMeteredQualityChange: (WatchStreamingQuality) -> Unit,
+    onAudioLanguageChange: (WatchAudioLanguage) -> Unit,
+) {
+    WatchSettingsCard {
+        Text(
+            text = stringResource(R.string.watch_playback_section),
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(start = 16.dp, top = 16.dp, end = 16.dp),
+        )
+        WatchChoiceRow(
+            title = stringResource(R.string.watch_audio_language),
+            options = WatchAudioLanguage.entries,
+            selected = preferences.audioLanguage,
+            label = { stringResource(it.labelRes) },
+            onSelect = onAudioLanguageChange,
+        )
+        HorizontalDivider()
+        WatchChoiceRow(
+            title = stringResource(R.string.watch_metered_quality),
+            supporting = stringResource(R.string.watch_metered_quality_hint),
+            options = WatchStreamingQuality.entries,
+            selected = preferences.meteredQuality,
+            label = { stringResource(it.labelRes) },
+            onSelect = onMeteredQualityChange,
+        )
+    }
+}
+
+@Composable
+private fun <T> WatchChoiceRow(
+    title: String,
+    options: List<T>,
+    selected: T,
+    label: @Composable (T) -> String,
+    onSelect: (T) -> Unit,
+    supporting: String? = null,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        headlineContent = { Text(title) },
+        supportingContent = supporting?.let { { Text(it) } },
+        trailingContent = {
+            Box {
+                TextButton(onClick = { menuOpen = true }) { Text(label(selected)) }
+                DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+                    options.forEach { option ->
+                        DropdownMenuItem(
+                            text = { Text(label(option)) },
+                            onClick = {
+                                onSelect(option)
+                                menuOpen = false
+                            },
+                        )
+                    }
+                }
+            }
+        },
+    )
 }
 
 @Composable

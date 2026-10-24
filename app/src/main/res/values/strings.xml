@@ -714,6 +714,16 @@
     <string name="watch_player_rewind">Back 10 seconds</string>
     <string name="watch_player_forward">Forward 10 seconds</string>
     <string name="watch_player_speed_format">%1$s×</string>
+    <string name="watch_player_audio_track">Audio Track</string>
+    <string name="watch_playback_section">Video Playback</string>
+    <string name="watch_audio_language">Audio Language</string>
+    <string name="watch_audio_language_server_default">Server Default</string>
+    <string name="watch_metered_quality">Quality on Mobile Data</string>
+    <string name="watch_metered_quality_hint">Used on metered connections such as mobile data and phone hotspots. Lower quality makes Jellyfin transcode.</string>
+    <string name="watch_quality_original">Original</string>
+    <string name="watch_quality_8_mbps">8 Mbit/s</string>
+    <string name="watch_quality_4_mbps">4 Mbit/s</string>
+    <string name="watch_quality_2_mbps">2 Mbit/s</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

@@ -14,7 +14,10 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   episodes full screen with ±10 s, a seek bar and playback speed. Files the
   tablet can decode play directly; anything else (for example 10-bit H.264) is
   transcoded by Jellyfin. Playback resumes where you stopped, and progress
-  and watched state are saved to Jellyfin, so they match the other Jellyfin apps. Tsukimi keeps only
+  and watched state are saved to Jellyfin, so they match the other Jellyfin apps.
+  Japanese audio is chosen by default (Settings → Watch → Audio Language), an
+  audio track button switches tracks during playback, and a lower streaming
+  quality can be set for mobile data and phone hotspots. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

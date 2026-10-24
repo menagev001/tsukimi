@@ -56,6 +56,8 @@ import moe.antimony.hoshi.features.wallpaper.IReaderBookCoverCapabilityProvider
 import moe.antimony.hoshi.features.wallpaper.bookCoverWallpaperSettingsRepository
 import moe.antimony.hoshi.features.watch.JellyfinSettingsRepository
 import moe.antimony.hoshi.features.watch.jellyfinSettingsRepository
+import moe.antimony.hoshi.features.watch.WatchPreferencesRepository
+import moe.antimony.hoshi.features.watch.watchPreferencesRepository
 import moe.antimony.hoshi.profiles.ProfileRepository
 
 @Module
@@ -146,6 +148,11 @@ internal object HoshiAppModule {
     @Singleton
     fun provideJellyfinSettingsRepository(@ApplicationContext context: Context): JellyfinSettingsRepository =
         context.jellyfinSettingsRepository()
+
+    @Provides
+    @Singleton
+    fun provideWatchPreferencesRepository(@ApplicationContext context: Context): WatchPreferencesRepository =
+        context.watchPreferencesRepository()
 
     @Provides
     @Singleton

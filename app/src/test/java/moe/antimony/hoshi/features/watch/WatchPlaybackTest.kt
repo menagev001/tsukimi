@@ -59,6 +59,21 @@ class WatchPlaybackTest {
     }
 
     @Test
+    fun preferredAudioPicksFirstStreamInLanguage() {
+        val streams = listOf(
+            WatchAudioStream(index = 1, label = "English - AC3 - 5.1", language = "eng"),
+            WatchAudioStream(index = 2, label = "Japanese - AAC - Stereo", language = "jpn"),
+            WatchAudioStream(index = 3, label = "Japanese - Commentary", language = "jpn"),
+        )
+
+        assertEquals(2, preferredAudioStreamIndex(streams, WatchAudioLanguage.Japanese))
+        assertEquals(1, preferredAudioStreamIndex(streams, WatchAudioLanguage.English))
+        assertEquals(null, preferredAudioStreamIndex(streams, WatchAudioLanguage.ServerDefault))
+        assertEquals(null, preferredAudioStreamIndex(streams.take(1), WatchAudioLanguage.Japanese))
+        assertEquals(5, preferredAudioStreamIndex(listOf(WatchAudioStream(5, "ja", "ja")), WatchAudioLanguage.Japanese))
+    }
+
+    @Test
     fun playbackTimeAndSpeedFormatting() {
         assertEquals("0:05", formatPlaybackTime(5_400L))
         assertEquals("23:40", formatPlaybackTime(23 * 60_000L + 40_000L))

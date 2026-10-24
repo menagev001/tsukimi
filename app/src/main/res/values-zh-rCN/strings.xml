@@ -712,6 +712,16 @@
     <string name="watch_player_rewind">后退 10 秒</string>
     <string name="watch_player_forward">前进 10 秒</string>
     <string name="watch_player_speed_format">%1$s×</string>
+    <string name="watch_player_audio_track">音轨</string>
+    <string name="watch_playback_section">视频播放</string>
+    <string name="watch_audio_language">音频语言</string>
+    <string name="watch_audio_language_server_default">服务器默认</string>
+    <string name="watch_metered_quality">移动数据画质</string>
+    <string name="watch_metered_quality_hint">在按流量计费的网络（如移动数据和手机热点）上使用。较低画质会让 Jellyfin 转码。</string>
+    <string name="watch_quality_original">原画</string>
+    <string name="watch_quality_8_mbps">8 Mbit/s</string>
+    <string name="watch_quality_4_mbps">4 Mbit/s</string>
+    <string name="watch_quality_2_mbps">2 Mbit/s</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

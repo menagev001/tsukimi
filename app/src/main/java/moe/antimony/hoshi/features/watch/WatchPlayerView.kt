@@ -22,6 +22,8 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Audiotrack
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
@@ -145,6 +147,8 @@ internal fun WatchPlayerView(
                     title = ready?.value?.item?.let { it.seriesName ?: it.name } ?: title,
                     subtitle = ready?.value?.item?.let { watchItemSubtitle(it) },
                     showTransport = ready != null && !uiState.hasPlaybackError,
+                    audioTracks = uiState.audioTracks,
+                    onSelectAudioTrack = viewModel::selectAudioTrack,
                     isPlaying = isPlaying,
                     onPlayPause = playPauseState::onClick,
                     onInteraction = { interactionCount++ },
@@ -162,6 +166,8 @@ private fun WatchPlayerControls(
     title: String,
     subtitle: String?,
     showTransport: Boolean,
+    audioTracks: List<WatchAudioTrackOption>,
+    onSelectAudioTrack: (WatchAudioTrackOption) -> Unit,
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onInteraction: () -> Unit,
@@ -190,6 +196,13 @@ private fun WatchPlayerControls(
                 subtitle?.let {
                     Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
+            }
+            if (showTransport && audioTracks.size > 1) {
+                WatchAudioTrackButton(
+                    tracks = audioTracks,
+                    onSelect = onSelectAudioTrack,
+                    onInteraction = onInteraction,
+                )
             }
         }
         Spacer(Modifier.weight(1f))
@@ -268,6 +281,34 @@ private fun WatchPlayerTimeline(
                         },
                     )
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchAudioTrackButton(
+    tracks: List<WatchAudioTrackOption>,
+    onSelect: (WatchAudioTrackOption) -> Unit,
+    onInteraction: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuOpen = true; onInteraction() }) {
+            Icon(Icons.Rounded.Audiotrack, contentDescription = stringResource(R.string.watch_player_audio_track))
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            tracks.forEach { track ->
+                DropdownMenuItem(
+                    text = { Text(track.label) },
+                    trailingIcon = {
+                        if (track.isSelected) Icon(Icons.Rounded.Check, contentDescription = null)
+                    },
+                    onClick = {
+                        onSelect(track)
+                        menuOpen = false
+                    },
+                )
             }
         }
     }
