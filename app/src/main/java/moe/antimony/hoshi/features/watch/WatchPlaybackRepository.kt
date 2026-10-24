@@ -38,6 +38,8 @@ data class WatchPlaybackSource(
     val audioStreamIndex: Int?,
     /** ISO 639-1 language the player should prefer when the stream has several audio tracks. */
     val preferredAudioLanguage: String?,
+    /** Text subtitle streams; Tsukimi downloads and draws these itself. */
+    val subtitleTracks: List<WatchSubtitleTrack>,
 )
 
 data class WatchAudioStream(
@@ -127,6 +129,7 @@ class WatchPlaybackRepository @Inject constructor(
                     audioStreams = source.mediaStreams.orEmpty().toWatchAudioStreams(),
                     audioStreamIndex = requestedAudioIndex ?: source.defaultAudioStreamIndex,
                     preferredAudioLanguage = preferences.audioLanguage.playerCode,
+                    subtitleTracks = source.mediaStreams.orEmpty().toWatchSubtitleTracks(),
                 ),
             )
         } catch (error: CancellationException) {
@@ -173,6 +176,15 @@ class WatchPlaybackRepository @Inject constructor(
 private fun List<MediaStream>.toWatchAudioStreams(): List<WatchAudioStream> =
     filter { it.type == MediaStreamType.AUDIO }.map { stream ->
         WatchAudioStream(
+            index = stream.index,
+            label = stream.displayTitle ?: stream.title ?: stream.language ?: stream.codec.orEmpty(),
+            language = stream.language,
+        )
+    }
+
+private fun List<MediaStream>.toWatchSubtitleTracks(): List<WatchSubtitleTrack> =
+    filter { it.type == MediaStreamType.SUBTITLE && it.isTextSubtitleStream }.map { stream ->
+        WatchSubtitleTrack(
             index = stream.index,
             label = stream.displayTitle ?: stream.title ?: stream.language ?: stream.codec.orEmpty(),
             language = stream.language,
