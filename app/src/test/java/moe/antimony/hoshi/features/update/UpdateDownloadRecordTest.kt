@@ -9,21 +9,21 @@ class UpdateDownloadRecordTest {
     private val update = AvailableUpdate(
         versionName = "0.3.5",
         releaseUrl = "https://example.com/releases/tag/v0.3.5",
-        assetName = "Hoshi-Reader-v0.3.5.apk",
-        downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+        assetName = "Tsukimi-v0.3.5.apk",
+        downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
         sha256 = "7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b",
     )
 
     @Test
     fun updateApkUsesStableFileName() {
-        assertEquals("Hoshi-Reader-update.apk", AndroidUpdateDownloadManager.UpdateFileName)
+        assertEquals("Tsukimi-update.apk", AndroidUpdateDownloadManager.UpdateFileName)
     }
 
     @Test
     fun downloadedRecordMatchesOnlyTheSameVersionAssetAndDigest() {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = 42L,
             sha256 = "7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b",
@@ -41,7 +41,7 @@ class UpdateDownloadRecordTest {
     fun recordsWithoutDigestsMatchOnlyUpdatesWithoutDigests() {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = 42L,
             sha256 = null,
@@ -56,11 +56,11 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = null,
             sha256 = null,
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = emptyList(),
             status = UpdateDownloadRecordStatus.Available,
         )
@@ -77,11 +77,11 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = null,
             sha256 = null,
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = emptyList(),
             status = UpdateDownloadRecordStatus.Skipped,
         )
@@ -95,18 +95,18 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = null,
             sha256 = "7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b",
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
-            fallbackDownloadUrls = listOf("https://mirror.example.com/Hoshi-Reader-v0.3.5.apk"),
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
+            fallbackDownloadUrls = listOf("https://mirror.example.com/Tsukimi-v0.3.5.apk"),
             status = UpdateDownloadRecordStatus.Available,
         )
 
         val restored = record.toAvailableUpdate()
 
-        assertEquals(update.copy(fallbackDownloadUrls = listOf("https://mirror.example.com/Hoshi-Reader-v0.3.5.apk")), restored)
+        assertEquals(update.copy(fallbackDownloadUrls = listOf("https://mirror.example.com/Tsukimi-v0.3.5.apk")), restored)
     }
 
     @Test
@@ -114,11 +114,11 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = null,
             sha256 = "7977f9e95adec03fce35ef0640fdd2fe662c6521d625dc12242df5b66fb2254b",
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = emptyList(),
             status = UpdateDownloadRecordStatus.Available,
         )
@@ -131,11 +131,11 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = 42L,
             sha256 = null,
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = emptyList(),
             status = UpdateDownloadRecordStatus.Downloaded,
         )
@@ -152,11 +152,11 @@ class UpdateDownloadRecordTest {
         val record = UpdateDownloadRecord(
             versionName = "0.3.5",
             releaseUrl = "https://example.com/releases/tag/v0.3.5",
-            assetName = "Hoshi-Reader-v0.3.5.apk",
+            assetName = "Tsukimi-v0.3.5.apk",
             fileName = AndroidUpdateDownloadManager.UpdateFileName,
             downloadId = 42L,
             sha256 = null,
-            downloadUrl = "https://example.com/Hoshi-Reader-v0.3.5.apk",
+            downloadUrl = "https://example.com/Tsukimi-v0.3.5.apk",
             fallbackDownloadUrls = emptyList(),
             status = UpdateDownloadRecordStatus.Downloaded,
         )

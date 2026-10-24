@@ -109,7 +109,7 @@ internal class AndroidUpdateDownloadManager @Inject constructor(
 
     companion object {
         const val ApkMimeType = "application/vnd.android.package-archive"
-        const val UpdateFileName = "Hoshi-Reader-update.apk"
+        const val UpdateFileName = "Tsukimi-update.apk"
     }
 }
 

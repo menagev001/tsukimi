@@ -1,5 +1,5 @@
 name: Bug report
-description: Report a bug you have experienced in Hoshi Reader Android
+description: Report a bug you have experienced in Tsukimi
 title: '[Bug]: '
 labels: ["bug"]
 body:
@@ -30,8 +30,7 @@ body:
         For EPUB import errors, open errors, page crashes, or formatting
         issues, upload a .zip containing the EPUB if you can share it publicly
         and legally. You can also attach screenshots or screen recordings. If
-        you cannot share the book publicly, say so in the description and send
-        it by Discord DM or email it to HuangAntimony@gmail.com.
+        you cannot share the book publicly, say so in the description.
       placeholder: Drag and drop the .zip archive, screenshots, or screen recordings here.
     validations:
       required: false
@@ -40,7 +39,7 @@ body:
     attributes:
       label: Diagnostic log
       description: >-
-        If the app crashed, open Hoshi Reader Android's Settings page, go to
+        If the app crashed, open Tsukimi's Settings page, go to
         Diagnostics, download the diagnostic log, and upload the .txt file here.
       placeholder: Drag and drop the .txt diagnostic log here.
     validations:
@@ -48,7 +47,7 @@ body:
   - type: input
     id: app-version
     attributes:
-      label: Hoshi Reader Android version
+      label: Tsukimi version
       placeholder: e.g. 1.1.3 or debug build from commit abc1234
     validations:
       required: true
