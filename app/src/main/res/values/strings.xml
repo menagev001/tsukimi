@@ -33,6 +33,8 @@
     <string name="action_sign_out">Sign out</string>
     <string name="action_copy_code">Copy code</string>
     <string name="action_scan">Scan</string>
+    <string name="action_retry" comment="Generic retry action, intentionally matching the AI lookup retry label.">Retry</string>
+    <string name="action_refresh">Refresh</string>
     <string name="loading">Loading...</string>
     <string name="none" comment="Generic empty value label, intentionally matching bookshelf_no_shelf.">None</string>
     <string name="dialog_error_title">Error</string>
@@ -47,6 +49,7 @@
     <string name="import_select_manga_cbz">Select a .cbz manga CBZ archive file.</string>
     <string name="import_select_mokuro_sidecar">Select a .mokuro sidecar file.</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">Books</string>
+    <string name="main_tab_watch" comment="Main navigation tab label, intentionally matching the Watch settings title.">Watch</string>
     <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">Manga</string>
     <string name="main_tab_dictionary">Dictionary</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">Statistics</string>
@@ -670,13 +673,13 @@
     <string name="explain_word_title">Explain Word</string>
     <string name="ai_lookup_loading">Asking AI…</string>
     <string name="ai_lookup_error_format">AI request failed: %1$s</string>
-    <string name="ai_lookup_retry">Retry</string>
+    <string name="ai_lookup_retry" comment="AI lookup retry label, intentionally matching the generic retry action.">Retry</string>
     <string name="sentence_breakdown_title" comment="Both the double-tap result overlay title and the button label shown before sending the sentence to AI.">Sentence Breakdown</string>
     <string name="ai_word_nuance_prompt_label">Word Nuance Prompt</string>
     <string name="ai_prompt_using_default">Using bundled prompt</string>
     <string name="ai_prompt_using_custom">Using custom prompt</string>
     <string name="ai_prompt_reset_to_default">Reset to Default</string>
-    <string name="settings_watch">Watch</string>
+    <string name="settings_watch" comment="Settings row label, intentionally matching the Watch main tab label.">Watch</string>
     <string name="watch_jellyfin_server">Jellyfin Server</string>
     <string name="watch_server_url">Server URL</string>
     <string name="watch_username">Username</string>
@@ -690,6 +693,20 @@
     <string name="watch_login_error_unsupported_version">This Jellyfin server is too old. Tsukimi needs Jellyfin 12 or newer.</string>
     <string name="watch_login_error_invalid_credentials">Wrong username or password.</string>
     <string name="watch_login_error_unknown">Sign-in failed. Try again.</string>
+    <string name="watch_not_signed_in_message">Sign in to your Jellyfin server to browse and watch your videos.</string>
+    <string name="watch_open_settings">Open Watch Settings</string>
+    <string name="watch_continue_watching">Continue Watching</string>
+    <string name="watch_next_up">Next Up</string>
+    <string name="watch_libraries">Libraries</string>
+    <string name="watch_empty_library">This library is empty.</string>
+    <string name="watch_no_episodes">No episodes in this season.</string>
+    <string name="watch_played">Watched</string>
+    <string name="watch_episode_code_format">S%1$d:E%2$d</string>
+    <string name="watch_episode_title_format">%1$d. %2$s</string>
+    <string name="watch_runtime_minutes_format">%1$d min</string>
+    <string name="watch_error_not_signed_in">You are not signed in to Jellyfin.</string>
+    <string name="watch_error_session_expired">Your Jellyfin session has ended. Sign in again in Settings → Watch.</string>
+    <string name="watch_error_load_failed">Could not load from Jellyfin.</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

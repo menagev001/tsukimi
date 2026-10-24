@@ -33,6 +33,8 @@
     <string name="action_sign_out">退出登录</string>
     <string name="action_copy_code">复制代码</string>
     <string name="action_scan">扫描</string>
+    <string name="action_retry" comment="Generic retry action, intentionally matching the AI lookup retry label.">重试</string>
+    <string name="action_refresh">刷新</string>
     <string name="loading">正在加载...</string>
     <string name="none" comment="Generic empty value label, intentionally matching bookshelf_no_shelf.">无</string>
     <string name="dialog_error_title">错误</string>
@@ -47,6 +49,7 @@
     <string name="import_select_manga_cbz">请选择 .cbz 漫画压缩包文件。</string>
     <string name="import_select_mokuro_sidecar">请选择 .mokuro 附属文件。</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">书库</string>
+    <string name="main_tab_watch" comment="Main navigation tab label, intentionally matching the Watch settings title.">观看</string>
     <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">漫画</string>
     <string name="main_tab_dictionary">查词</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">统计</string>
@@ -668,13 +671,13 @@
     <string name="explain_word_title">单词释义</string>
     <string name="ai_lookup_loading">正在询问 AI…</string>
     <string name="ai_lookup_error_format">AI 请求失败：%1$s</string>
-    <string name="ai_lookup_retry">重试</string>
+    <string name="ai_lookup_retry" comment="AI lookup retry label, intentionally matching the generic retry action.">重试</string>
     <string name="sentence_breakdown_title" comment="Both the double-tap result overlay title and the button label shown before sending the sentence to AI.">句子解析</string>
     <string name="ai_word_nuance_prompt_label">单词释义提示词</string>
     <string name="ai_prompt_using_default">使用内置提示词</string>
     <string name="ai_prompt_using_custom">使用自定义提示词</string>
     <string name="ai_prompt_reset_to_default">恢复默认</string>
-    <string name="settings_watch">观看</string>
+    <string name="settings_watch" comment="Settings row label, intentionally matching the Watch main tab label.">观看</string>
     <string name="watch_jellyfin_server">Jellyfin 服务器</string>
     <string name="watch_server_url">服务器地址</string>
     <string name="watch_username">用户名</string>
@@ -688,6 +691,20 @@
     <string name="watch_login_error_unsupported_version">该 Jellyfin 服务器版本过旧。Tsukimi 需要 Jellyfin 12 或更高版本。</string>
     <string name="watch_login_error_invalid_credentials">用户名或密码错误。</string>
     <string name="watch_login_error_unknown">登录失败，请重试。</string>
+    <string name="watch_not_signed_in_message">登录 Jellyfin 服务器后即可浏览和观看视频。</string>
+    <string name="watch_open_settings">打开观看设置</string>
+    <string name="watch_continue_watching">继续观看</string>
+    <string name="watch_next_up">下一集</string>
+    <string name="watch_libraries">媒体库</string>
+    <string name="watch_empty_library">此媒体库为空。</string>
+    <string name="watch_no_episodes">本季没有剧集。</string>
+    <string name="watch_played">已看完</string>
+    <string name="watch_episode_code_format">S%1$d:E%2$d</string>
+    <string name="watch_episode_title_format">%1$d. %2$s</string>
+    <string name="watch_runtime_minutes_format">%1$d 分钟</string>
+    <string name="watch_error_not_signed_in">尚未登录 Jellyfin。</string>
+    <string name="watch_error_session_expired">Jellyfin 会话已失效。请在 设置 → 观看 中重新登录。</string>
+    <string name="watch_error_load_failed">无法从 Jellyfin 加载内容。</string>
     <string name="diagnostics_saved">诊断信息已保存。</string>
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>

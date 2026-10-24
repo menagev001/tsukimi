@@ -5,6 +5,7 @@ import android.util.Log
 import androidx.annotation.StringRes
 import dagger.hilt.android.qualifiers.ApplicationContext
 import java.net.URI
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
@@ -39,6 +40,14 @@ enum class JellyfinLoginFailure(@param:StringRes val messageRes: Int) {
     Unknown(R.string.watch_login_error_unknown),
 }
 
+/** An API client for the signed-in session, plus the user every user-scoped request needs. */
+class JellyfinSession internal constructor(
+    val api: ApiClient,
+    val userId: UUID,
+)
+
+class JellyfinNotSignedInException : IllegalStateException("Not signed in to Jellyfin")
+
 sealed interface JellyfinLoginResult {
     data class Success(val userName: String) : JellyfinLoginResult
     data class Failure(val failure: JellyfinLoginFailure) : JellyfinLoginResult
@@ -57,7 +66,20 @@ class JellyfinRepository @Inject constructor(
         }
     }
 
+    @Volatile
+    private var cachedSession: Pair<JellyfinSettings, JellyfinSession>? = null
+
     val settings: Flow<JellyfinSettings> = settingsRepository.settings
+
+    /** Throws [JellyfinNotSignedInException] when there is no stored session. */
+    suspend fun session(): JellyfinSession {
+        val current = settingsRepository.settings.first()
+        if (!current.isLoggedIn) throw JellyfinNotSignedInException()
+        cachedSession?.let { (settings, session) -> if (settings == current) return session }
+        val userId = runCatching { UUID.fromString(current.userId) }.getOrNull()
+            ?: throw JellyfinNotSignedInException()
+        return JellyfinSession(apiClient(current), userId).also { cachedSession = current to it }
+    }
 
     suspend fun login(
         serverUrl: String,
@@ -113,6 +135,7 @@ class JellyfinRepository @Inject constructor(
             }
         }
         settingsRepository.clearSession()
+        cachedSession = null
     }
 
     private fun apiClient(settings: JellyfinSettings): ApiClient =

@@ -2354,6 +2354,7 @@ private fun EmptyBooksView(
 private fun BottomTabGlyph(tab: MainTab, modifier: Modifier = Modifier) {
     val icon = when (tab) {
         MainTab.Books -> Icons.AutoMirrored.Rounded.MenuBook
+        MainTab.Watch -> Icons.Rounded.OndemandVideo
         MainTab.Dictionary -> Icons.Rounded.Translate
         MainTab.Statistics -> Icons.AutoMirrored.Rounded.ShowChart
         MainTab.Settings -> Icons.Rounded.Settings

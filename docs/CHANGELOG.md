@@ -8,9 +8,11 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Added
 
-- Sign in to a Jellyfin server (version 12 or newer) in Settings → Watch, the
-  first step of the coming Watch mode. Tsukimi keeps only the session token,
-  never the password, and Sign out ends the session on the server.
+- Add a Watch tab for a Jellyfin server (version 12 or newer): sign in under
+  Settings → Watch, then browse Continue Watching, Next Up and your film and
+  series libraries, with seasons and episodes per series. Tsukimi keeps only
+  the session token, never the password, and Sign out ends the session on the
+  server.
 
 ### Changed
 

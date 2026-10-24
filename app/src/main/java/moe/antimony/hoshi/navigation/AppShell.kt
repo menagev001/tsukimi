@@ -53,6 +53,12 @@ import moe.antimony.hoshi.features.sasayaki.SasayakiSettings
 import moe.antimony.hoshi.features.settings.AdvancedSettingsView
 import moe.antimony.hoshi.features.statistics.StatisticsView
 import moe.antimony.hoshi.features.update.AboutScreen
+import moe.antimony.hoshi.features.watch.WatchHomeView
+import moe.antimony.hoshi.features.watch.WatchItem
+import moe.antimony.hoshi.features.watch.WatchItemKind
+import moe.antimony.hoshi.features.watch.WatchLibrary
+import moe.antimony.hoshi.features.watch.WatchLibraryView
+import moe.antimony.hoshi.features.watch.WatchSeriesView
 import moe.antimony.hoshi.features.watch.WatchSettingsView
 import kotlinx.coroutines.launch
 
@@ -87,6 +93,7 @@ fun AppShell(
     val pendingImportRouteCoordinator = remember { PendingImportRouteCoordinator() }
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Books) }
     val booksBackStack = rememberNavBackStack(AppRoute.BooksRoute)
+    val watchBackStack = rememberNavBackStack(AppRoute.WatchRoute)
     val dictionaryBackStack = rememberNavBackStack(AppRoute.DictionaryRoute)
     val statisticsBackStack = rememberNavBackStack(AppRoute.StatisticsRoute)
     val settingsBackStack = rememberNavBackStack(AppRoute.SettingsRoute)
@@ -142,6 +149,7 @@ fun AppShell(
 
     fun selectedBackStack(): MutableList<NavKey> = when (effectiveSelectedTab) {
         MainTab.Books -> booksBackStack
+        MainTab.Watch -> watchBackStack
         MainTab.Dictionary -> dictionaryBackStack
         MainTab.Statistics -> statisticsBackStack
         MainTab.Settings -> settingsBackStack
@@ -239,6 +247,20 @@ fun AppShell(
         settingsBackStack.add(AppRoute.AnkiAdvancedRoute)
     }
 
+    fun openWatchLibrary(library: WatchLibrary) {
+        watchBackStack.add(AppRoute.WatchLibraryRoute(library.id, library.name, library.kind))
+    }
+
+    fun openWatchItem(item: WatchItem) {
+        when (item.kind) {
+            WatchItemKind.Series -> watchBackStack.add(AppRoute.WatchSeriesRoute(item.id, item.name))
+            WatchItemKind.Season -> item.seriesId?.let { seriesId ->
+                watchBackStack.add(AppRoute.WatchSeriesRoute(seriesId, item.seriesName ?: item.name))
+            }
+            else -> Unit
+        }
+    }
+
     fun returnFromDuplicatedAnkiFormat() {
         settingsBackStack.returnFromAnkiFormatDuplicate()
     }
@@ -305,6 +327,35 @@ fun AppShell(
                     onOpenMangaReader = ::openMangaReader,
                     bookshelfRefreshKey = bookshelfRefreshKey,
                     dictionaryFocusRequestKey = dictionaryFocusRequestKey,
+                )
+                AppRoute.WatchRoute -> TopLevelRouteContent(
+                    selectedTab = MainTab.Watch,
+                    pendingImportUri = currentPendingImportUri,
+                    onPendingImportConsumed = currentOnPendingImportConsumed,
+                    readerSettings = currentReaderSettings,
+                    onReaderSettingsChange = currentOnReaderSettingsChange,
+                    onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
+                    bookshelfRefreshKey = bookshelfRefreshKey,
+                    dictionaryFocusRequestKey = dictionaryFocusRequestKey,
+                    onOpenWatchLibrary = ::openWatchLibrary,
+                    onOpenWatchItem = ::openWatchItem,
+                    onOpenWatchSettings = { openSettingsDetail(SettingsDetailSection.Watch) },
+                )
+                is AppRoute.WatchLibraryRoute -> WatchLibraryView(
+                    libraryId = route.libraryId,
+                    title = route.title,
+                    kind = route.kind,
+                    onOpenItem = ::openWatchItem,
+                    onClose = ::popRoute,
+                    modifier = Modifier.fillMaxSize(),
+                )
+                is AppRoute.WatchSeriesRoute -> WatchSeriesView(
+                    seriesId = route.seriesId,
+                    title = route.title,
+                    onOpenItem = ::openWatchItem,
+                    onClose = ::popRoute,
+                    modifier = Modifier.fillMaxSize(),
                 )
                 AppRoute.DictionaryRoute -> TopLevelRouteContent(
                     selectedTab = MainTab.Dictionary,
@@ -423,6 +474,11 @@ fun AppShell(
         entryDecorators = rememberAppNavEntryDecorators(),
         entryProvider = entryProvider,
     )
+    val watchEntries = rememberDecoratedNavEntries(
+        backStack = watchBackStack,
+        entryDecorators = rememberAppNavEntryDecorators(),
+        entryProvider = entryProvider,
+    )
     val dictionaryEntries = rememberDecoratedNavEntries(
         backStack = dictionaryBackStack,
         entryDecorators = rememberAppNavEntryDecorators(),
@@ -440,6 +496,7 @@ fun AppShell(
     )
     val currentEntries = when (effectiveSelectedTab) {
         MainTab.Books -> booksEntries
+        MainTab.Watch -> watchEntries
         MainTab.Dictionary -> dictionaryEntries
         MainTab.Statistics -> statisticsEntries
         MainTab.Settings -> settingsEntries
@@ -490,6 +547,9 @@ private fun TopLevelRouteContent(
     pendingDictionaryLookupRequest: PendingDictionaryLookupRequest? = null,
     onPendingDictionaryLookupConsumed: () -> Unit = {},
     onSettingsDestination: (SettingsDestination) -> Unit = {},
+    onOpenWatchLibrary: (WatchLibrary) -> Unit = {},
+    onOpenWatchItem: (WatchItem) -> Unit = {},
+    onOpenWatchSettings: () -> Unit = {},
 ) {
     val layoutSpec = currentMainShellLayoutSpec()
     when (selectedTab) {
@@ -500,6 +560,13 @@ private fun TopLevelRouteContent(
             onOpenMangaReader = onOpenMangaReader,
             refreshKey = bookshelfRefreshKey,
             layoutSpec = layoutSpec,
+            modifier = Modifier.fillMaxSize(),
+        )
+        MainTab.Watch -> WatchHomeView(
+            layoutSpec = layoutSpec,
+            onOpenLibrary = onOpenWatchLibrary,
+            onOpenItem = onOpenWatchItem,
+            onOpenSettings = onOpenWatchSettings,
             modifier = Modifier.fillMaxSize(),
         )
         MainTab.Dictionary -> DictionarySearchView(
@@ -593,6 +660,7 @@ private fun SettingsDetailDestination(
 
 private fun MainTab.toRoute(): AppRoute = when (this) {
     MainTab.Books -> AppRoute.BooksRoute
+    MainTab.Watch -> AppRoute.WatchRoute
     MainTab.Dictionary -> AppRoute.DictionaryRoute
     MainTab.Statistics -> AppRoute.StatisticsRoute
     MainTab.Settings -> AppRoute.SettingsRoute
@@ -636,6 +704,7 @@ internal fun normalizeStatisticsBackStackForVisibleTabs(
 
 private fun AppRoute.toMainTab(): MainTab = when (this) {
     AppRoute.MainRoute, AppRoute.BooksRoute -> MainTab.Books
+    AppRoute.WatchRoute, is AppRoute.WatchLibraryRoute, is AppRoute.WatchSeriesRoute -> MainTab.Watch
     AppRoute.DictionaryRoute -> MainTab.Dictionary
     AppRoute.StatisticsRoute -> MainTab.Statistics
     AppRoute.SettingsRoute -> MainTab.Settings

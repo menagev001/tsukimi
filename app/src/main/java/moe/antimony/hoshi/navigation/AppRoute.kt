@@ -2,6 +2,7 @@ package moe.antimony.hoshi.navigation
 
 import androidx.navigation3.runtime.NavKey
 import kotlinx.serialization.Serializable
+import moe.antimony.hoshi.features.watch.WatchLibraryKind
 
 @Serializable
 sealed interface AppRoute : NavKey {
@@ -10,6 +11,22 @@ sealed interface AppRoute : NavKey {
 
     @Serializable
     data object BooksRoute : AppRoute
+
+    @Serializable
+    data object WatchRoute : AppRoute
+
+    @Serializable
+    data class WatchLibraryRoute(
+        val libraryId: String,
+        val title: String,
+        val kind: WatchLibraryKind,
+    ) : AppRoute
+
+    @Serializable
+    data class WatchSeriesRoute(
+        val seriesId: String,
+        val title: String,
+    ) : AppRoute
 
     @Serializable
     data object DictionaryRoute : AppRoute

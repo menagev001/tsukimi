@@ -26,12 +26,15 @@ internal fun appShellNavEntryMetadata(route: AppRoute): Map<String, Any> =
 internal fun appRouteUsesMainShell(route: AppRoute): Boolean = when (route) {
     AppRoute.MainRoute,
     AppRoute.BooksRoute,
+    AppRoute.WatchRoute,
     AppRoute.DictionaryRoute,
     AppRoute.StatisticsRoute,
     AppRoute.SettingsRoute,
     -> true
     is AppRoute.ReaderRoute,
     is AppRoute.MangaReaderRoute,
+    is AppRoute.WatchLibraryRoute,
+    is AppRoute.WatchSeriesRoute,
     is AppRoute.SettingsDetailRoute,
     is AppRoute.AnkiCardFormatRoute,
     AppRoute.AnkiAdvancedRoute,
