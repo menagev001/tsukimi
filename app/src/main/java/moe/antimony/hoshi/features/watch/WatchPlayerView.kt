@@ -169,16 +169,20 @@ internal fun WatchPlayerView(
                 ?.takeIf { it.width > 0f && it.height > 0f }
                 ?.let { it.width / it.height }
             ContentFrame(player = player, modifier = Modifier.fillMaxSize())
+            val liveSubtitleInsetDp = subtitleBottomInsetDp(
+                screenWidthDp = maxWidth.value,
+                screenHeightDp = maxHeight.value,
+                videoAspectRatio = videoAspectRatio,
+                controlsVisible = controlsVisible,
+            )
+            // Lines stay put while a lookup is open: the popup's highlight is measured once, and
+            // the controls hiding would otherwise slide the line away from it.
+            val lookupSubtitleInsetDp = remember(lookupActive) { liveSubtitleInsetDp }
             WatchSubtitleOverlay(
                 popupHost = popupHost,
                 primaryLines = uiState.subtitles.primaryLines,
                 fontSizePx = uiState.subtitles.fontSizePx,
-                bottomInset = subtitleBottomInsetDp(
-                    screenWidthDp = maxWidth.value,
-                    screenHeightDp = maxHeight.value,
-                    videoAspectRatio = videoAspectRatio,
-                    controlsVisible = controlsVisible,
-                ).dp,
+                bottomInset = (if (lookupActive) lookupSubtitleInsetDp else liveSubtitleInsetDp).dp,
                 onBlankTap = { controlsVisible = !controlsVisible },
                 onSideDoubleTap = { forward ->
                     viewModel.seekBy(if (forward) SeekStepMs else -SeekStepMs)

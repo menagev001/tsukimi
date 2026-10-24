@@ -21,7 +21,6 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.AndroidView
 import moe.antimony.hoshi.features.reader.LookupPopupHost
-import moe.antimony.hoshi.features.reader.READER_DOUBLE_TAP_TIMEOUT_MS
 import moe.antimony.hoshi.features.reader.ReaderTapDispatcher
 import moe.antimony.hoshi.features.reader.androidPixelsToCssPixels
 import moe.antimony.hoshi.features.reader.readerSelectionMaxLength
@@ -35,6 +34,12 @@ import moe.antimony.hoshi.webview.applyHoshiWebViewSecurityDefaults
  * - a double tap elsewhere seeks back (left half) or forward (right half),
  * - any other tap closes an open popup, or else calls [onBlankTap].
  */
+/**
+ * Longer than the reader's 180 ms: two taps on one side of a video come a little slower than on
+ * a page, and a slightly later single tap matters less here.
+ */
+private const val WatchDoubleTapTimeoutMs = 250L
+
 @SuppressLint("ClickableViewAccessibility")
 @Composable
 internal fun WatchSubtitleOverlay(
@@ -87,7 +92,7 @@ internal fun WatchSubtitleOverlay(
                 }
 
                 val taps = ReaderTapDispatcher(
-                    doubleTapTimeoutMs = READER_DOUBLE_TAP_TIMEOUT_MS,
+                    doubleTapTimeoutMs = WatchDoubleTapTimeoutMs,
                     onTap = { x, y ->
                         selectAt(x, y, sentenceOnly = false) {
                             if (popupHost.isOpen) popupHost.dismiss() else currentOnBlankTap()
@@ -116,7 +121,11 @@ internal fun WatchSubtitleOverlay(
                             return true
                         }
                     },
-                )
+                ).apply {
+                    // Every tap must reach ReaderTapDispatcher; GestureDetector's own double-tap
+                    // detection would swallow the second tap of a double tap.
+                    setOnDoubleTapListener(null)
+                }
                 var gestureOnPopup = false
                 setOnTouchListener { _, event ->
                     if (event.actionMasked == MotionEvent.ACTION_DOWN) {
@@ -156,6 +165,6 @@ internal fun WatchSubtitleOverlay(
         if (pageReady) webView?.evaluateJavascript(watchBottomInsetScript(bottomInset.value), null)
     }
     LaunchedEffect(webView, pageReady, primaryLines) {
-        if (pageReady) webView?.evaluateJavascript(watchShowCuesScript(primaryLines, emptyList()), null)
+        if (pageReady) webView?.evaluateJavascript(watchShowCuesScript(primaryLines), null)
     }
 }

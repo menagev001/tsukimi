@@ -96,8 +96,8 @@ Sentence Audio).
 - Tapping a word pauses playback and opens the existing lookup popup (popup
   iframe + `ReaderLookupPopupWebBridge`). Closing the popup resumes playback
   (setting: resume automatically or stay paused).
-- Optional: show the English line under the Japanese one (toggle in the
-  player), hidden by default.
+- No English line on screen (decided 2026-10-24); the English track is still
+  downloaded for the card's translation field.
 - Optional: subtitle list panel (side sheet on the tablet) with all cues; tap a
   cue to jump to it. Looking up words works there too.
 
@@ -246,7 +246,7 @@ Card tags: `hoshi`, `hoshi::watch` or `hoshi::book`, and the series/book title.
 ## Settings Summary
 
 - Watch: server URL, login, quality away from home, default audio language,
-  subtitle size, show English line, resume after lookup, subtitle offset.
+  subtitle size, resume after lookup, subtitle offset.
 - Anki: Watch-mode field mapping, audio padding, example-sentence length limit.
 - AI: Example sentence prompt (next to the two existing prompts).
 

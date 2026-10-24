@@ -79,13 +79,11 @@ internal fun watchSubtitleConfigureScript(fontSizePx: Int): String =
     "window.hoshiWatch && ${watchSubtitleConfigureCall(fontSizePx)}"
 
 private fun watchSubtitleConfigureCall(fontSizePx: Int): String =
-    "window.hoshiWatch.configure({ fontSizePx: $fontSizePx, secondaryFontSizePx: ${secondaryFontSizePx(fontSizePx)} });"
+    "window.hoshiWatch.configure({ fontSizePx: $fontSizePx });"
 
-private fun secondaryFontSizePx(fontSizePx: Int): Int = (fontSizePx * 0.7f).toInt()
-
-internal fun watchShowCuesScript(primary: List<String>, secondary: List<String>): String {
-    fun array(lines: List<String>) = lines.joinToString(prefix = "[", postfix = "]") { readerJavaScriptStringLiteral(it) }
-    return "window.hoshiWatch && window.hoshiWatch.showCues(${array(primary)}, ${array(secondary)});"
+internal fun watchShowCuesScript(lines: List<String>): String {
+    val array = lines.joinToString(prefix = "[", postfix = "]") { readerJavaScriptStringLiteral(it) }
+    return "window.hoshiWatch && window.hoshiWatch.showCues($array);"
 }
 
 internal fun watchBottomInsetScript(px: Float): String =

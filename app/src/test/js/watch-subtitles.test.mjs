@@ -78,29 +78,27 @@ function watchContext({ hitAt = () => null } = {}) {
 
 test('showCues draws one paragraph per cue and skips redraws of the same cues', () => {
     const watch = watchContext();
-    watch.hoshiWatch.showCues(['一行目', '二行目'], ['first line']);
+    watch.hoshiWatch.showCues(['一行目', '二行目']);
 
     const [root] = watch.body.children;
-    const [primary, secondary] = root.children;
-    assert.deepEqual(primary.children.map((line) => line.textContent), ['一行目', '二行目']);
-    assert.deepEqual(primary.children.map((line) => line.tagName), ['p', 'p']);
-    assert.deepEqual(secondary.children.map((line) => line.textContent), ['first line']);
+    assert.deepEqual(root.children.map((line) => line.textContent), ['一行目', '二行目']);
+    assert.deepEqual(root.children.map((line) => line.tagName), ['p', 'p']);
 
     const clearsBefore = watch.clearCount;
-    watch.hoshiWatch.showCues(['一行目', '二行目'], ['first line']);
+    watch.hoshiWatch.showCues(['一行目', '二行目']);
     assert.equal(watch.clearCount, clearsBefore);
 
-    watch.hoshiWatch.showCues([], []);
-    assert.equal(primary.children.length, 0);
+    watch.hoshiWatch.showCues([]);
+    assert.equal(root.children.length, 0);
     assert.equal(watch.clearCount, clearsBefore + 1);
 });
 
 test('selectTextAt only selects on a Japanese line', () => {
     let hitLine = false;
     const watch = watchContext({
-        hitAt: (_x, _y, body) => (hitLine ? body.children[0].children[0].children[0] : body),
+        hitAt: (_x, _y, body) => (hitLine ? body.children[0].children[0] : body),
     });
-    watch.hoshiWatch.showCues(['こんにちは'], ['Hello']);
+    watch.hoshiWatch.showCues(['こんにちは']);
 
     assert.equal(watch.hoshiWatch.selectTextAt(10, 20, 16, false), null);
     assert.equal(watch.selectCalls.length, 0);
@@ -112,10 +110,9 @@ test('selectTextAt only selects on a Japanese line', () => {
 
 test('configure and setBottomInset set CSS variables', () => {
     const watch = watchContext();
-    watch.hoshiWatch.configure({ fontSizePx: 40, secondaryFontSizePx: 28 });
+    watch.hoshiWatch.configure({ fontSizePx: 40 });
     watch.hoshiWatch.setBottomInset(120);
 
     assert.equal(watch.styleProperties['--hoshi-watch-font-size'], '40px');
-    assert.equal(watch.styleProperties['--hoshi-watch-secondary-font-size'], '28px');
     assert.equal(watch.styleProperties['--hoshi-watch-bottom-inset'], '120px');
 });
