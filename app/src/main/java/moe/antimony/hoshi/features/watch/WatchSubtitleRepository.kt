@@ -10,7 +10,7 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import moe.antimony.hoshi.di.IoDispatcher
-import org.jellyfin.sdk.api.client.extensions.subtitleApi
+import org.jellyfin.sdk.api.client.extensions.get
 
 data class WatchSubtitleSelection(
     val track: WatchSubtitleTrack,
@@ -51,12 +51,17 @@ class WatchSubtitleRepository @Inject constructor(
         cacheLock.withLock { cache[key] }?.let { return@withContext Result.success(it) }
         try {
             val session = jellyfinRepository.session()
-            val srt = session.api.subtitleApi.getSubtitle(
-                routeItemId = UUID.fromString(itemId),
-                routeMediaSourceId = mediaSourceId,
-                routeIndex = track.index,
-                routeFormat = "srt",
-            ).content
+            // SubtitleApi.getSubtitle is typed as String, which the SDK decodes as JSON and fails
+            // on SRT text; only ByteArray responses are returned raw.
+            val srt = session.api.get<ByteArray>(
+                pathTemplate = "/Videos/{itemId}/{mediaSourceId}/Subtitles/{index}/Stream.{format}",
+                pathParameters = mapOf(
+                    "itemId" to UUID.fromString(itemId),
+                    "mediaSourceId" to mediaSourceId,
+                    "index" to track.index,
+                    "format" to "srt",
+                ),
+            ).content.decodeToString()
             val cues = parseSrt(srt)
             cacheLock.withLock { cache[key] = cues }
             Result.success(cues)
