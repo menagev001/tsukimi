@@ -1,17 +1,17 @@
 <div align="center">
 
-# Hoshi Reader Android
+# 月見 Tsukimi
 
 ![Platform](https://img.shields.io/badge/platform-Android-lightgrey)
 ![License](https://img.shields.io/badge/license-GPLv3-blue)
-[![Download](https://img.shields.io/github/downloads/HuangAntimony/Hoshi-Reader-Android/total?label=download)](https://github.com/HuangAntimony/Hoshi-Reader-Android/releases)
-[![Latest download](https://img.shields.io/github/downloads/HuangAntimony/Hoshi-Reader-Android/latest/total?label=latest%20download)](https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/latest)
+[![Download](https://img.shields.io/github/downloads/menagev001/tsukimi/total?label=download)](https://github.com/menagev001/tsukimi/releases)
+[![Latest download](https://img.shields.io/github/downloads/menagev001/tsukimi/latest/total?label=latest%20download)](https://github.com/menagev001/tsukimi/releases/latest)
 
 [English](README.md) | **简体中文**
 
-Hoshi Reader Android 是一款面向 Android 日语沉浸学习的轻量 EPUB 阅读器 App，支持 Yomitan 辞典查词、Anki 制卡、有声书跟读，以及墨水屏专用的模式选项。
+Tsukimi 是一款 Android 日语沉浸学习 App：阅读 EPUB 书籍和漫画，使用 Yomitan 辞典查词，让 AI 解释单词和句子，并把阅读内容制成 Anki 卡片。带可点击字幕的视频观看功能正在规划中。
 
-本项目是 [Hoshi Reader](https://github.com/Manhhao/Hoshi-Reader) 的 Android 原生复刻版。
+Tsukimi 基于 HuangAntimony 的 [Hoshi Reader Android](https://github.com/HuangAntimony/Hoshi-Reader-Android) 修改而来，后者是 Manhhao 的 [Hoshi Reader](https://github.com/Manhhao/Hoshi-Reader) 的 Android 原生复刻版。继承与新增内容见[基于](#基于)。
 
 <table>
   <tr>
@@ -64,6 +64,16 @@ Hoshi Reader Android 是一款面向 Android 日语沉浸学习的轻量 EPUB �
 - 阅读时添加五色高亮标注，并随时进行跳转。
 - 阅读数据统计，包括阅读的字符数、时长、阅读速度，可在阅读时实时显示。
 
+### AI 查词
+
+- 让 AI（Claude）结合句子解释查到的单词，或双击文本获得句子解析。两种提示词都可以在 AI 设置中编辑，AI 服务繁忙时会自动重试。
+- 将高亮及其句子上下文导出为 JSON，供 Migaku 使用。
+
+### 漫画
+
+- 阅读带有 [mokuro](https://github.com/kha-white/mokuro) OCR 数据的 CBZ 卷：点击对话气泡显示其文字，再点击单词查词；双击气泡可获得句子解析。
+- 把卷归入系列，自动或手动裁剪扫描页边距，并统计漫画阅读数据。
+
 ### Anki 制卡
 
 - 通过 AnkiDroid 或 AnkiConnect 制卡。
@@ -80,81 +90,39 @@ Hoshi Reader Android 是一款面向 Android 日语沉浸学习的轻量 EPUB �
 - 通过 Google Drive 同步阅读进度、统计和书籍，兼容 ッツ Reader。
 - 导入或导出 ッツ bookdata，并使用 `.hoshi` 归档备份或恢复书籍和辞典，兼容 Hoshi Reader iOS。
 
-## 为什么从 Yomitan + ッツ Reader 迁移到 Hoshi
+## 下载
 
-- **一个 App 替代多段拼接流程：** EPUB 阅读、Yomitan 查词、Anki 制卡、本地音频和有声书跟读都在 Hoshi 内完成。
-- **更快的导入速度和查词速度：** 底层使用 C++ hoshidicts，辞典导入速度提升约百倍，并支持批量导入 Yomitan 辞典；查词路径也做了大量性能优化，在低性能设备和墨水屏设备上尤为明显。
-- **更好的 Android 阅读体验：** 自定义阅读主题、墨水屏显示优化、低性能设备表现和音量键翻页都作为核心阅读体验处理。
-- **标注与书架管理：** 句子高亮和书签可以保存之后想回看的段落；自定义书架和文件夹递归导入让本地书籍整理更灵活。
-- **更顺滑的弹窗与本地音频流程：** 查词弹窗可滑动关闭，本地单词音频可以直接用于阅读和制卡，不需要额外配置 AnkiConnect Android。
-- **直接对接 AnkiDroid 的制卡流程：** Hoshi 可以不经过 AnkiConnect Android，直接与 AnkiDroid 交互完成制卡，让常见 Android 制卡路径更简单。
-- **更顺畅的有声书工作流：** Hoshi 简化有声书配置，并提供更好的有声书音频进度和播放控制；制卡时还能自动把命中的音频片段扩展到完整句子，不需要手动拼接字幕行。
-- **同步与迁移路径：** Google Drive 可同步阅读进度、统计和书籍，并兼容 ッツ；还支持 `.hoshi` iOS 备份恢复和 ッツ bookdata 导入/导出。
+请从 [GitHub Releases](https://github.com/menagev001/tsukimi/releases/latest) 下载最新的 Tsukimi APK。
 
-## 为什么在 EPUB 阅读场景选择 Hoshi 而不是 jidoujisho
-
-- **阅读场景优先：** Hoshi 把日语 EPUB 阅读、查词和制卡收进一条专注流程；jidoujisho 的视频、漫画、网页和跨媒体工具对只想阅读的用户偏重。
-- **可靠支持核心 Yomitan 辞典：** Hoshi 支持 term、frequency、pitch 三类辞典；jidoujisho 对结构化释义内容和辞典媒体渲染的支持并不可靠。
-- **专门的 C++ 辞典引擎：** 原生 hoshidicts 让导入更快、查词响应更快、辞典占用更紧凑，并为低内存设备提供 Low Memory Usage Mode。
-- **释义内递归查词：** 直接点击辞典释义里的生词即可打开嵌套查词，不需要复制文本、重新搜索或离开当前上下文。
-- **EPUB 阅读器体验：** Hoshi 内置可自定义的 EPUB 阅读器，并把标注和阅读统计接入主阅读流程；jidoujisho 内嵌的 ッツ Reader 版本偏旧，实际会遇到 EPUB 导入失败或打开报错。
-- **墨水屏设备支持：** UI 高对比度、辞典弹窗专用 CSS，以及查词和有声书高亮使用下划线式显示，提升墨水屏可读性，同时兼顾低性能设备。
-- **EPUB 有声书跟读：** Hoshi 会把有声书字幕对齐到书籍文本，用于句子高亮、自动翻页、播放控制和句子音频制卡；jidoujisho 没有面向 EPUB 阅读的等价书籍对齐有声书工作流。
-- **多设备同步与迁移：** Google Drive 同步兼容 ッツ Reader，并支持跨设备导入、导出和备份恢复；jidoujisho 没有对应的同步或备份迁移路径。
-
-## 下载 Hoshi Reader Android APK
-
-请从 [GitHub Releases](https://github.com/HuangAntimony/Hoshi-Reader-Android/releases/latest) 下载最新的 Hoshi Reader Android APK。
-
-Hoshi Reader Android 需要 Android 8.0 或更高版本。
-
-## 使用指南
-
-App 交互指南可以参考这篇 Hoshi Reader iOS 使用文档：[Hoshi Reader 使用文档](https://my.feishu.cn/wiki/SXzUw9F6AiPw99kdzwac5Cv8n0f)。
-
-日语学习方法可以参考这篇基于二语习得理论的指南：[基于二语习得理论的日语学习指南](https://my.feishu.cn/wiki/YeOSwsG7giLuQxkcDFscUXVZn2f)。
+Tsukimi 需要 Android 8.0 或更高版本。
 
 ## 开发状态
 
-已完成与 iOS 版的功能对齐，当前的开发重点是打磨 UI 与用户交互。
+Tsukimi 主要为作者个人在墨水屏 Android 平板上的使用而开发，按现状分享。已发布的用户可见变化见 [docs/CHANGELOG.md](docs/CHANGELOG.md)。
 
-已发布的用户可见变化见 [docs/CHANGELOG.md](docs/CHANGELOG.md)。
-
-## 功能请求
-
-通用功能请求请优先提交到 iOS 仓库。
-
-若为 Android 特有功能，或因 iOS 系统限制无法实现的功能（例如墨水屏主题、音量键翻页等），请在本仓库提交 Issue。
+欢迎通过 [Issue](https://github.com/menagev001/tsukimi/issues) 反馈问题和提出功能请求。
 
 ## 隐私与数据
 
-Hoshi Reader Android 会把导入的书籍、辞典、字体、有声书数据、阅读进度、高亮、统计和设置保存在 App 本地存储中。
+Tsukimi 会把导入的书籍、辞典、字体、有声书数据、阅读进度、高亮、统计和设置保存在 App 本地存储中。
 
 Google Drive 同步使用由用户配置的 Google Cloud OAuth 设备代码流程。Anki 制卡会与 AnkiDroid 或已配置的 AnkiConnect 地址通信。更新检查会读取 GitHub Release 元数据。
 
-## 鸣谢
+## 基于
 
-Hoshi Reader Android 基于以下生态：
+Tsukimi 是 HuangAntimony 的 [Hoshi Reader Android](https://github.com/HuangAntimony/Hoshi-Reader-Android) 的修改版，后者是 Manhhao 的 [Hoshi Reader](https://github.com/Manhhao/Hoshi-Reader) 的 Android 原生复刻版。两者均采用 GPL-3.0 许可，Tsukimi 同样如此。代码在 Hoshi Reader Android v1.3.3 之后不久分叉，此后不再与上游同步。
 
-- [Hoshi Reader iOS](https://github.com/Manhhao/Hoshi-Reader)：参考实现。
-- [hoshidicts](https://github.com/Manhhao/hoshidicts) 及 [hoshidicts-kotlin-bridge](https://github.com/Manhhao/hoshidicts-kotlin-bridge)：Yomitan 辞典支持。
+Tsukimi 新增：AI 单词和句子查询、Migaku JSON 导出、漫画支持（CBZ 与 mokuro），以及 Tsukimi 名称和发布渠道。
+
+它建立在以下生态之上：
+
+- [hoshidicts](https://github.com/Manhhao/hoshidicts) 及 [hoshidicts-kotlin-bridge](https://github.com/HuangAntimony/hoshidicts-kotlin-bridge)：Yomitan 辞典支持。
 - [Yomitan](https://github.com/yomidevs/yomitan)：辞典格式和查词体验参考。
 - [AnkiDroid](https://github.com/ankidroid/Anki-Android)：Android 制卡集成。
 - [Ankiconnect Android](https://github.com/KamWithK/AnkiconnectAndroid)：本地音频行为和 AnkiDroid 重复范围 / checksum 查询参考。
 - [ッツ Ebook Reader](https://github.com/ttu-ttu/ebook-reader)：阅读器、统计和同步兼容性参考。
+- [mokuro](https://github.com/kha-white/mokuro)：漫画 OCR 数据。
 
 ## 许可证
 
 本项目基于 GNU General Public License v3.0 发布。详情见 [LICENSE](LICENSE)。
-
-## Star History
-
-如果 Hoshi Reader Android 对你的阅读有帮助，欢迎顺手点一个 Star。
-
-<p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=HuangAntimony/Hoshi-Reader-Android&type=date&theme=dark&legend=top-left" />
-    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=HuangAntimony/Hoshi-Reader-Android&type=date&legend=top-left" />
-    <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=HuangAntimony/Hoshi-Reader-Android&type=date&legend=top-left" />
-  </picture>
-</p>
