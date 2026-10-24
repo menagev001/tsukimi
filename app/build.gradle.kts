@@ -70,7 +70,7 @@ android {
     }
 
     defaultConfig {
-        applicationId = "moe.antimony.hoshi"
+        applicationId = "com.feathercomet.tsukimi"
         minSdk = 26
         targetSdk = 36
         versionCode = 10500
