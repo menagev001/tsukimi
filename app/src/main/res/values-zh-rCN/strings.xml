@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hoshi Reader</string>
+    <string name="app_name">Tsukimi</string>
     <string name="action_ok">确定</string>
     <string name="action_cancel">取消</string>
     <string name="action_confirm">确认</string>
@@ -41,7 +41,7 @@
     <string name="import_select_audiobook">请选择 .mp3、.m4b 或 .opus 有声书文件。</string>
     <string name="import_select_audio_database">请选择 .db 音频数据库文件。</string>
     <string name="import_select_dictionary_archive">请选择 .zip 辞典压缩包文件。</string>
-    <string name="import_select_hoshi_backup">请选择 .hoshi Hoshi 备份文件。</string>
+    <string name="import_select_hoshi_backup">请选择 Tsukimi 备份文件（.hoshi）。</string>
     <string name="import_select_ttu_bookdata_backup">请选择 .zip ッツ bookdata 备份文件。</string>
     <string name="import_select_font">请选择 .ttf、.otf、.woff 或 .woff2 字体文件。</string>
     <string name="import_select_manga_cbz">请选择 .cbz 漫画压缩包文件。</string>
@@ -359,7 +359,7 @@
         <item quantity="one">%d 个结果</item>
         <item quantity="other">%d 个结果</item>
     </plurals>
-    <string name="reader_image_clip_label">Hoshi 阅读器图片</string>
+    <string name="reader_image_clip_label">Tsukimi 阅读器图片</string>
     <string name="reader_image_copied">已复制图片。</string>
     <string name="reader_image_saved">已保存图片。</string>
     <string name="reader_image_save_failed">无法保存图片。</string>
@@ -506,9 +506,9 @@
     <string name="sync_clear_cache">清除 Google Drive 缓存</string>
     <string name="sync_cache_cleared">已清除 Google Drive 缓存。</string>
     <string name="sync_clear_cache_title">清除 Google Drive 缓存？</string>
-    <string name="sync_clear_cache_confirmation">Hoshi 将清除已缓存的 Google Drive 文件夹 ID 和远程封面缩略图。本地书籍不会被删除。</string>
+    <string name="sync_clear_cache_confirmation">Tsukimi 将清除已缓存的 Google Drive 文件夹 ID 和远程封面缩略图。本地书籍不会被删除。</string>
     <string name="sync_sign_out_title">退出 Google Drive？</string>
-    <string name="sync_sign_out_confirmation">Hoshi 将断开 Google Drive 并清除已缓存的 Drive 文件夹。本地书籍不会被删除。</string>
+    <string name="sync_sign_out_confirmation">Tsukimi 将断开 Google Drive 并清除已缓存的 Drive 文件夹。本地书籍不会被删除。</string>
     <string name="sync_mode_auto" comment="Sync mode value; intentionally matches the manga crop Auto label.">自动</string>
     <string name="sync_mode_manual" comment="Sync mode value; intentionally matches the manga crop Manual label.">手动</string>
     <string name="sync_google_drive" comment="Sync provider label, intentionally matching the bookshelf remote Google Drive section.">Google Drive</string>
@@ -525,7 +525,7 @@
         <item>按照 ッツ 同步教程创建或打开共享的 Google Cloud 项目，发布 OAuth 同意屏幕，并启用 Google Drive API。</item>
         <item>在同一个项目中打开 Google Cloud Console 的 Google Auth Platform -&gt; Clients，点击 CREATE CLIENT，并选择“电视和输入受限设备”应用类型。</item>
         <item>复制这个“电视和输入受限设备”客户端的客户端 ID 和客户端密钥，并粘贴到这里。此流程不要使用 iOS bundle ID，也不要创建标准 Android OAuth 客户端。</item>
-        <item>点击连接 Google Drive，复制 Hoshi 显示的代码，打开验证 URL，并输入该代码。</item>
+        <item>点击连接 Google Drive，复制 Tsukimi 显示的代码，打开验证 URL，并输入该代码。</item>
         <item>如果在此设备上使用验证 URL 不方便，请在另一台手机或电脑上打开 Google device page，并输入同一个代码。</item>
         <item>授权 Google Drive 中包含 ッツ 或 Hoshi 同步文件夹的 Google 账号。</item>
     </string-array>
@@ -533,14 +533,14 @@
     <string name="sync_google_drive_authorization_expired">Google Drive 授权代码已过期。</string>
     <string name="sync_google_drive_open_link_prompt">在此设备或另一台手机/电脑上打开此链接：</string>
     <string name="sync_google_drive_open_code_format">在此设备或另一台手机/电脑上打开 %1$s 并输入 %2$s。</string>
-    <string name="sync_google_drive_transient_network_format">Hoshi 当前无法从此设备连接到 Google。请保持此屏幕打开，或在另一台手机/电脑上打开 %1$s 并输入 %2$s。</string>
+    <string name="sync_google_drive_transient_network_format">Tsukimi 当前无法从此设备连接到 Google。请保持此屏幕打开，或在另一台手机/电脑上打开 %1$s 并输入 %2$s。</string>
     <string name="sync_status_connected" comment="Sync connection state, intentionally matching AnkiConnect connection state.">已连接</string>
     <string name="sync_status_not_connected" comment="Sync connection state, intentionally matching AnkiConnect connection state.">未连接</string>
     <string name="sync_status_missing_configuration">尚未配置 OAuth 客户端</string>
     <string name="update_downloaded_title">更新已下载</string>
     <string name="update_downloaded_message_format" comment="Downloaded update prompt message, intentionally matching About update status.">更新 %1$s 已下载。</string>
     <string name="update_available_title">有可用更新</string>
-    <string name="update_available_message_format">Hoshi Reader %1$s 已可用。</string>
+    <string name="update_available_message_format">Tsukimi %1$s 已可用。</string>
     <string name="backup_books" comment="Backup section label, intentionally matching the Books tab label.">书籍</string>
     <string name="backup_dictionaries" comment="Backup section label, intentionally matching the Dictionaries settings label.">辞典</string>
     <string name="backup_ttu_bookdata">ッツ 备份</string>
@@ -585,7 +585,7 @@
     <string name="audio_import_failed">导入失败</string>
     <string name="audio_import_android_db_failed">无法导入 android.db。</string>
     <string name="audio_android_db_size_format">android.db（%1$s）</string>
-    <string name="audio_local_audio_hint">1. 导入会把 android.db 复制到 Hoshi 的私有存储中，因此导入前请确保有足够空间容纳额外副本。\n2. 导入完成后，可以安全删除原始外部文件以释放空间。</string>
+    <string name="audio_local_audio_hint">1. 导入会把 android.db 复制到 Tsukimi 的私有存储中，因此导入前请确保有足够空间容纳额外副本。\n2. 导入完成后，可以安全删除原始外部文件以释放空间。</string>
     <string name="audio_copying_android_db">正在复制 android.db</string>
     <string name="audio_copied_size_format">%1$s / %2$s</string>
     <string name="audio_move_source_up">上移来源</string>
@@ -616,7 +616,7 @@
     <string name="anki_add_format">添加卡片格式</string>
     <string name="anki_duplicate_format">复制此格式</string>
     <string name="anki_delete_format_title">删除“%1$s”？</string>
-    <string name="anki_delete_format_confirmation">这会从 Hoshi 中永久删除该卡片格式及其字段映射。</string>
+    <string name="anki_delete_format_confirmation">这会从 Tsukimi 中永久删除该卡片格式及其字段映射。</string>
     <string name="anki_format_name">格式名称</string>
     <string name="anki_format_icon">图标</string>
     <string name="anki_icon_square">方形</string>
@@ -678,7 +678,7 @@
     <string name="diagnostics_save_failed">无法保存诊断信息。</string>
     <string name="diagnostics_save">保存诊断信息</string>
     <string name="diagnostics_share">分享诊断信息</string>
-    <string name="diagnostics_share_subject">Hoshi 诊断信息</string>
+    <string name="diagnostics_share_subject">Tsukimi 诊断信息</string>
     <string name="about_version_format">版本 %1$s（%2$d）</string>
     <string name="about_github_body">如果你喜欢这个应用，可以考虑在 GitHub 上给项目点星。</string>
     <string name="about_storage_cleanup">存储清理</string>
@@ -712,7 +712,7 @@
     <string name="about_update_downloading">正在下载更新。</string>
     <string name="about_update_downloaded_format" comment="About update status, intentionally matching downloaded update prompt message.">更新 %1$s 已下载。</string>
     <string name="about_update_last_download_failed">上次更新下载失败。</string>
-    <string name="about_update_check_github">检查 GitHub Releases 是否有新版 Hoshi Reader APK。</string>
+    <string name="about_update_check_github">检查 GitHub Releases 是否有新版 Tsukimi APK。</string>
     <string name="about_update_checking_github">正在检查 GitHub Releases...</string>
     <string name="about_update_latest">当前已是最新版本。</string>
     <string name="about_update_no_matching_apk">发现新版发布，但没有单个匹配的 APK。</string>
@@ -784,7 +784,7 @@
     <string name="book_cover_wallpaper_not_allowed">设备策略不允许此应用更改壁纸。</string>
     <string name="book_cover_wallpaper_ireader">更新 iReader 书籍封面屏保</string>
     <string name="book_cover_wallpaper_ireader_summary">每次打开书籍时，更新 iReader 内建的“书籍封面”屏保。</string>
-    <string name="book_cover_wallpaper_ireader_select_system_option">请先用 iReader 内建阅读器打开任意书籍，再到设备的屏保设置中选择“书籍封面”并点击“应用”，然后返回 Hoshi。</string>
+    <string name="book_cover_wallpaper_ireader_select_system_option">请先用 iReader 内建阅读器打开任意书籍，再到设备的屏保设置中选择“书籍封面”并点击“应用”，然后返回 Tsukimi。</string>
     <string name="book_cover_wallpaper_ireader_not_supported">此设备或固件不支持 iReader 私有屏保集成。</string>
     <string name="book_cover_wallpaper_ireader_not_selected_error">无法更新 iReader 屏保。请先用内建阅读器打开任意书籍，再到设备的屏保设置中选择“书籍封面”并点击“应用”。</string>
     <string name="book_cover_wallpaper_vendor_integrations">墨水屏厂商适配</string>

@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Hoshi Reader</string>
+    <string name="app_name">Tsukimi</string>
     <string name="action_ok">OK</string>
     <string name="action_cancel">Cancel</string>
     <string name="action_confirm">Confirm</string>
@@ -41,7 +41,7 @@
     <string name="import_select_audiobook">Select a .mp3, .m4b, or .opus audiobook file.</string>
     <string name="import_select_audio_database">Select a .db audio database file.</string>
     <string name="import_select_dictionary_archive">Select a .zip dictionary archive file.</string>
-    <string name="import_select_hoshi_backup">Select a .hoshi Hoshi backup file.</string>
+    <string name="import_select_hoshi_backup">Select a Tsukimi backup file (.hoshi).</string>
     <string name="import_select_ttu_bookdata_backup">Select a .zip ッツ bookdata backup file.</string>
     <string name="import_select_font">Select a .ttf, .otf, .woff, or .woff2 font file.</string>
     <string name="import_select_manga_cbz">Select a .cbz manga CBZ archive file.</string>
@@ -361,7 +361,7 @@
         <item quantity="one">%d result</item>
         <item quantity="other">%d results</item>
     </plurals>
-    <string name="reader_image_clip_label">Hoshi reader image</string>
+    <string name="reader_image_clip_label">Tsukimi reader image</string>
     <string name="reader_image_copied">Image copied.</string>
     <string name="reader_image_saved">Image saved.</string>
     <string name="reader_image_save_failed">Could not save image.</string>
@@ -508,9 +508,9 @@
     <string name="sync_clear_cache">Clear Google Drive cache</string>
     <string name="sync_cache_cleared">Google Drive cache cleared.</string>
     <string name="sync_clear_cache_title">Clear Google Drive cache?</string>
-    <string name="sync_clear_cache_confirmation">Hoshi will clear cached Google Drive folder IDs and remote cover thumbnails. Local books are not deleted.</string>
+    <string name="sync_clear_cache_confirmation">Tsukimi will clear cached Google Drive folder IDs and remote cover thumbnails. Local books are not deleted.</string>
     <string name="sync_sign_out_title">Sign out of Google Drive?</string>
-    <string name="sync_sign_out_confirmation">Hoshi will disconnect Google Drive and clear cached Drive folders. Local books are not deleted.</string>
+    <string name="sync_sign_out_confirmation">Tsukimi will disconnect Google Drive and clear cached Drive folders. Local books are not deleted.</string>
     <string name="sync_mode_auto" comment="Sync mode value; intentionally matches the manga crop Auto label.">Auto</string>
     <string name="sync_mode_manual" comment="Sync mode value; intentionally matches the manga crop Manual label.">Manual</string>
     <string name="sync_google_drive" comment="Sync provider label, intentionally matching the bookshelf remote Google Drive section.">Google Drive</string>
@@ -527,7 +527,7 @@
         <item>Follow the ッツ Sync guide to create or open the shared Google Cloud project, publish the OAuth consent screen, and enable the Google Drive API.</item>
         <item>In that same project, open Google Auth Platform -&gt; Clients in the Google Cloud Console, click CREATE CLIENT, and select application type TVs and Limited Input devices.</item>
         <item>Copy the client ID and client secret from that TVs and Limited Input devices client and paste them here. Do not use the iOS bundle ID or a standard Android OAuth client for this flow.</item>
-        <item>Press Connect Google Drive, copy the code shown by Hoshi, open the verification URL, and enter the code.</item>
+        <item>Press Connect Google Drive, copy the code shown by Tsukimi, open the verification URL, and enter the code.</item>
         <item>If the verification URL is hard to use on this device, open the Google device page on another phone or computer and enter the same code.</item>
         <item>Authorize the Google Account whose Drive contains the ッツ or Hoshi sync folder.</item>
     </string-array>
@@ -535,14 +535,14 @@
     <string name="sync_google_drive_authorization_expired">Google Drive authorization code expired.</string>
     <string name="sync_google_drive_open_link_prompt">Open this link on this device or another phone/computer:</string>
     <string name="sync_google_drive_open_code_format">Open %1$s on this device or another phone/computer and enter %2$s.</string>
-    <string name="sync_google_drive_transient_network_format">Hoshi cannot reach Google from this device right now. Keep this screen open, or open %1$s on another phone/computer and enter %2$s.</string>
+    <string name="sync_google_drive_transient_network_format">Tsukimi cannot reach Google from this device right now. Keep this screen open, or open %1$s on another phone/computer and enter %2$s.</string>
     <string name="sync_status_connected" comment="Sync connection state, intentionally matching AnkiConnect connection state.">Connected</string>
     <string name="sync_status_not_connected" comment="Sync connection state, intentionally matching AnkiConnect connection state.">Not connected</string>
     <string name="sync_status_missing_configuration">OAuth client not configured</string>
     <string name="update_downloaded_title">Update Downloaded</string>
     <string name="update_downloaded_message_format" comment="Downloaded update prompt message, intentionally matching About update status.">Update %1$s has been downloaded.</string>
     <string name="update_available_title">Update Available</string>
-    <string name="update_available_message_format">Hoshi Reader %1$s is available.</string>
+    <string name="update_available_message_format">Tsukimi %1$s is available.</string>
     <string name="backup_books" comment="Backup section label, intentionally matching the Books tab label.">Books</string>
     <string name="backup_dictionaries" comment="Backup section label, intentionally matching the Dictionaries settings label.">Dictionaries</string>
     <string name="backup_ttu_bookdata">ッツ Backup</string>
@@ -587,7 +587,7 @@
     <string name="audio_import_failed">Import failed</string>
     <string name="audio_import_android_db_failed">Unable to import android.db.</string>
     <string name="audio_android_db_size_format">android.db (%1$s)</string>
-    <string name="audio_local_audio_hint">1. Import copies android.db into Hoshi\'s private storage, so keep enough free space for one extra copy before importing.\n2. After import completes, you can safely delete the original external file to free space.</string>
+    <string name="audio_local_audio_hint">1. Import copies android.db into Tsukimi\'s private storage, so keep enough free space for one extra copy before importing.\n2. After import completes, you can safely delete the original external file to free space.</string>
     <string name="audio_copying_android_db">Copying android.db</string>
     <string name="audio_copied_size_format">%1$s of %2$s</string>
     <string name="audio_move_source_up">Move source up</string>
@@ -618,7 +618,7 @@
     <string name="anki_add_format">Add Card Format</string>
     <string name="anki_duplicate_format">Duplicate This Format</string>
     <string name="anki_delete_format_title">Delete “%1$s”?</string>
-    <string name="anki_delete_format_confirmation">This permanently deletes the card format and its field mappings from Hoshi.</string>
+    <string name="anki_delete_format_confirmation">This permanently deletes the card format and its field mappings from Tsukimi.</string>
     <string name="anki_format_name">Format Name</string>
     <string name="anki_format_icon">Icon</string>
     <string name="anki_icon_square">Square</string>
@@ -680,7 +680,7 @@
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>
     <string name="diagnostics_share">Share Diagnostics</string>
-    <string name="diagnostics_share_subject">Hoshi diagnostics</string>
+    <string name="diagnostics_share_subject">Tsukimi diagnostics</string>
     <string name="about_version_format">Version %1$s (%2$d)</string>
     <string name="about_github_body">If you like this app, consider starring the project on GitHub.</string>
     <string name="about_storage_cleanup">Storage Cleanup</string>
@@ -714,7 +714,7 @@
     <string name="about_update_downloading">An update is downloading.</string>
     <string name="about_update_downloaded_format" comment="About update status, intentionally matching downloaded update prompt message.">Update %1$s has been downloaded.</string>
     <string name="about_update_last_download_failed">The last update download failed.</string>
-    <string name="about_update_check_github">Check GitHub Releases for a newer Hoshi Reader APK.</string>
+    <string name="about_update_check_github">Check GitHub Releases for a newer Tsukimi APK.</string>
     <string name="about_update_checking_github">Checking GitHub Releases...</string>
     <string name="about_update_latest">You are running the latest version.</string>
     <string name="about_update_no_matching_apk">A newer release was found, but it does not include a single matching APK.</string>
@@ -786,7 +786,7 @@
     <string name="book_cover_wallpaper_not_allowed">Device policy does not allow this app to change the wallpaper.</string>
     <string name="book_cover_wallpaper_ireader">Update iReader book cover screen saver</string>
     <string name="book_cover_wallpaper_ireader_summary">Update iReader’s built-in Book Cover screen saver whenever a book opens.</string>
-    <string name="book_cover_wallpaper_ireader_select_system_option">First open any book in the built-in iReader app. Then select Book Cover in the device’s screen saver settings, tap Apply, and return to Hoshi.</string>
+    <string name="book_cover_wallpaper_ireader_select_system_option">First open any book in the built-in iReader app. Then select Book Cover in the device’s screen saver settings, tap Apply, and return to Tsukimi.</string>
     <string name="book_cover_wallpaper_ireader_not_supported">This private iReader screen saver integration is not available on this device or firmware.</string>
     <string name="book_cover_wallpaper_ireader_not_selected_error">Couldn’t update the iReader screen saver. Open any book in the built-in iReader app, then select Book Cover in the device’s screen saver settings and tap Apply.</string>
     <string name="book_cover_wallpaper_vendor_integrations">E-Ink Device Integrations</string>

@@ -100,7 +100,7 @@ android {
     buildTypes {
         debug {
             applicationIdSuffix = ".debug"
-            manifestPlaceholders["appLabel"] = "Hoshi Debug"
+            manifestPlaceholders["appLabel"] = "Tsukimi Debug"
             ndk {
                 abiFilters += listOf("arm64-v8a", "x86_64")
             }
@@ -108,7 +108,7 @@ android {
         release {
             isMinifyEnabled = true
             isShrinkResources = true
-            manifestPlaceholders["appLabel"] = "Hoshi Reader"
+            manifestPlaceholders["appLabel"] = "Tsukimi"
             ndk {
                 abiFilters += listOf("arm64-v8a")
             }
