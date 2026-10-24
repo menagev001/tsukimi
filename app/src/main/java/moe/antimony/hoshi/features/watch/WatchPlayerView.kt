@@ -11,6 +11,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -73,6 +74,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.compose.ContentFrame
 import androidx.media3.ui.compose.state.rememberPlayPauseButtonState
+import androidx.media3.ui.compose.state.rememberPresentationState
 import androidx.media3.ui.compose.state.rememberPlaybackSpeedState
 import androidx.media3.ui.compose.state.rememberProgressStateWithTickInterval
 import java.math.BigDecimal
@@ -84,8 +86,8 @@ import moe.antimony.hoshi.R
 private const val ControlsAutoHideMs = 3_000L
 private const val ProgressTickMs = 500L
 private const val SubtitleOffsetStepMs = 100L
-private val SubtitleInset = 32.dp
-private val SubtitleInsetWithControls = 120.dp
+private const val SubtitleVideoMarginFraction = 0.06f
+private const val SubtitleInsetWithControlsDp = 120f
 private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f)
 
 @OptIn(UnstableApi::class)
@@ -119,16 +121,25 @@ internal fun WatchPlayerView(
     }
 
     CompositionLocalProvider(LocalContentColor provides Color.White) {
-        Box(
+        BoxWithConstraints(
             modifier = modifier
                 .fillMaxSize()
                 .background(Color.Black),
         ) {
+            val presentationState = rememberPresentationState(player)
+            val videoAspectRatio = presentationState.videoSizeDp
+                ?.takeIf { it.width > 0f && it.height > 0f }
+                ?.let { it.width / it.height }
             ContentFrame(player = player, modifier = Modifier.fillMaxSize())
             WatchSubtitleOverlay(
                 primaryLines = uiState.subtitles.primaryLines,
                 fontSizePx = uiState.subtitles.fontSizePx,
-                bottomInset = if (controlsVisible) SubtitleInsetWithControls else SubtitleInset,
+                bottomInset = subtitleBottomInsetDp(
+                    screenWidthDp = maxWidth.value,
+                    screenHeightDp = maxHeight.value,
+                    videoAspectRatio = videoAspectRatio,
+                    controlsVisible = controlsVisible,
+                ).dp,
                 onBlankTap = { controlsVisible = !controlsVisible },
             )
 
@@ -454,6 +465,23 @@ internal fun formatPlaybackTime(ms: Long): String {
     } else {
         String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
     }
+}
+
+/**
+ * Distance from the bottom of the screen to the lowest subtitle line: a little above the bottom
+ * edge of the picture (not of the screen, which may show letterbox bars), and above the
+ * timeline while the controls are visible.
+ */
+internal fun subtitleBottomInsetDp(
+    screenWidthDp: Float,
+    screenHeightDp: Float,
+    videoAspectRatio: Float?,
+    controlsVisible: Boolean,
+): Float {
+    val videoHeightDp = videoAspectRatio?.let { minOf(screenHeightDp, screenWidthDp / it) } ?: screenHeightDp
+    val letterboxDp = (screenHeightDp - videoHeightDp) / 2f
+    val insetDp = letterboxDp + videoHeightDp * SubtitleVideoMarginFraction
+    return if (controlsVisible) maxOf(insetDp, SubtitleInsetWithControlsDp) else insetDp
 }
 
 /** "+0.3", "-1.2", "0.0": signed seconds with one decimal. */

@@ -84,6 +84,18 @@ class WatchPlaybackTest {
     }
 
     @Test
+    fun subtitlesSitAbovePictureNotScreenEdge() {
+        // 16:9 video on a 16:10 tablet (1280x800 dp): 40 dp letterbox bars, 720 dp picture.
+        assertEquals(40f + 720f * 0.06f, subtitleBottomInsetDp(1280f, 800f, 16f / 9f, controlsVisible = false), 0.01f)
+        // Same aspect as the screen: no bars.
+        assertEquals(800f * 0.06f, subtitleBottomInsetDp(1280f, 800f, 1.6f, controlsVisible = false), 0.01f)
+        // Unknown video size falls back to the full screen.
+        assertEquals(800f * 0.06f, subtitleBottomInsetDp(1280f, 800f, null, controlsVisible = false), 0.01f)
+        // Controls push the lines above the timeline.
+        assertEquals(120f, subtitleBottomInsetDp(1280f, 800f, 16f / 9f, controlsVisible = true), 0.01f)
+    }
+
+    @Test
     fun subtitleOffsetFormatting() {
         assertEquals("0.0", formatSubtitleOffset(0))
         assertEquals("+0.3", formatSubtitleOffset(300))

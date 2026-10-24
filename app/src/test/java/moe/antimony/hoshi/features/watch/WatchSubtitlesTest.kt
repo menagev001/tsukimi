@@ -43,6 +43,26 @@ class WatchSubtitlesTest {
     }
 
     @Test
+    fun decodesEntitiesAndRemovesDirectionMarks() {
+        // Line from a streaming-service rip: literal &lrm; plus U+202A/U+202C embeddings.
+        val srt = "63\n00:03:09,294 --> 00:03:13,465\n" +
+            "\u202Aヘッ！&lrm;\u3000&lrm;お前らよりは\u202C\n" +
+            "\u202Aスケベなこと考えねえよ&lrm;\u3000&lrm;ケケッ\u202C\n"
+
+        assertEquals(
+            "ヘッ！\u3000お前らよりは\nスケベなこと考えねえよ\u3000ケケッ",
+            parseSrt(srt).single().text,
+        )
+    }
+
+    @Test
+    fun decodesNamedAndNumericEntities() {
+        assertEquals("<a & b> \"c\" あい", decodeSubtitleEntities("&lt;a &amp; b&gt; &quot;c&quot; &#12354;&#x3044;"))
+        assertEquals("&unknown; &", decodeSubtitleEntities("&unknown; &"))
+        assertEquals("Tom & Jerry", cleanSubtitleLine("<i>Tom &amp; Jerry</i>\u200E"))
+    }
+
+    @Test
     fun activeCuesIncludeOverlaps() {
         val cues = listOf(
             WatchSubtitleCue(0, 1_000, "a"),

@@ -19,6 +19,41 @@ private val SrtTimingRegex = Regex(
 )
 private val MarkupTagRegex = Regex("""</?[a-zA-Z][^>]*>""")
 private val AssOverrideRegex = Regex("""\{\\[^}]*\}""")
+private val EntityRegex = Regex("""&(#[0-9]{1,7}|#[xX][0-9a-fA-F]{1,6}|[a-zA-Z]{2,8});""")
+private val NamedEntities = mapOf(
+    "amp" to "&",
+    "lt" to "<",
+    "gt" to ">",
+    "quot" to "\"",
+    "apos" to "'",
+    "nbsp" to " ",
+    "lrm" to "",
+    "rlm" to "",
+)
+
+// Direction marks and embeddings (common in subtitles ripped from streaming services),
+// zero-width spaces and BOMs: invisible, but they would end up in lookups and cards.
+private val InvisibleControlRegex = Regex("[\u200B\u200E\u200F\u202A-\u202E\u2066-\u2069\uFEFF]")
+
+/** Decodes HTML character references such as `&lrm;` or `&#12354;`; unknown ones stay as written. */
+internal fun decodeSubtitleEntities(text: String): String =
+    EntityRegex.replace(text) { match ->
+        val name = match.groupValues[1]
+        when {
+            name.startsWith("#x") || name.startsWith("#X") -> name.drop(2).toIntOrNull(16)?.let(::codePointString)
+            name.startsWith("#") -> name.drop(1).toIntOrNull()?.let(::codePointString)
+            else -> NamedEntities[name.lowercase()]
+        } ?: match.value
+    }
+
+private fun codePointString(codePoint: Int): String? =
+    if (Character.isValidCodePoint(codePoint)) String(Character.toChars(codePoint)) else null
+
+/** One subtitle text line as displayed: no markup, entities decoded, invisible controls removed. */
+internal fun cleanSubtitleLine(line: String): String =
+    decodeSubtitleEntities(line.replace(AssOverrideRegex, "").replace(MarkupTagRegex, ""))
+        .replace(InvisibleControlRegex, "")
+        .trim()
 
 /**
  * Parses SubRip text as served by Jellyfin's subtitle stream endpoint. Formatting tags are
@@ -50,7 +85,8 @@ internal fun parseSrt(source: String): List<WatchSubtitleCue> {
             textLines.removeAt(textLines.lastIndex)
         }
         val text = textLines
-            .map { it.replace(AssOverrideRegex, "").replace(MarkupTagRegex, "").replace("\\N", "\n").trim() }
+            .flatMap { it.split("\\N") }
+            .map(::cleanSubtitleLine)
             .filter(String::isNotEmpty)
             .joinToString("\n")
         if (text.isNotEmpty()) {
