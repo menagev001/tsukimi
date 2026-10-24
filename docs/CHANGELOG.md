@@ -17,7 +17,10 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   and watched state are saved to Jellyfin, so they match the other Jellyfin apps.
   Japanese audio is chosen by default (Settings → Watch → Audio Language), an
   audio track button switches tracks during playback, and a lower streaming
-  quality can be set for mobile data and phone hotspots. Tsukimi keeps only
+  quality can be set for mobile data and phone hotspots. Japanese subtitles
+  are shown by Tsukimi itself (white text with a soft outline, four sizes),
+  with a subtitle track menu, per-episode timing correction in 0.1 s steps,
+  and buttons to jump to the previous or next line. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

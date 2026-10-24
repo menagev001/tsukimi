@@ -5,6 +5,7 @@ import androidx.annotation.StringRes
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -32,10 +33,22 @@ enum class WatchAudioLanguage(
     ServerDefault(R.string.watch_audio_language_server_default, null, null),
 }
 
+enum class WatchSubtitleSize(
+    @param:StringRes val labelRes: Int,
+    /** CSS pixels of the Japanese line; the second line is drawn smaller. */
+    val fontSizePx: Int,
+) {
+    Small(R.string.watch_subtitle_size_small, 24),
+    Medium(R.string.watch_subtitle_size_medium, 32),
+    Large(R.string.watch_subtitle_size_large, 40),
+    ExtraLarge(R.string.watch_subtitle_size_extra_large, 50),
+}
+
 data class WatchPreferences(
     /** Used on metered connections (mobile data, phone hotspots), i.e. away from home. */
     val meteredQuality: WatchStreamingQuality = WatchStreamingQuality.Original,
     val audioLanguage: WatchAudioLanguage = WatchAudioLanguage.Japanese,
+    val subtitleSize: WatchSubtitleSize = WatchSubtitleSize.Medium,
 )
 
 internal const val OriginalQualityBitrate = 120_000_000
@@ -52,8 +65,13 @@ class WatchPreferencesRepository(
         WatchPreferences(
             meteredQuality = enumOrDefault(preferences[KEY_METERED_QUALITY], WatchStreamingQuality.Original),
             audioLanguage = enumOrDefault(preferences[KEY_AUDIO_LANGUAGE], WatchAudioLanguage.Japanese),
+            subtitleSize = enumOrDefault(preferences[KEY_SUBTITLE_SIZE], WatchSubtitleSize.Medium),
         )
     }
+
+    /** Subtitle timing correction for one video; positive values show lines later. */
+    fun subtitleOffsetMs(itemId: String): Flow<Long> =
+        dataStore.data.map { it[subtitleOffsetKey(itemId)] ?: 0L }
 
     suspend fun updateMeteredQuality(value: WatchStreamingQuality) {
         dataStore.edit { it[KEY_METERED_QUALITY] = value.name }
@@ -63,9 +81,22 @@ class WatchPreferencesRepository(
         dataStore.edit { it[KEY_AUDIO_LANGUAGE] = value.name }
     }
 
+    suspend fun updateSubtitleSize(value: WatchSubtitleSize) {
+        dataStore.edit { it[KEY_SUBTITLE_SIZE] = value.name }
+    }
+
+    suspend fun updateSubtitleOffsetMs(itemId: String, offsetMs: Long) {
+        dataStore.edit {
+            if (offsetMs == 0L) it.remove(subtitleOffsetKey(itemId)) else it[subtitleOffsetKey(itemId)] = offsetMs
+        }
+    }
+
     private companion object {
         val KEY_METERED_QUALITY = stringPreferencesKey("meteredQuality")
         val KEY_AUDIO_LANGUAGE = stringPreferencesKey("audioLanguage")
+        val KEY_SUBTITLE_SIZE = stringPreferencesKey("subtitleSize")
+
+        fun subtitleOffsetKey(itemId: String) = longPreferencesKey("subtitleOffset.$itemId")
     }
 }
 

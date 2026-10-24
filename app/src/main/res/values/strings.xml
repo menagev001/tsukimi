@@ -724,6 +724,19 @@
     <string name="watch_quality_8_mbps">8 Mbit/s</string>
     <string name="watch_quality_4_mbps">4 Mbit/s</string>
     <string name="watch_quality_2_mbps">2 Mbit/s</string>
+    <string name="watch_player_subtitles">Subtitles</string>
+    <string name="watch_subtitles_off" comment="Subtitle track menu value; intentionally matches other off labels.">Off</string>
+    <string name="watch_subtitle_timing">Timing</string>
+    <string name="watch_subtitle_offset_format">%1$s s</string>
+    <string name="watch_subtitle_earlier">Show subtitles earlier</string>
+    <string name="watch_subtitle_later">Show subtitles later</string>
+    <string name="watch_player_previous_line">Previous line</string>
+    <string name="watch_player_next_line">Next line</string>
+    <string name="watch_subtitle_size">Subtitle Size</string>
+    <string name="watch_subtitle_size_small">Small</string>
+    <string name="watch_subtitle_size_medium">Medium</string>
+    <string name="watch_subtitle_size_large">Large</string>
+    <string name="watch_subtitle_size_extra_large">Extra Large</string>
     <string name="diagnostics_saved">Diagnostics saved.</string>
     <string name="diagnostics_save_failed">Unable to save diagnostics.</string>
     <string name="diagnostics_save">Save Diagnostics</string>

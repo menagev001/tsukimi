@@ -93,6 +93,7 @@ fun WatchSettingsView(
                         preferences = uiState.preferences,
                         onMeteredQualityChange = viewModel::updateMeteredQuality,
                         onAudioLanguageChange = viewModel::updateAudioLanguage,
+                        onSubtitleSizeChange = viewModel::updateSubtitleSize,
                     )
                 }
             }
@@ -229,6 +230,7 @@ private fun WatchPlaybackCard(
     preferences: WatchPreferences,
     onMeteredQualityChange: (WatchStreamingQuality) -> Unit,
     onAudioLanguageChange: (WatchAudioLanguage) -> Unit,
+    onSubtitleSizeChange: (WatchSubtitleSize) -> Unit,
 ) {
     WatchSettingsCard {
         Text(
@@ -242,6 +244,14 @@ private fun WatchPlaybackCard(
             selected = preferences.audioLanguage,
             label = { stringResource(it.labelRes) },
             onSelect = onAudioLanguageChange,
+        )
+        HorizontalDivider()
+        WatchChoiceRow(
+            title = stringResource(R.string.watch_subtitle_size),
+            options = WatchSubtitleSize.entries,
+            selected = preferences.subtitleSize,
+            label = { stringResource(it.labelRes) },
+            onSelect = onSubtitleSizeChange,
         )
         HorizontalDivider()
         WatchChoiceRow(

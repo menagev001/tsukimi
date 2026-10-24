@@ -25,7 +25,7 @@ private val AssOverrideRegex = Regex("""\{\\[^}]*\}""")
  * removed because Tsukimi draws plain text; cues without text are dropped.
  */
 internal fun parseSrt(source: String): List<WatchSubtitleCue> {
-    val lines = source.removePrefix("﻿").replace("\r\n", "\n").replace('\r', '\n').split('\n')
+    val lines = source.removePrefix("\uFEFF").replace("\r\n", "\n").replace('\r', '\n').split('\n')
     val cues = mutableListOf<WatchSubtitleCue>()
     var index = 0
     while (index < lines.size) {

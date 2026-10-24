@@ -9,7 +9,6 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -22,15 +21,21 @@ import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Audiotrack
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Forward10
 import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.PlayArrow
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Replay10
+import androidx.compose.material.icons.rounded.SkipNext
+import androidx.compose.material.icons.rounded.SkipPrevious
+import androidx.compose.material.icons.rounded.Subtitles
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
@@ -78,6 +83,9 @@ import moe.antimony.hoshi.R
 
 private const val ControlsAutoHideMs = 3_000L
 private const val ProgressTickMs = 500L
+private const val SubtitleOffsetStepMs = 100L
+private val SubtitleInset = 32.dp
+private val SubtitleInsetWithControls = 120.dp
 private val PlaybackSpeeds = listOf(0.5f, 0.75f, 0.9f, 1f, 1.1f, 1.25f, 1.5f, 2f)
 
 @OptIn(UnstableApi::class)
@@ -114,10 +122,15 @@ internal fun WatchPlayerView(
         Box(
             modifier = modifier
                 .fillMaxSize()
-                .background(Color.Black)
-                .clickable(interactionSource = null, indication = null) { controlsVisible = !controlsVisible },
+                .background(Color.Black),
         ) {
             ContentFrame(player = player, modifier = Modifier.fillMaxSize())
+            WatchSubtitleOverlay(
+                primaryLines = uiState.subtitles.primaryLines,
+                fontSizePx = uiState.subtitles.fontSizePx,
+                bottomInset = if (controlsVisible) SubtitleInsetWithControls else SubtitleInset,
+                onBlankTap = { controlsVisible = !controlsVisible },
+            )
 
             when (val source = uiState.source) {
                 WatchLoadState.Loading -> CircularProgressIndicator(Modifier.align(Alignment.Center))
@@ -149,6 +162,11 @@ internal fun WatchPlayerView(
                     showTransport = ready != null && !uiState.hasPlaybackError,
                     audioTracks = uiState.audioTracks,
                     onSelectAudioTrack = viewModel::selectAudioTrack,
+                    subtitles = uiState.subtitles,
+                    onSelectSubtitleTrack = viewModel::selectSubtitleTrack,
+                    onAdjustSubtitleOffset = viewModel::adjustSubtitleOffset,
+                    onPreviousLine = viewModel::seekToPreviousLine,
+                    onNextLine = viewModel::seekToNextLine,
                     isPlaying = isPlaying,
                     onPlayPause = playPauseState::onClick,
                     onInteraction = { interactionCount++ },
@@ -168,6 +186,11 @@ private fun WatchPlayerControls(
     showTransport: Boolean,
     audioTracks: List<WatchAudioTrackOption>,
     onSelectAudioTrack: (WatchAudioTrackOption) -> Unit,
+    subtitles: WatchSubtitlesUiState,
+    onSelectSubtitleTrack: (WatchSubtitleTrack?) -> Unit,
+    onAdjustSubtitleOffset: (Long) -> Unit,
+    onPreviousLine: () -> Unit,
+    onNextLine: () -> Unit,
     isPlaying: Boolean,
     onPlayPause: () -> Unit,
     onInteraction: () -> Unit,
@@ -197,6 +220,14 @@ private fun WatchPlayerControls(
                     Text(it, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
             }
+            if (showTransport && subtitles.tracks.isNotEmpty()) {
+                WatchSubtitleButton(
+                    subtitles = subtitles,
+                    onSelect = onSelectSubtitleTrack,
+                    onAdjustOffset = onAdjustSubtitleOffset,
+                    onInteraction = onInteraction,
+                )
+            }
             if (showTransport && audioTracks.size > 1) {
                 WatchAudioTrackButton(
                     tracks = audioTracks,
@@ -207,11 +238,17 @@ private fun WatchPlayerControls(
         }
         Spacer(Modifier.weight(1f))
         if (showTransport) {
+            val hasLines = subtitles.selectedTrackIndex != null
             Row(
-                horizontalArrangement = Arrangement.spacedBy(48.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(40.dp, Alignment.CenterHorizontally),
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.fillMaxWidth(),
             ) {
+                if (hasLines) {
+                    IconButton(onClick = { onPreviousLine(); onInteraction() }, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.Rounded.SkipPrevious, stringResource(R.string.watch_player_previous_line), Modifier.size(36.dp))
+                    }
+                }
                 IconButton(onClick = { player.seekBack(); onInteraction() }, modifier = Modifier.size(64.dp)) {
                     Icon(Icons.Rounded.Replay10, stringResource(R.string.watch_player_rewind), Modifier.size(40.dp))
                 }
@@ -224,6 +261,11 @@ private fun WatchPlayerControls(
                 }
                 IconButton(onClick = { player.seekForward(); onInteraction() }, modifier = Modifier.size(64.dp)) {
                     Icon(Icons.Rounded.Forward10, stringResource(R.string.watch_player_forward), Modifier.size(40.dp))
+                }
+                if (hasLines) {
+                    IconButton(onClick = { onNextLine(); onInteraction() }, modifier = Modifier.size(56.dp)) {
+                        Icon(Icons.Rounded.SkipNext, stringResource(R.string.watch_player_next_line), Modifier.size(36.dp))
+                    }
                 }
             }
         }
@@ -280,6 +322,62 @@ private fun WatchPlayerTimeline(
                             speedMenuOpen = false
                         },
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchSubtitleButton(
+    subtitles: WatchSubtitlesUiState,
+    onSelect: (WatchSubtitleTrack?) -> Unit,
+    onAdjustOffset: (Long) -> Unit,
+    onInteraction: () -> Unit,
+) {
+    var menuOpen by remember { mutableStateOf(false) }
+    Box {
+        IconButton(onClick = { menuOpen = true; onInteraction() }) {
+            Icon(Icons.Rounded.Subtitles, contentDescription = stringResource(R.string.watch_player_subtitles))
+        }
+        DropdownMenu(expanded = menuOpen, onDismissRequest = { menuOpen = false }) {
+            DropdownMenuItem(
+                text = { Text(stringResource(R.string.watch_subtitles_off)) },
+                trailingIcon = { if (subtitles.selectedTrackIndex == null) Icon(Icons.Rounded.Check, contentDescription = null) },
+                onClick = {
+                    onSelect(null)
+                    menuOpen = false
+                },
+            )
+            subtitles.tracks.forEach { track ->
+                DropdownMenuItem(
+                    text = { Text(track.label) },
+                    trailingIcon = {
+                        if (track.index == subtitles.selectedTrackIndex) Icon(Icons.Rounded.Check, contentDescription = null)
+                    },
+                    onClick = {
+                        onSelect(track)
+                        menuOpen = false
+                    },
+                )
+            }
+            if (subtitles.selectedTrackIndex != null) {
+                HorizontalDivider()
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(horizontal = 12.dp),
+                ) {
+                    Text(stringResource(R.string.watch_subtitle_timing), modifier = Modifier.weight(1f, fill = false))
+                    IconButton(onClick = { onAdjustOffset(-SubtitleOffsetStepMs) }) {
+                        Icon(Icons.Rounded.Remove, stringResource(R.string.watch_subtitle_earlier))
+                    }
+                    Text(
+                        stringResource(R.string.watch_subtitle_offset_format, formatSubtitleOffset(subtitles.offsetMs)),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    IconButton(onClick = { onAdjustOffset(SubtitleOffsetStepMs) }) {
+                        Icon(Icons.Rounded.Add, stringResource(R.string.watch_subtitle_later))
+                    }
                 }
             }
         }
@@ -356,6 +454,18 @@ internal fun formatPlaybackTime(ms: Long): String {
     } else {
         String.format(Locale.ROOT, "%d:%02d", minutes, seconds)
     }
+}
+
+/** "+0.3", "-1.2", "0.0": signed seconds with one decimal. */
+internal fun formatSubtitleOffset(offsetMs: Long): String {
+    val tenths = Math.round(offsetMs / 100.0)
+    val sign = when {
+        tenths > 0 -> "+"
+        tenths < 0 -> "-"
+        else -> ""
+    }
+    val absolute = kotlin.math.abs(tenths)
+    return "$sign${absolute / 10}.${absolute % 10}"
 }
 
 /** "1", "1.25", "0.9": no trailing zeros. */

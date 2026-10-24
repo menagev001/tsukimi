@@ -9,7 +9,7 @@ import org.junit.Test
 class WatchSubtitlesTest {
     @Test
     fun parsesCuesWithCrlfBomAndFormatting() {
-        val srt = "﻿1\r\n00:00:01,000 --> 00:00:02,500\r\n<i>おはよう</i>\r\n\r\n" +
+        val srt = "\uFEFF1\r\n00:00:01,000 --> 00:00:02,500\r\n<i>おはよう</i>\r\n\r\n" +
             "2\r\n00:00:03,000 --> 00:00:05,000\r\n{\\an8}今日は\r\nいい天気だね\r\n\r\n"
 
         assertEquals(

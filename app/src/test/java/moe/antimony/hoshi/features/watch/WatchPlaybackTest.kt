@@ -82,4 +82,12 @@ class WatchPlaybackTest {
         assertEquals("0.9", formatPlaybackSpeed(0.9f))
         assertEquals("1.25", formatPlaybackSpeed(1.25f))
     }
+
+    @Test
+    fun subtitleOffsetFormatting() {
+        assertEquals("0.0", formatSubtitleOffset(0))
+        assertEquals("+0.3", formatSubtitleOffset(300))
+        assertEquals("-1.2", formatSubtitleOffset(-1_200))
+        assertEquals("+12.0", formatSubtitleOffset(12_000))
+    }
 }

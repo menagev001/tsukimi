@@ -36,6 +36,18 @@ data class WatchPlayerUiState(
     val isBuffering: Boolean = false,
     val hasPlaybackError: Boolean = false,
     val audioTracks: List<WatchAudioTrackOption> = emptyList(),
+    val subtitles: WatchSubtitlesUiState = WatchSubtitlesUiState(),
+)
+
+data class WatchSubtitlesUiState(
+    val tracks: List<WatchSubtitleTrack> = emptyList(),
+    /** Jellyfin stream index of the shown track, or null when subtitles are off. */
+    val selectedTrackIndex: Int? = null,
+    val isLoading: Boolean = false,
+    val offsetMs: Long = 0,
+    val fontSizePx: Int = WatchSubtitleSize.Medium.fontSizePx,
+    /** Texts of the Japanese cues shown right now. */
+    val primaryLines: List<String> = emptyList(),
 )
 
 data class WatchAudioTrackOption(
@@ -54,6 +66,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     @ApplicationContext context: Context,
     private val playbackRepository: WatchPlaybackRepository,
     private val reporter: WatchPlaybackReporter,
+    private val subtitleRepository: WatchSubtitleRepository,
+    private val preferencesRepository: WatchPreferencesRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WatchPlayerUiState())
     val uiState: StateFlow<WatchPlayerUiState> = _uiState.asStateFlow()
@@ -62,6 +76,9 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
 
     /** True between the start and stop reports sent to Jellyfin. */
     private var isReporting = false
+
+    private var primaryCues: List<WatchSubtitleCue> = emptyList()
+    private var subtitlesLoadedFor: String? = null
 
     val player: ExoPlayer = ExoPlayer.Builder(context)
         .setSeekBackIncrementMs(SeekIncrementMs)
@@ -103,7 +120,10 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
                         newPosition: Player.PositionInfo,
                         reason: Int,
                     ) {
-                        if (reason == Player.DISCONTINUITY_REASON_SEEK) reportProgress()
+                        if (reason == Player.DISCONTINUITY_REASON_SEEK) {
+                            reportProgress()
+                            updateActiveCues()
+                        }
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
@@ -120,6 +140,23 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             while (true) {
                 delay(ProgressReportIntervalMs)
                 if (player.isPlaying) reportProgress()
+            }
+        }
+        viewModelScope.launch {
+            while (true) {
+                delay(CueTickMs)
+                if (player.isPlaying) updateActiveCues()
+            }
+        }
+        viewModelScope.launch {
+            preferencesRepository.preferences.collect { preferences ->
+                updateSubtitles { it.copy(fontSizePx = preferences.subtitleSize.fontSizePx) }
+            }
+        }
+        viewModelScope.launch {
+            preferencesRepository.subtitleOffsetMs(itemId).collect { offsetMs ->
+                updateSubtitles { it.copy(offsetMs = offsetMs) }
+                updateActiveCues()
             }
         }
     }
@@ -161,11 +198,70 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         }
     }
 
+    fun selectSubtitleTrack(track: WatchSubtitleTrack?) {
+        val source = activeSource ?: return
+        if (track == null) {
+            primaryCues = emptyList()
+            updateSubtitles { it.copy(selectedTrackIndex = null, isLoading = false) }
+            updateActiveCues()
+            return
+        }
+        updateSubtitles { it.copy(selectedTrackIndex = track.index, isLoading = true) }
+        viewModelScope.launch {
+            val cues = subtitleRepository.cues(itemId, source.mediaSourceId.orEmpty(), track).getOrNull()
+            if (_uiState.value.subtitles.selectedTrackIndex != track.index) return@launch
+            primaryCues = cues.orEmpty()
+            updateSubtitles { it.copy(isLoading = false, selectedTrackIndex = track.index.takeIf { cues != null }) }
+            updateActiveCues()
+        }
+    }
+
+    fun adjustSubtitleOffset(deltaMs: Long) {
+        val offsetMs = (_uiState.value.subtitles.offsetMs + deltaMs).coerceIn(-MaxSubtitleOffsetMs, MaxSubtitleOffsetMs)
+        viewModelScope.launch { preferencesRepository.updateSubtitleOffsetMs(itemId, offsetMs) }
+    }
+
+    fun seekToPreviousLine() {
+        val offsetMs = _uiState.value.subtitles.offsetMs
+        previousCueStartMs(primaryCues, player.currentPosition - offsetMs)?.let { player.seekTo(it + offsetMs) }
+    }
+
+    fun seekToNextLine() {
+        val offsetMs = _uiState.value.subtitles.offsetMs
+        nextCueStartMs(primaryCues, player.currentPosition - offsetMs)?.let { player.seekTo(it + offsetMs) }
+    }
+
+    private fun loadSubtitles(source: WatchPlaybackSource) {
+        if (subtitlesLoadedFor == source.mediaSourceId) return
+        subtitlesLoadedFor = source.mediaSourceId
+        updateSubtitles { it.copy(tracks = source.subtitleTracks, isLoading = source.subtitleTracks.isNotEmpty()) }
+        if (source.subtitleTracks.isEmpty()) return
+        viewModelScope.launch {
+            val subtitles = subtitleRepository.load(itemId, source.mediaSourceId.orEmpty(), source.subtitleTracks)
+            primaryCues = subtitles.japanese?.cues.orEmpty()
+            updateSubtitles { it.copy(isLoading = false, selectedTrackIndex = subtitles.japanese?.track?.index) }
+            updateActiveCues()
+        }
+    }
+
+    private fun updateActiveCues() {
+        val positionMs = player.currentPosition - _uiState.value.subtitles.offsetMs
+        val lines = activeCueIndices(primaryCues, positionMs).map { primaryCues[it].text }
+        if (lines != _uiState.value.subtitles.primaryLines) updateSubtitles { it.copy(primaryLines = lines) }
+    }
+
+    private inline fun updateSubtitles(transform: (WatchSubtitlesUiState) -> WatchSubtitlesUiState) {
+        _uiState.update { it.copy(subtitles = transform(it.subtitles)) }
+    }
+
     private fun load() {
-        _uiState.value = WatchPlayerUiState()
+        _uiState.update { WatchPlayerUiState(subtitles = it.subtitles) }
         viewModelScope.launch {
             val result = playbackRepository.prepare(itemId)
-            result.onSuccess(::start)
+            result.onSuccess { source ->
+                start(source)
+                loadSubtitles(source)
+            }
             _uiState.update { it.copy(source = result.toWatchLoadState()) }
         }
     }
@@ -256,5 +352,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         const val Tag = "WatchPlayer"
         const val SeekIncrementMs = 10_000L
         const val ProgressReportIntervalMs = 10_000L
+        const val CueTickMs = 100L
+        const val MaxSubtitleOffsetMs = 30_000L
     }
 }

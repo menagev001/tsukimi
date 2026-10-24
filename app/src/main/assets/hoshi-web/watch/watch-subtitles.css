@@ -1,0 +1,67 @@
+:root {
+    --hoshi-watch-font-size: 32px;
+    --hoshi-watch-secondary-font-size: 22px;
+    --hoshi-watch-bottom-inset: 24px;
+}
+
+html,
+body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: transparent;
+    overflow: hidden;
+    -webkit-user-select: none;
+    user-select: none;
+    -webkit-touch-callout: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+.hoshi-watch-subtitles {
+    position: fixed;
+    left: 4%;
+    right: 4%;
+    bottom: var(--hoshi-watch-bottom-inset);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.2em;
+    transition: bottom 150ms ease-out;
+    pointer-events: none;
+}
+
+.hoshi-watch-primary,
+.hoshi-watch-secondary {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.hoshi-watch-line,
+.hoshi-watch-secondary-line {
+    margin: 0;
+    padding: 0 0.25em;
+    color: #fff;
+    text-align: center;
+    white-space: pre-line;
+    line-height: 1.35;
+    /* A soft outline that stays readable on bright frames without a background box. */
+    text-shadow:
+        0 0 3px rgba(0, 0, 0, 0.95),
+        0 0 6px rgba(0, 0, 0, 0.8),
+        1px 1px 2px rgba(0, 0, 0, 0.9);
+    -webkit-text-stroke: 0.5px rgba(0, 0, 0, 0.6);
+}
+
+.hoshi-watch-line {
+    font-size: var(--hoshi-watch-font-size);
+    font-weight: 600;
+    pointer-events: auto;
+}
+
+.hoshi-watch-secondary-line {
+    font-size: var(--hoshi-watch-secondary-font-size);
+    font-weight: 500;
+    color: #e8e8e8;
+}

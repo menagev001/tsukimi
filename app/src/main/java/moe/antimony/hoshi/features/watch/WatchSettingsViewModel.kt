@@ -77,6 +77,10 @@ internal class WatchSettingsViewModel @Inject constructor(
         viewModelScope.launch { preferencesRepository.updateAudioLanguage(value) }
     }
 
+    fun updateSubtitleSize(value: WatchSubtitleSize) {
+        viewModelScope.launch { preferencesRepository.updateSubtitleSize(value) }
+    }
+
     fun clearError() {
         transientState.update { it.copy(errorMessage = null) }
     }
