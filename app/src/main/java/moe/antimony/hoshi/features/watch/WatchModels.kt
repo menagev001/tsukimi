@@ -99,6 +99,8 @@ private const val TicksPerMillisecond = 10_000L
 
 internal fun Long.ticksToMs(): Long = this / TicksPerMillisecond
 
+internal fun Long.msToTicks(): Long = this * TicksPerMillisecond
+
 internal fun BaseItemDto.toWatchLibrary(images: WatchImageUrlBuilder): WatchLibrary? {
     val kind = when (collectionType) {
         CollectionType.MOVIES -> WatchLibraryKind.Movies

@@ -13,7 +13,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   series libraries, with seasons and episodes per series, and play films and
   episodes full screen with ±10 s, a seek bar and playback speed. Files the
   tablet can decode play directly; anything else (for example 10-bit H.264) is
-  transcoded by Jellyfin. Playback resumes where you stopped. Tsukimi keeps only
+  transcoded by Jellyfin. Playback resumes where you stopped, and progress
+  and watched state are saved to Jellyfin, so they match the other Jellyfin apps. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

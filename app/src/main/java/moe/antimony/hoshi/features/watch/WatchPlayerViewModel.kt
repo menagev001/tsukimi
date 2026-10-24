@@ -20,6 +20,7 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -38,9 +39,15 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     @Assisted private val itemId: String,
     @ApplicationContext context: Context,
     private val playbackRepository: WatchPlaybackRepository,
+    private val reporter: WatchPlaybackReporter,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WatchPlayerUiState())
     val uiState: StateFlow<WatchPlayerUiState> = _uiState.asStateFlow()
+
+    private var activeSource: WatchPlaybackSource? = null
+
+    /** True between the start and stop reports sent to Jellyfin. */
+    private var isReporting = false
 
     val player: ExoPlayer = ExoPlayer.Builder(context)
         .setSeekBackIncrementMs(SeekIncrementMs)
@@ -63,6 +70,22 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
                 object : Player.Listener {
                     override fun onPlaybackStateChanged(playbackState: Int) {
                         _uiState.update { it.copy(isBuffering = playbackState == Player.STATE_BUFFERING) }
+                        when (playbackState) {
+                            Player.STATE_READY -> reportStart()
+                            Player.STATE_ENDED -> reportStop()
+                        }
+                    }
+
+                    override fun onPlayWhenReadyChanged(playWhenReady: Boolean, reason: Int) {
+                        reportProgress()
+                    }
+
+                    override fun onPositionDiscontinuity(
+                        oldPosition: Player.PositionInfo,
+                        newPosition: Player.PositionInfo,
+                        reason: Int,
+                    ) {
+                        if (reason == Player.DISCONTINUITY_REASON_SEEK) reportProgress()
                     }
 
                     override fun onPlayerError(error: PlaybackException) {
@@ -75,6 +98,12 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
 
     init {
         load()
+        viewModelScope.launch {
+            while (true) {
+                delay(ProgressReportIntervalMs)
+                if (player.isPlaying) reportProgress()
+            }
+        }
     }
 
     fun retry() {
@@ -103,6 +132,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     }
 
     private fun start(source: WatchPlaybackSource) {
+        activeSource = source
         val dataSourceFactory = DefaultHttpDataSource.Factory()
             .setDefaultRequestProperties(source.requestHeaders)
             .setAllowCrossProtocolRedirects(true)
@@ -118,7 +148,27 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         player.play()
     }
 
+    private fun reportStart() {
+        val source = activeSource ?: return
+        if (isReporting) return
+        isReporting = true
+        reporter.start(source, player.currentPosition, isPaused = !player.playWhenReady)
+    }
+
+    private fun reportProgress() {
+        val source = activeSource ?: return
+        if (isReporting) reporter.progress(source, player.currentPosition, isPaused = !player.playWhenReady)
+    }
+
+    private fun reportStop() {
+        val source = activeSource ?: return
+        if (!isReporting) return
+        isReporting = false
+        reporter.stop(source, player.currentPosition)
+    }
+
     override fun onCleared() {
+        reportStop()
         player.release()
     }
 
@@ -130,5 +180,6 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private companion object {
         const val Tag = "WatchPlayer"
         const val SeekIncrementMs = 10_000L
+        const val ProgressReportIntervalMs = 10_000L
     }
 }
