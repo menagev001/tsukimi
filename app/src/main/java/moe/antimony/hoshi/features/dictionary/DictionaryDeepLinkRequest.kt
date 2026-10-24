@@ -23,7 +23,7 @@ internal data class DictionaryDeepLinkRequest(
 
             return runCatching {
                 val parsedUri = URI(uri)
-                if (parsedUri.scheme != "hoshi" || parsedUri.host != "search") return null
+                if (parsedUri.scheme != "tsukimi" || parsedUri.host != "search") return null
 
                 val queryParameters = parsedUri.rawQuery
                     ?.split('&')

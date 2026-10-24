@@ -9,7 +9,7 @@ class DictionaryDeepLinkRequestTest {
     fun decodedTextDefaultsToOverlay() {
         val request = DictionaryDeepLinkRequest.from(
             action = "android.intent.action.VIEW",
-            uri = "hoshi://search?text=%E9%A3%9F%E3%81%B9%E3%82%8B",
+            uri = "tsukimi://search?text=%E9%A3%9F%E3%81%B9%E3%82%8B",
         )
 
         assertEquals("食べる", request?.text)
@@ -20,7 +20,7 @@ class DictionaryDeepLinkRequestTest {
     fun appModePreservesDecodedTextForDictionarySearch() {
         val request = DictionaryDeepLinkRequest.from(
             action = "android.intent.action.VIEW",
-            uri = "hoshi://search?text=%20%E7%8C%AB%20&mode=app",
+            uri = "tsukimi://search?text=%20%E7%8C%AB%20&mode=app",
         )
 
         assertEquals(" 猫 ", request?.text)
@@ -31,7 +31,7 @@ class DictionaryDeepLinkRequestTest {
     fun literalPlusIsPreservedAsLookupText() {
         val request = DictionaryDeepLinkRequest.from(
             action = "android.intent.action.VIEW",
-            uri = "hoshi://search?text=C++",
+            uri = "tsukimi://search?text=C++",
         )
 
         assertEquals("C++", request?.text)
@@ -44,14 +44,14 @@ class DictionaryDeepLinkRequestTest {
             DictionaryDeepLinkDestination.MainApp,
             DictionaryDeepLinkRequest.from(
                 action = "android.intent.action.VIEW",
-                uri = "hoshi://search",
+                uri = "tsukimi://search",
             )?.destination,
         )
         assertEquals(
             DictionaryDeepLinkDestination.MainApp,
             DictionaryDeepLinkRequest.from(
                 action = "android.intent.action.VIEW",
-                uri = "hoshi://search?text=%20%20%20",
+                uri = "tsukimi://search?text=%20%20%20",
             )?.destination,
         )
     }
@@ -60,7 +60,7 @@ class DictionaryDeepLinkRequestTest {
     fun unknownModeKeepsDefaultOverlayAndFirstParameterWins() {
         val request = DictionaryDeepLinkRequest.from(
             action = "android.intent.action.VIEW",
-            uri = "hoshi://search?mode=popup&text=%E7%8C%AB&text=%E7%8A%AC&ignored=value",
+            uri = "tsukimi://search?mode=popup&text=%E7%8C%AB&text=%E7%8A%AC&ignored=value",
         )
 
         assertEquals("猫", request?.text)
@@ -72,7 +72,7 @@ class DictionaryDeepLinkRequestTest {
         assertNull(
             DictionaryDeepLinkRequest.from(
                 action = "android.intent.action.SEND",
-                uri = "hoshi://search?text=%E7%8C%AB",
+                uri = "tsukimi://search?text=%E7%8C%AB",
             ),
         )
         assertNull(
@@ -84,13 +84,13 @@ class DictionaryDeepLinkRequestTest {
         assertNull(
             DictionaryDeepLinkRequest.from(
                 action = "android.intent.action.VIEW",
-                uri = "hoshi://other?text=%E7%8C%AB",
+                uri = "tsukimi://other?text=%E7%8C%AB",
             ),
         )
         assertNull(
             DictionaryDeepLinkRequest.from(
                 action = "android.intent.action.VIEW",
-                uri = "hoshi://search?text=%ZZ",
+                uri = "tsukimi://search?text=%ZZ",
             ),
         )
     }

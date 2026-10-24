@@ -93,8 +93,8 @@ press is for native selection/highlight-style flows when those are under test.
 Validate lookup deep links with:
 
 ```bash
-adb shell "am start -a android.intent.action.VIEW -d 'hoshi://search?text=%E7%8C%AB'"
-adb shell "am start -a android.intent.action.VIEW -d 'hoshi://search?text=%E7%8C%AB&mode=app'"
+adb shell "am start -a android.intent.action.VIEW -d 'tsukimi://search?text=%E7%8C%AB'"
+adb shell "am start -a android.intent.action.VIEW -d 'tsukimi://search?text=%E7%8C%AB&mode=app'"
 ```
 
 The first link opens the default popup overlay and the second opens the

@@ -188,7 +188,7 @@ class MainActivityConfigurationTest {
             "Hoshi search deep links must open through the isolated lookup activity.",
             activity.hasDeepLinkIntentFilter(
                 actionName = "android.intent.action.VIEW",
-                scheme = "hoshi",
+                scheme = "tsukimi",
                 host = "search",
             ),
         )
@@ -196,7 +196,7 @@ class MainActivityConfigurationTest {
             "MainActivity must not open behind the default lookup overlay.",
             mainActivityManifestElement().hasDeepLinkIntentFilter(
                 actionName = "android.intent.action.VIEW",
-                scheme = "hoshi",
+                scheme = "tsukimi",
                 host = "search",
             ),
         )

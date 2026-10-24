@@ -125,7 +125,7 @@
 
                 <data
                     android:host="search"
-                    android:scheme="hoshi" />
+                    android:scheme="tsukimi" />
             </intent-filter>
         </activity>
     </application>
