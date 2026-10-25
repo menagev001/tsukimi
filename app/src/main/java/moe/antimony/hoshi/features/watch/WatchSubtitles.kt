@@ -196,17 +196,15 @@ internal fun cueIndexForSentence(cues: List<WatchSubtitleCue>, sentence: String,
         ?: cues.indices.filter { flat(it) == sentence }.minByOrNull { abs(cues[it].startMs - positionMs) }
 }
 
-/** The [lineCount] subtitle lines before and after the line whose text is [sentence], as AI context. */
+/** The [lineCount] subtitle lines before and after the lines in [range], as AI context. */
 internal fun subtitleAiContext(
     cues: List<WatchSubtitleCue>,
-    sentence: String,
-    positionMs: Long,
+    range: IntRange,
     lineCount: Int = 2,
-): AiSentenceContext? {
+): AiSentenceContext {
     fun flat(index: Int) = cues[index].text.replace("\n", "")
-    val index = cueIndexForSentence(cues, sentence, positionMs) ?: return null
     return AiSentenceContext(
-        before = (maxOf(0, index - lineCount) until index).map(::flat),
-        after = (index + 1 until minOf(cues.size, index + 1 + lineCount)).map(::flat),
+        before = (maxOf(0, range.first - lineCount) until range.first).map(::flat),
+        after = (range.last + 1 until minOf(cues.size, range.last + 1 + lineCount)).map(::flat),
     )
 }

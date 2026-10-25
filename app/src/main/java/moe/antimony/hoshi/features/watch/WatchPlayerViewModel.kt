@@ -39,6 +39,8 @@ data class WatchPlayerUiState(
     val hasPlaybackError: Boolean = false,
     val audioTracks: List<WatchAudioTrackOption> = emptyList(),
     val subtitles: WatchSubtitlesUiState = WatchSubtitlesUiState(),
+    /** The lines a card from the open lookup would use; null without a lookup on a subtitle. */
+    val cardSelection: WatchCardSelection? = null,
 )
 
 data class WatchSubtitlesUiState(
@@ -221,9 +223,43 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         }
     }
 
-    /** The neighbouring subtitle lines of [sentence] for AI lookups, or null when it is not a line. */
-    fun aiContextFor(sentence: String): AiSentenceContext? =
-        subtitleAiContext(primaryCues, sentence, player.currentPosition - _uiState.value.subtitles.offsetMs)
+    /**
+     * The sentence and context for an AI lookup from [sentence]: the merged lines and their
+     * neighbours when lines were added, else the line itself. Null context when it is not a line.
+     */
+    fun aiRequestFor(sentence: String): Pair<String, AiSentenceContext?> {
+        val selection = cardSelectionFor(sentence) ?: return sentence to null
+        return selection.text to subtitleAiContext(primaryCues, selection.range)
+    }
+
+    /** Starts the card selection at the line of the open lookup, or clears it ([sentence] null). */
+    fun setCardBase(sentence: String?) {
+        val selection = sentence?.let { lineSelection(it) }
+        if (selection?.baseIndex != _uiState.value.cardSelection?.baseIndex) {
+            _uiState.update { it.copy(cardSelection = selection) }
+        }
+    }
+
+    fun extendCardSelection(previous: Boolean) {
+        _uiState.update { state -> state.copy(cardSelection = state.cardSelection?.extended(primaryCues, previous)) }
+    }
+
+    fun resetCardSelection() {
+        _uiState.update { state ->
+            state.copy(cardSelection = state.cardSelection?.let { watchCardSelection(primaryCues, it.baseIndex, it.baseIndex..it.baseIndex) })
+        }
+    }
+
+    /** The current selection when [sentence] is its tapped line, else that line on its own. */
+    private fun cardSelectionFor(sentence: String): WatchCardSelection? =
+        _uiState.value.cardSelection?.takeIf { primaryCues[it.baseIndex].text.replace("\n", "") == sentence }
+            ?: lineSelection(sentence)
+
+    private fun lineSelection(sentence: String): WatchCardSelection? {
+        val index = cueIndexForSentence(primaryCues, sentence, player.currentPosition - _uiState.value.subtitles.offsetMs)
+            ?: return null
+        return watchCardSelection(primaryCues, index, index..index)
+    }
 
     /**
      * Adds what a Watch card knows beyond the popup: `{source}`, `{sentence-translation}` and the
@@ -232,10 +268,18 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     fun cardContext(base: AnkiMiningContext): AnkiMiningContext {
         val item = activeSource?.item ?: return base
         val offsetMs = _uiState.value.subtitles.offsetMs
-        val lines = watchCardLines(primaryCues, base.sentence, player.currentPosition - offsetMs)
+        val selection = cardSelectionFor(base.sentence)
+            ?: return base.copy(
+                source = watchCardSource(item, player.currentPosition),
+                extraTags = base.extraTags + watchCardTags(item),
+            )
+        val first = primaryCues[selection.range.first]
+        val last = primaryCues[selection.range.last]
         return base.copy(
-            source = watchCardSource(item, (lines?.startMs ?: (player.currentPosition - offsetMs)) + offsetMs),
-            sentenceTranslation = lines?.let { watchCardTranslation(englishCues, it.startMs, it.endMs) },
+            sentence = selection.text,
+            sentenceOffset = base.sentenceOffset?.plus(selection.offsetBeforeBase(primaryCues)),
+            source = watchCardSource(item, primaryCues[selection.baseIndex].startMs + offsetMs),
+            sentenceTranslation = watchCardTranslation(englishCues, first.startMs, last.endMs),
             extraTags = base.extraTags + watchCardTags(item),
         )
     }

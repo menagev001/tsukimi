@@ -1,7 +1,8 @@
 package moe.antimony.hoshi.features.watch
 
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class WatchCardsTest {
@@ -44,10 +45,33 @@ class WatchCardsTest {
         )
     }
 
+    private val lines = listOf(
+        WatchSubtitleCue(0, 1_000, "今日は"),
+        WatchSubtitleCue(1_000, 2_000, "いい天気\nだから"),
+        WatchSubtitleCue(2_000, 3_000, "散歩に行こう"),
+    )
+
     @Test
-    fun cardLinesFindTheTappedLine() {
-        val cues = listOf(WatchSubtitleCue(0, 1_000, "一"), WatchSubtitleCue(1_000, 2_000, "二\n行"))
-        assertEquals(WatchCardLines(1..1, 1_000, 2_000), watchCardLines(cues, "二行", 1_500))
-        assertNull(watchCardLines(cues, "三", 0))
+    fun selectionStartsAtTheTappedLine() {
+        val selection = watchCardSelection(lines, 1, 1..1)
+        assertEquals("いい天気だから", selection.text)
+        assertFalse(selection.isMerged)
+        assertTrue(selection.canAddPrevious)
+        assertTrue(selection.canAddNext)
+    }
+
+    @Test
+    fun addingLinesMergesTextAndShiftsTheWordOffset() {
+        val merged = watchCardSelection(lines, 1, 1..1)
+            .extended(lines, previous = true)
+            .extended(lines, previous = false)
+
+        assertEquals(0..2, merged.range)
+        assertEquals("今日はいい天気だから散歩に行こう", merged.text)
+        assertTrue(merged.isMerged)
+        assertFalse(merged.canAddPrevious)
+        assertFalse(merged.canAddNext)
+        assertEquals(3, merged.offsetBeforeBase(lines))
+        assertEquals(merged, merged.extended(lines, previous = true).extended(lines, previous = false))
     }
 }

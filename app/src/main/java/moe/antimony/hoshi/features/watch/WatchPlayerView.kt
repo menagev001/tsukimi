@@ -20,7 +20,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.List
@@ -44,6 +46,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
 import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -167,6 +170,10 @@ internal fun WatchPlayerView(
         viewModel.onLookupActiveChanged(lookupActive)
         if (lookupActive) controlsVisible = false
     }
+    val rootLookupSentence = popupHost.lookupPopups.firstOrNull()?.state?.selection?.sentence
+    LaunchedEffect(rootLookupSentence) {
+        viewModel.setCardBase(rootLookupSentence)
+    }
     // The card is built in the background; close the popup so playback continues meanwhile.
     LaunchedEffect(newestCardJobId) {
         if (newestCardJobId != null) popupHost.dismiss()
@@ -279,6 +286,20 @@ internal fun WatchPlayerView(
                 )
             }
 
+            val cardSelection = uiState.cardSelection
+            if (popupHost.isOpen && cardSelection != null) {
+                WatchCardLinesBar(
+                    selection = cardSelection,
+                    onAddPrevious = { viewModel.extendCardSelection(previous = true) },
+                    onAddNext = { viewModel.extendCardSelection(previous = false) },
+                    onReset = viewModel::resetCardSelection,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .safeDrawingPadding()
+                        .padding(top = 8.dp, start = 16.dp, end = 16.dp),
+                )
+            }
+
             AnkiCardJobChip(
                 modifier = Modifier
                     .align(Alignment.TopCenter)
@@ -298,14 +319,58 @@ internal fun WatchPlayerView(
     }
 }
 
+/** The sentence a card will use, with buttons to add the line before or after it. */
+@Composable
+private fun WatchCardLinesBar(
+    selection: WatchCardSelection,
+    onAddPrevious: () -> Unit,
+    onAddNext: () -> Unit,
+    onReset: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        shape = RoundedCornerShape(20.dp),
+        color = Color.Black.copy(alpha = 0.75f),
+        contentColor = Color.White,
+        modifier = modifier.widthIn(max = 900.dp),
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            modifier = Modifier.padding(horizontal = 4.dp),
+        ) {
+            TextButton(onClick = onAddPrevious, enabled = selection.canAddPrevious) {
+                Text(stringResource(R.string.watch_card_add_previous_line))
+            }
+            Text(
+                text = selection.text,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f, fill = false).padding(vertical = 8.dp),
+            )
+            TextButton(onClick = onAddNext, enabled = selection.canAddNext) {
+                Text(stringResource(R.string.watch_card_add_next_line))
+            }
+            if (selection.isMerged) {
+                TextButton(onClick = onReset) {
+                    Text(stringResource(R.string.action_reset))
+                }
+            }
+        }
+    }
+}
+
 /** AI lookups from subtitles carry the two lines before and after the tapped line. */
 private class WatchAiRequests(private val viewModel: WatchPlayerViewModel) : LookupPopupAiRequests {
     override fun askWordNuance(ai: AiLookupViewModel, word: String, selection: ReaderSelectionData) {
-        ai.askWordNuance(word = word, sentence = selection.sentence, context = viewModel.aiContextFor(selection.sentence))
+        val (sentence, context) = viewModel.aiRequestFor(selection.sentence)
+        ai.askWordNuance(word = word, sentence = sentence, context = context)
     }
 
     override fun requestSentenceBreakdown(ai: AiLookupViewModel, selection: ReaderSelectionData) {
-        ai.requestSentenceBreakdown(selection.sentence, viewModel.aiContextFor(selection.sentence))
+        val (sentence, context) = viewModel.aiRequestFor(selection.sentence)
+        ai.requestSentenceBreakdown(sentence, context)
     }
 }
 

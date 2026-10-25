@@ -737,6 +737,8 @@
     <string name="watch_player_next_line">下一句</string>
     <string name="watch_player_show_line_list">显示字幕列表</string>
     <string name="watch_player_hide_line_list">隐藏字幕列表</string>
+    <string name="watch_card_add_previous_line">+ 上一句</string>
+    <string name="watch_card_add_next_line">+ 下一句</string>
     <string name="watch_subtitle_size">字幕大小</string>
     <string name="watch_subtitle_size_small">小</string>
     <string name="watch_subtitle_size_medium">中</string>

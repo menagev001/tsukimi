@@ -146,15 +146,21 @@ class WatchSubtitlesTest {
             WatchSubtitleCue(9_000, 10_000, "同じ"),
         )
 
-        val context = subtitleAiContext(cues, "同じ", positionMs = 2_500)!!
+        assertEquals(2, cueIndexForSentence(cues, "同じ", positionMs = 2_500))
+        assertEquals(6, cueIndexForSentence(cues, "同じ", positionMs = 9_500))
+        assertNull(cueIndexForSentence(cues, "ない", positionMs = 0))
+
+        val context = subtitleAiContext(cues, 2..2)
         assertEquals(listOf("一", "二"), context.before)
         assertEquals(listOf("四行", "五"), context.after)
 
-        val later = subtitleAiContext(cues, "同じ", positionMs = 9_500)!!
-        assertEquals(listOf("五", "六"), later.before)
-        assertEquals(emptyList<String>(), later.after)
+        val merged = subtitleAiContext(cues, 2..3)
+        assertEquals(listOf("一", "二"), merged.before)
+        assertEquals(listOf("五", "六"), merged.after)
 
-        assertNull(subtitleAiContext(cues, "ない", positionMs = 0))
+        val last = subtitleAiContext(cues, 6..6)
+        assertEquals(listOf("五", "六"), last.before)
+        assertEquals(emptyList<String>(), last.after)
     }
 
     @Test
