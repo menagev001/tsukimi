@@ -1,6 +1,8 @@
 package moe.antimony.hoshi.features.watch
 
 import android.annotation.SuppressLint
+import android.graphics.Rect
+import android.os.Build
 import android.net.Uri
 import android.view.GestureDetector
 import android.view.MotionEvent
@@ -20,22 +22,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.viewinterop.AndroidView
+import kotlin.math.abs
 import moe.antimony.hoshi.features.reader.LookupPopupHost
 import moe.antimony.hoshi.features.reader.ReaderTapDispatcher
 import moe.antimony.hoshi.features.reader.androidPixelsToCssPixels
 import moe.antimony.hoshi.features.reader.readerSelectionMaxLength
 import moe.antimony.hoshi.webview.applyHoshiWebViewSecurityDefaults
 
-/**
- * Transparent WebView over the video that draws the current subtitle lines and hosts the lookup
- * popup. It receives every touch on the player:
- * - touches on an open popup go to the WebView itself,
- * - a tap on a word (in a line or in the line list) opens the popup, a double tap on a line asks
- *   for its sentence breakdown,
- * - a tap on a timestamp in the line list calls [onSeekToCue]; drags in the list scroll it,
- * - a double tap elsewhere seeks back (left half) or forward (right half),
- * - any other tap closes an open popup, or else (outside the list) calls [onBlankTap].
- */
 /**
  * Longer than the reader's 180 ms: two taps on one side of a video come a little slower than on
  * a page, and a slightly later single tap matters less here.
@@ -45,6 +38,31 @@ private const val WatchDoubleTapTimeoutMs = 250L
 /** Seconds of fling velocity turned into list scroll distance. */
 private const val ListFlingDistancePerVelocity = 0.25f
 
+/** Width of the strip at the right edge where a swipe to the left opens the line list. */
+private const val ListEdgeZoneDp = 48f
+
+/** Horizontal travel that opens or closes the line list. */
+private const val ListSwipeDistanceDp = 56f
+
+/**
+ * Height of the right-edge strip reserved against the system back gesture; Android grants at
+ * most 200 dp per edge.
+ */
+private const val ListEdgeExclusionHeightDp = 200f
+
+private enum class ListGesture { Open, Close, Scroll, None }
+
+/**
+ * Transparent WebView over the video that draws the current subtitle lines and hosts the lookup
+ * popup. It receives every touch on the player:
+ * - touches on an open popup go to the WebView itself,
+ * - a tap on a word (in a line or in the line list) opens the popup, a double tap on a line asks
+ *   for its sentence breakdown,
+ * - a tap on a timestamp in the line list calls [onSeekToCue]; vertical drags in the list scroll
+ *   it, a swipe to the right closes it, and a swipe from the right edge inward opens it,
+ * - a double tap elsewhere seeks back (left half) or forward (right half),
+ * - any other tap closes an open popup, or else (outside the list) calls [onBlankTap].
+ */
 @SuppressLint("ClickableViewAccessibility")
 @Composable
 internal fun WatchSubtitleOverlay(
@@ -53,12 +71,14 @@ internal fun WatchSubtitleOverlay(
     cues: List<WatchSubtitleCue>,
     activeCueIndex: Int?,
     listVisible: Boolean,
+    listAvailable: Boolean,
     listWidth: Dp,
     fontSizePx: Int,
     bottomInset: Dp,
     onBlankTap: () -> Unit,
     onSideDoubleTap: (forward: Boolean) -> Unit,
     onSeekToCue: (cueIndex: Int) -> Unit,
+    onListVisibleChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
@@ -69,6 +89,8 @@ internal fun WatchSubtitleOverlay(
     val currentOnSideDoubleTap by rememberUpdatedState(onSideDoubleTap)
     val currentOnSeekToCue by rememberUpdatedState(onSeekToCue)
     val currentListVisible by rememberUpdatedState(listVisible)
+    val currentListAvailable by rememberUpdatedState(listAvailable)
+    val currentOnListVisibleChange by rememberUpdatedState(onListVisibleChange)
     val currentListWidth by rememberUpdatedState(listWidth)
     val webView = popupHost.webView
 
@@ -131,6 +153,28 @@ internal fun WatchSubtitleOverlay(
                         }
                     },
                 )
+                var listGesture: ListGesture? = null
+
+                /** Decides once per drag what it does, from where it started and its first direction. */
+                fun listGestureFor(start: MotionEvent, event: MotionEvent): ListGesture {
+                    listGesture?.let { return it }
+                    val dx = event.x - start.x
+                    val dy = event.y - start.y
+                    val edgeZonePx = ListEdgeZoneDp * resources.displayMetrics.density
+                    return when {
+                        !currentListVisible && currentListAvailable && start.x >= width - edgeZonePx ->
+                            if (-dx > abs(dy)) ListGesture.Open else ListGesture.None
+                        inList(start.x) -> if (dx > abs(dy)) ListGesture.Close else ListGesture.Scroll
+                        else -> ListGesture.None
+                    }.also { listGesture = it }
+                }
+
+                fun finishListSwipe(visible: Boolean) {
+                    listGesture = ListGesture.None
+                    popupHost.dismiss()
+                    currentOnListVisibleChange(visible)
+                }
+
                 val gestures = GestureDetector(
                     ctx,
                     object : GestureDetector.SimpleOnGestureListener() {
@@ -148,18 +192,33 @@ internal fun WatchSubtitleOverlay(
                         }
 
                         override fun onScroll(start: MotionEvent?, event: MotionEvent, distanceX: Float, distanceY: Float): Boolean {
-                            if (start == null || !inList(start.x)) return false
-                            popupHost.dismiss()
+                            if (start == null) return false
                             val density = resources.displayMetrics.density
-                            evaluateJavascript(watchScrollListScript(androidPixelsToCssPixels(distanceY, density)), null)
+                            val swipePx = ListSwipeDistanceDp * density
+                            when (listGestureFor(start, event)) {
+                                ListGesture.Open -> if (start.x - event.x >= swipePx) finishListSwipe(visible = true)
+                                ListGesture.Close -> if (event.x - start.x >= swipePx) finishListSwipe(visible = false)
+                                ListGesture.Scroll -> {
+                                    popupHost.dismiss()
+                                    evaluateJavascript(watchScrollListScript(androidPixelsToCssPixels(distanceY, density)), null)
+                                }
+                                ListGesture.None -> return false
+                            }
                             return true
                         }
 
                         override fun onFling(start: MotionEvent?, event: MotionEvent, velocityX: Float, velocityY: Float): Boolean {
-                            if (start == null || !inList(start.x)) return false
-                            val density = resources.displayMetrics.density
-                            val distance = -velocityY * ListFlingDistancePerVelocity
-                            evaluateJavascript(watchFlingListScript(androidPixelsToCssPixels(distance, density)), null)
+                            if (start == null) return false
+                            when (listGesture) {
+                                ListGesture.Open -> if (velocityX < 0) finishListSwipe(visible = true)
+                                ListGesture.Close -> if (velocityX > 0) finishListSwipe(visible = false)
+                                ListGesture.Scroll -> {
+                                    val density = resources.displayMetrics.density
+                                    val distance = -velocityY * ListFlingDistancePerVelocity
+                                    evaluateJavascript(watchFlingListScript(androidPixelsToCssPixels(distance, density)), null)
+                                }
+                                ListGesture.None, null -> return false
+                            }
                             return true
                         }
                     },
@@ -171,6 +230,7 @@ internal fun WatchSubtitleOverlay(
                 var gestureOnPopup = false
                 setOnTouchListener { _, event ->
                     if (event.actionMasked == MotionEvent.ACTION_DOWN) {
+                        listGesture = null
                         val density = resources.displayMetrics.density
                         gestureOnPopup = popupHost.blocksGesture(
                             event,
@@ -183,6 +243,17 @@ internal fun WatchSubtitleOverlay(
                     if (gestureOnPopup) return@setOnTouchListener false
                     gestures.onTouchEvent(event)
                     true
+                }
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    addOnLayoutChangeListener { _, _, _, right, bottom, _, _, _, _ ->
+                        val density = resources.displayMetrics.density
+                        val edgeZonePx = (ListEdgeZoneDp * density).toInt()
+                        val halfHeightPx = (ListEdgeExclusionHeightDp * density / 2).toInt()
+                        val centerY = bottom / 2
+                        systemGestureExclusionRects = listOf(
+                            Rect(right - edgeZonePx, centerY - halfHeightPx, right, centerY + halfHeightPx),
+                        )
+                    }
                 }
                 popupHost.webView = this
                 loadDataWithBaseURL(

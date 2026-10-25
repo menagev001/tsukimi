@@ -36,7 +36,6 @@ body {
 }
 
 .hoshi-watch-list {
-    display: none;
     position: fixed;
     top: 0;
     right: 0;
@@ -47,10 +46,15 @@ body {
     overflow-y: hidden;
     background: rgba(12, 12, 12, 0.88);
     color: #ddd;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform 200ms ease-out, visibility 0s linear 200ms;
 }
 
 .hoshi-watch-list-open .hoshi-watch-list {
-    display: block;
+    transform: translateX(0);
+    visibility: visible;
+    transition: transform 200ms ease-out, visibility 0s;
 }
 
 .hoshi-watch-list-item {
