@@ -150,7 +150,7 @@ handlebars like `{expression}`). New handlebars:
 |---|---|
 | `{ai-word-nuance}` | AI word nuance result (the popup result is reused when it was already asked) |
 | `{ai-sentence-breakdown}` | AI sentence breakdown, including its English translation |
-| `{ai-example-sentence}` | AI example sentence, see below (empty when not needed) |
+| `{original-sentence}` | The original sentence when an AI example replaced it, see below (empty otherwise) |
 | `{sentence-translation}` | Matching English subtitle line(s) by time overlap, empty for books |
 | `{screenshot}` | Video frame of the line |
 | `{sentence-audio}` | Audio clip of the line (or merged lines) |
@@ -165,7 +165,7 @@ Lapis' `SentenceAudio` maps to `{sentence-audio}{sasayaki-audio}` and `Picture`
 to `{screenshot}{book-cover}`.
 
 Lapis has no fields for the AI results. The note type gets extra fields
-(`AINuance`, `AIBreakdown`, `ExampleSentence`, `SentenceTranslation`, `Source`)
+(`AINuance`, `AIBreakdown`, `OriginalSentence`, `SentenceTranslation`, `Source`)
 added once in Anki on the desktop, plus a back-template block that shows them.
 The Phase 3 setup step lists exactly what to add.
 
@@ -191,9 +191,11 @@ the series/book title.
 - Not fully automatic (decided 2026-10-25): when the sentence is longer than a
   set number of characters (setting, default 40), adding a card first asks
   whether to keep the original sentence only or to add an AI example sentence.
-  Applies to video, books and manga. The original sentence stays on the card as
-  context; the example sentence goes in `ExampleSentence`. A button in the
-  popup asks for one by hand.
+  Applies to video, books and manga. With the AI example, the example becomes
+  the card's main sentence (`{sentence}`, shorter is better for flashcards) and
+  the original goes to `{original-sentence}` (field `OriginalSentence`, empty
+  when the original is kept). Sentence audio, screenshot and translation stay
+  those of the original line. A button in the popup asks for one by hand.
 
 ### Screenshot
 
