@@ -1,6 +1,7 @@
 package moe.antimony.hoshi.features.watch
 
 import android.content.Context
+import android.graphics.Bitmap
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.lifecycle.ViewModel
@@ -20,18 +21,25 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
 import moe.antimony.hoshi.features.ai.AiSentenceContext
+import moe.antimony.hoshi.features.anki.AnkiCardRequest
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
+import moe.antimony.hoshi.features.anki.AnkiMiningPayload
+import java.io.File
 import java.util.Locale
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import moe.antimony.hoshi.di.IoDispatcher
 
 data class WatchPlayerUiState(
     val source: WatchLoadState<WatchPlaybackSource> = WatchLoadState.Loading,
@@ -72,6 +80,7 @@ data class WatchAudioTrackOption(
 internal class WatchPlayerViewModel @AssistedInject constructor(
     @Assisted private val itemId: String,
     @ApplicationContext context: Context,
+    @param:IoDispatcher private val ioDispatcher: CoroutineDispatcher,
     private val playbackRepository: WatchPlaybackRepository,
     private val reporter: WatchPlaybackReporter,
     private val subtitleRepository: WatchSubtitleRepository,
@@ -90,6 +99,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private var resumeAfterLookup = true
     private var pausedForLookup = false
     private var subtitlesLoadedFor: String? = null
+
+    private val screenshotDirectory = File(context.cacheDir, "anki-media")
 
     val player: ExoPlayer = ExoPlayer.Builder(context)
         .setSeekBackIncrementMs(SeekIncrementMs)
@@ -281,6 +292,34 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             source = watchCardSource(item, primaryCues[selection.baseIndex].startMs + offsetMs),
             sentenceTranslation = watchCardTranslation(englishCues, first.startMs, last.endMs),
             extraTags = base.extraTags + watchCardTags(item),
+        )
+    }
+
+    /**
+     * A card for the popup's Anki button. [frame] is the video frame copied when the button was
+     * pressed; it is saved inside the job and deleted when the job ends.
+     */
+    fun cardRequest(
+        formatId: String?,
+        payloadJson: String,
+        context: AnkiMiningContext,
+        selectionText: String,
+        frame: Deferred<Bitmap?>,
+    ): AnkiCardRequest {
+        var screenshot: File? = null
+        return AnkiCardRequest(
+            label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
+                ?.takeIf(String::isNotBlank) ?: selectionText,
+            formatId = formatId,
+            payloadJson = payloadJson,
+            context = cardContext(context),
+            prepareContext = { cardContext ->
+                screenshot = frame.await()?.let { bitmap ->
+                    withContext(ioDispatcher) { saveWatchScreenshot(bitmap, screenshotDirectory) }
+                }
+                cardContext.copy(screenshotPath = screenshot?.path)
+            },
+            cleanUp = { screenshot?.delete() },
         )
     }
 

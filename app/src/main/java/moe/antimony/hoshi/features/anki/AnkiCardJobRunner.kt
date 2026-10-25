@@ -20,6 +20,10 @@ data class AnkiCardRequest(
     val formatId: String?,
     val payloadJson: String,
     val context: AnkiMiningContext,
+    /** Adds slow parts such as media to the context inside the job; cancelling the job stops it. */
+    val prepareContext: (suspend (AnkiMiningContext) -> AnkiMiningContext)? = null,
+    /** Runs when the job ends in any way, e.g. to delete temporary media files. */
+    val cleanUp: () -> Unit = {},
 )
 
 data class AnkiCardJob(
@@ -61,9 +65,10 @@ class AnkiCardJobRunner @Inject internal constructor(
                 val expression = runCatching { AnkiMiningPayload.fromJson(request.payloadJson).expression }.getOrDefault("")
                 val duplicate = expression.isNotBlank() &&
                     runCatching { repository.isDuplicate(expression, emptyList(), emptyList()) }.getOrDefault(false)
+                val context = request.prepareContext?.invoke(request.context) ?: request.context
                 val added = repository.mineEntry(
                     rawPayload = request.payloadJson,
-                    context = request.context,
+                    context = context,
                     decks = emptyList(),
                     noteTypes = emptyList(),
                     formatId = request.formatId,
@@ -75,6 +80,8 @@ class AnkiCardJobRunner @Inject internal constructor(
             } catch (error: Exception) {
                 Log.w(Tag, "Card job failed: ${error.message}")
                 AnkiCardJobStatus.Failed
+            } finally {
+                runCatching(request.cleanUp)
             }
             finish(id, status)
         }

@@ -37,7 +37,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   English subtitle lines at that time). While the popup is open, a bar shows
   the sentence the card will use, with + Previous line / + Next line to join a
   sentence that is spread over several subtitles; the card, its translation and
-  Explain Word / Sentence Breakdown then use the joined sentence. Tsukimi keeps only
+  Explain Word / Sentence Breakdown then use the joined sentence. A new Anki
+  field value `{screenshot}` adds the video frame of the line (without
+  subtitles, at most 1280 px wide). Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

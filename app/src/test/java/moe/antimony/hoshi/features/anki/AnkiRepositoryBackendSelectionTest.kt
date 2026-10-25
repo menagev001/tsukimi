@@ -184,6 +184,43 @@ class AnkiRepositoryBackendSelectionTest {
     }
 
     @Test
+    fun mineEntryAddsScreenshotAsImageWhenReferenced() = runBlocking {
+        val deck = AnkiDeck(10L, "Mining")
+        val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression", "Picture"))
+        val ankiConnect = RecordingBackend(decks = listOf(deck), noteTypes = listOf(noteType))
+        val repository = repository(
+            settingsRepository = InMemoryAnkiSettingsRepository(
+                AnkiSettings(
+                    backendKind = AnkiBackendKind.AnkiConnect,
+                    ankiConnectUrl = "https://anki.example.com",
+                    selectedDeckId = deck.id,
+                    selectedDeckName = deck.name,
+                    selectedNoteTypeId = noteType.id,
+                    selectedNoteTypeName = noteType.name,
+                    availableDecks = listOf(deck),
+                    availableNoteTypes = listOf(noteType),
+                    fieldMappings = mapOf("Expression" to "{expression}", "Picture" to "{screenshot}{book-cover}"),
+                ),
+            ),
+            ankiConnectBackendFactory = { _, _ -> ankiConnect },
+        )
+        val screenshot = Files.createTempFile("frame", ".jpg").toFile().apply { writeBytes(byteArrayOf(1, 2, 3)) }
+
+        assertTrue(
+            repository.mineEntry(
+                rawPayload = """{"expression":"食べる"}""",
+                context = AnkiMiningContext(sentence = "パンを食べる。", screenshotPath = screenshot.path),
+                decks = emptyList(),
+                noteTypes = emptyList(),
+            ),
+        )
+
+        assertEquals("image/jpeg", ankiConnect.lastMediaMimeType)
+        assertTrue(ankiConnect.lastMediaName.orEmpty().startsWith("tsukimi_screenshot_"))
+        assertEquals("""<img src="${ankiConnect.lastMediaName}">""", ankiConnect.lastFields["Picture"])
+    }
+
+    @Test
     fun mineEntryForceSyncsAnkiDroidAfterSuccessfulAddWhenEnabled() = runBlocking {
         val deck = AnkiDeck(10L, "Mining")
         val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression"))

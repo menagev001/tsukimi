@@ -318,6 +318,8 @@ data class AnkiMiningContext(
     val sentenceTranslation: String? = null,
     /** Tags added to the card format's own tags. */
     val extraTags: Set<String> = emptySet(),
+    /** Image file of the moment the sentence was seen, e.g. a video frame; `{screenshot}`. */
+    val screenshotPath: String? = null,
 )
 
 object AnkiHandlebarRenderer {
@@ -387,6 +389,7 @@ object AnkiHandlebarRenderer {
             "{sentence-translation}" -> context.sentenceTranslation.orEmpty()
             "{book-cover}" -> context.coverPath.orEmpty()
             "{sasayaki-audio}" -> context.sasayakiAudioPath.orEmpty()
+            "{screenshot}" -> context.screenshotPath.orEmpty()
             else -> ""
         }
     }

@@ -74,4 +74,11 @@ class WatchCardsTest {
         assertEquals(3, merged.offsetBeforeBase(lines))
         assertEquals(merged, merged.extended(lines, previous = true).extended(lines, previous = false))
     }
+
+    @Test
+    fun screenshotsKeepAspectAndLimitWidth() {
+        assertEquals(1280 to 720, watchScreenshotSize(1920, 1080))
+        assertEquals(1280 to 533, watchScreenshotSize(3840, 1600))
+        assertEquals(854 to 480, watchScreenshotSize(854, 480))
+    }
 }

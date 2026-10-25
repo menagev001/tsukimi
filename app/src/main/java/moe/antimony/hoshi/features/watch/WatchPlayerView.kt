@@ -94,8 +94,6 @@ import moe.antimony.hoshi.features.ai.AiLookupState
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiCardJobChip
 import moe.antimony.hoshi.features.anki.AnkiCardJobsViewModel
-import moe.antimony.hoshi.features.anki.AnkiCardRequest
-import moe.antimony.hoshi.features.anki.AnkiMiningPayload
 import moe.antimony.hoshi.features.reader.LookupPopupAiRequests
 import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
 import moe.antimony.hoshi.features.reader.LookupPopupMineHandler
@@ -138,6 +136,7 @@ internal fun WatchPlayerView(
     val cueTexts = remember(uiState.subtitles.cues) { uiState.subtitles.cues.map { it.text } }
     val currentCueTexts by rememberUpdatedState(cueTexts)
     val cardJobs: AnkiCardJobsViewModel = hiltViewModel()
+    val framePlayer = remember(player) { WatchFrameCapturePlayer(player) }
     val newestCardJobId = cardJobs.jobs.collectAsStateWithLifecycle().value.lastOrNull()?.id
     val popupHost = rememberLookupPopupHost(
         readerSettings = readerSettings,
@@ -147,17 +146,11 @@ internal fun WatchPlayerView(
         documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
         rootPopupVertical = false,
         aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
-        mineEntry = remember(viewModel, cardJobs) {
+        mineEntry = remember(viewModel, cardJobs, framePlayer) {
             LookupPopupMineHandler { formatId, payloadJson, context, selection ->
-                cardJobs.start(
-                    AnkiCardRequest(
-                        label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
-                            ?.takeIf(String::isNotBlank) ?: selection.text,
-                        formatId = formatId,
-                        payloadJson = payloadJson,
-                        context = viewModel.cardContext(context),
-                    ),
-                )
+                // Copy the frame now, before the popup closes and playback moves on.
+                val frame = framePlayer.captureFrame()
+                cardJobs.start(viewModel.cardRequest(formatId, payloadJson, context, selection.text, frame))
                 true
             }
         },
@@ -208,7 +201,7 @@ internal fun WatchPlayerView(
             val videoAspectRatio = presentationState.videoSizeDp
                 ?.takeIf { it.width > 0f && it.height > 0f }
                 ?.let { it.width / it.height }
-            ContentFrame(player = player, modifier = Modifier.fillMaxSize())
+            ContentFrame(player = framePlayer, modifier = Modifier.fillMaxSize())
             val liveSubtitleInsetDp = subtitleBottomInsetDp(
                 screenWidthDp = maxWidth.value,
                 screenHeightDp = maxHeight.value,

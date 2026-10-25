@@ -738,6 +738,7 @@ internal object AnkiHandlebarOptions {
         "{sasayaki-audio}",
         "{source}",
         "{sentence-translation}",
+        "{screenshot}",
     )
 
     private val AdvancedOptions = listOf(
