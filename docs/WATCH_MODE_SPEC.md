@@ -129,10 +129,8 @@ editable in AI Settings as today. Book lookups keep sending the single sentence.
 - An **Add card** button in the popup (same place as the current Anki button).
   The card is created immediately, in the background, while the video continues.
   A small "Card being made…" chip shows progress with **Cancel**. When it is done
-  the chip shows "Card added" with **Undo** for a few seconds.
-- The AnkiDroid API cannot delete notes. Undo therefore tags the note
-  `hoshi::undo` and suspends it; a note on the AnkiDroid side lists these for
-  deletion. Cancel before the note is added just stops the job.
+  the chip shows "Card added" for a few seconds. There is no undo (decided
+  2026-10-25); Cancel before the note is added just stops the job.
 - Duplicate check with `findDuplicateNotes` on the expression; the chip warns
   but still allows adding.
 
@@ -161,16 +159,18 @@ handlebars like `{expression}`). New handlebars:
 Existing handlebars keep working: `{expression}`, `{reading}`,
 `{furigana-plain}`, `{audio}` (word audio), `{glossary-first}`, `{glossary}`,
 `{sentence}`, pitch accent and frequency. `{sasayaki-audio}` keeps meaning the
-audiobook clip in books; Lapis' `SentenceAudio` maps to `{sentence-audio}` in
-Watch mode and `{sasayaki-audio}` in books. `Picture` maps to `{screenshot}` in
-Watch mode and `{book-cover}` in books.
+audiobook clip in books. Video, books and manga share **one** card format
+(decided 2026-10-25): handlebars that do not apply to the source are empty, so
+Lapis' `SentenceAudio` maps to `{sentence-audio}{sasayaki-audio}` and `Picture`
+to `{screenshot}{book-cover}`.
 
 Lapis has no fields for the AI results. The note type gets extra fields
 (`AINuance`, `AIBreakdown`, `ExampleSentence`, `SentenceTranslation`, `Source`)
 added once in Anki on the desktop, plus a back-template block that shows them.
 The Phase 3 setup step lists exactly what to add.
 
-Card tags: `hoshi`, `hoshi::watch` or `hoshi::book`, and the series/book title.
+Card tags: `tsukimi`, `tsukimi::watch`, `tsukimi::book` or `tsukimi::manga`, and
+the series/book title.
 
 ### Example sentence
 
@@ -188,10 +188,12 @@ Card tags: `hoshi`, `hoshi::watch` or `hoshi::book`, and the series/book title.
   > - Output only the Japanese sentence. No reading, translation, explanation, label, or any other text.
 
   `[word]` is filled in by Tsukimi.
-- Asked automatically when the sentence is longer than a set number of
-  characters (setting, default 40), for books and video. The original sentence
-  stays on the card as context; the example sentence goes in `ExampleSentence`.
-  A button in the popup asks for one by hand.
+- Not fully automatic (decided 2026-10-25): when the sentence is longer than a
+  set number of characters (setting, default 40), adding a card first asks
+  whether to keep the original sentence only or to add an AI example sentence.
+  Applies to video, books and manga. The original sentence stays on the card as
+  context; the example sentence goes in `ExampleSentence`. A button in the
+  popup asks for one by hand.
 
 ### Screenshot
 
@@ -214,16 +216,17 @@ Card tags: `hoshi`, `hoshi::watch` or `hoshi::book`, and the series/book title.
 ### Failure handling
 
 - No AI key or AI error: the card is still added without the AI fields and
-  tagged `hoshi::ai-missing`. A "Fill AI fields" action later fills them with
+  tagged `tsukimi::ai-missing`. A "Fill AI fields" action later fills them with
   `updateNoteFields`.
 - No network to Jellyfin while clipping: card added without audio, tagged
-  `hoshi::audio-missing`.
+  `tsukimi::audio-missing`.
 
-## Phase 4: Books on the Same Pipeline
+## Phase 4: Books and Manga on the Same Pipeline
 
-- The existing Anki button in the reader gets the same background job: AI
-  nuance, AI breakdown and (for long sentences) the example sentence are added
-  automatically, using the field mapping above.
+- The existing Anki button in the reader and the manga reader gets the same
+  background job: AI nuance, AI breakdown and (for long sentences, after the
+  confirm dialog) the example sentence are added, using the shared field
+  mapping above.
 - One-time import of the open rows (`card_created` = FALSE) of the "Sentence
   Mining" sheet: export as CSV, import in Tsukimi (Settings → Anki → Import word
   list), each row runs the normal card builder with dictionary lookup. Rows
@@ -247,20 +250,17 @@ Card tags: `hoshi`, `hoshi::watch` or `hoshi::book`, and the series/book title.
 
 - Watch: server URL, login, quality away from home, default audio language,
   subtitle size, resume after lookup, subtitle offset.
-- Anki: Watch-mode field mapping, audio padding, example-sentence length limit.
+- Anki: audio padding, example-sentence length limit.
 - AI: Example sentence prompt (next to the two existing prompts).
 
 ## Open Points
 
 - Exact Lapis field names to add, and the back-template block (Phase 3 setup).
-- Which Jellyfin server Tsukimi uses: `jellyfin-public` (jellyfin.feathercomet.com)
-  or `jellyfin-private` (private.feathercomet.com). The setting allows either.
-- Whether undo should hard-delete through AnkiConnect when the desktop is on.
-- Jellyfin Kotlin SDK version: the newest release that is at least two weeks old
-  when Phase 1 starts.
+
+Decided: Tsukimi uses `jellyfin-public` (jellyfin.feathercomet.com) only; Jellyfin
+Kotlin SDK 1.9.2.
 
 ## Validation
 
 Each phase follows `docs/VALIDATION.md`. UI strings go in `values/strings.xml`
-and `values-zh-rCN/strings.xml`. Branch per phase: `codex/watch-player`,
-`codex/watch-subtitles`, `codex/watch-cards`, `codex/book-auto-cards`.
+and `values-zh-rCN/strings.xml`. All phases go on the `video-features` branch.
