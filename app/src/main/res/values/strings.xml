@@ -666,6 +666,11 @@
     <string name="anki_fetch_no_ankidroid_note_types">No AnkiDroid note types were found.</string>
     <string name="anki_fetch_no_ankiconnect_note_types">No AnkiConnect note types were found.</string>
     <string name="anki_connect_invalid_url">Invalid AnkiConnect URL.</string>
+    <string name="anki_card_job_working_format">Adding %1$s to Anki…</string>
+    <string name="anki_card_job_added_format">Added %1$s to Anki</string>
+    <string name="anki_card_job_added_duplicate_format">Added %1$s to Anki (it was already in the deck)</string>
+    <string name="anki_card_job_failed_format">Could not add %1$s to Anki</string>
+    <string name="anki_card_job_cancelled">Card cancelled</string>
     <string name="ai_base_url">Base URL</string>
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">Model</string>
     <string name="ai_api_key">API Key</string>

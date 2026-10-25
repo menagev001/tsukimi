@@ -136,6 +136,54 @@ class AnkiRepositoryBackendSelectionTest {
     }
 
     @Test
+    fun mineEntryAddsContextTagsSourceAndTranslation() = runBlocking {
+        val deck = AnkiDeck(10L, "Mining")
+        val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression", "MiscInfo", "SentenceTranslation"))
+        val ankiDroid = RecordingBackend(decks = listOf(deck), noteTypes = listOf(noteType))
+        val repository = repository(
+            backend = ankiDroid,
+            settingsRepository = InMemoryAnkiSettingsRepository(
+                AnkiSettings(
+                    backendKind = AnkiBackendKind.AnkiDroid,
+                    allowDupes = false,
+                    selectedDeckId = deck.id,
+                    selectedDeckName = deck.name,
+                    selectedNoteTypeId = noteType.id,
+                    selectedNoteTypeName = noteType.name,
+                    availableDecks = listOf(deck),
+                    availableNoteTypes = listOf(noteType),
+                    fieldMappings = mapOf(
+                        "Expression" to "{expression}",
+                        "MiscInfo" to "{source}",
+                        "SentenceTranslation" to "{sentence-translation}",
+                    ),
+                    tags = "mined",
+                ),
+            ),
+        )
+
+        assertTrue(
+            repository.mineEntry(
+                rawPayload = """{"expression":"食べる"}""",
+                context = AnkiMiningContext(
+                    sentence = "パンを食べる。",
+                    source = "Show S01E02 3:13",
+                    sentenceTranslation = "I eat bread.",
+                    extraTags = setOf("tsukimi", "tsukimi::watch"),
+                ),
+                decks = emptyList(),
+                noteTypes = emptyList(),
+                allowDuplicates = true,
+            ),
+        )
+
+        assertEquals("Show S01E02 3:13", ankiDroid.lastFields["MiscInfo"])
+        assertEquals("I eat bread.", ankiDroid.lastFields["SentenceTranslation"])
+        assertEquals(setOf("mined", "tsukimi", "tsukimi::watch"), ankiDroid.lastTags)
+        assertEquals(true, ankiDroid.lastAllowDupes)
+    }
+
+    @Test
     fun mineEntryForceSyncsAnkiDroidAfterSuccessfulAddWhenEnabled() = runBlocking {
         val deck = AnkiDeck(10L, "Mining")
         val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression"))
@@ -752,6 +800,7 @@ class AnkiRepositoryBackendSelectionTest {
         var lastDeck: AnkiDeck? = null
             private set
         var lastTags: Set<String> = emptySet()
+        var lastAllowDupes: Boolean? = null
             private set
         var lastOpenNotesKey: String = ""
             private set
@@ -789,6 +838,7 @@ class AnkiRepositoryBackendSelectionTest {
             lastDeck = deck
             lastFields = fieldsByName
             lastTags = tags
+            lastAllowDupes = allowDupes
             return addNoteResult
         }
 

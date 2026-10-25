@@ -664,6 +664,11 @@
     <string name="anki_fetch_no_ankidroid_note_types">未找到 AnkiDroid 笔记类型。</string>
     <string name="anki_fetch_no_ankiconnect_note_types">未找到 AnkiConnect 笔记类型。</string>
     <string name="anki_connect_invalid_url">AnkiConnect URL 无效。</string>
+    <string name="anki_card_job_working_format">正在将 %1$s 添加到 Anki…</string>
+    <string name="anki_card_job_added_format">已将 %1$s 添加到 Anki</string>
+    <string name="anki_card_job_added_duplicate_format">已将 %1$s 添加到 Anki（牌组中已有此词）</string>
+    <string name="anki_card_job_failed_format">无法将 %1$s 添加到 Anki</string>
+    <string name="anki_card_job_cancelled">已取消制卡</string>
     <string name="ai_base_url">基础 URL</string>
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">模型</string>
     <string name="ai_api_key">API 密钥</string>

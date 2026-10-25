@@ -187,9 +187,16 @@ internal fun withSubtitleLineSentence(selection: ReaderSelectionData, lines: Lis
 }
 
 /**
- * The [lineCount] subtitle lines before and after the line whose text is [sentence], as context
- * for AI lookups. The line shown at [positionMs] wins over identical lines elsewhere.
+ * Index of the cue whose text (without line breaks) is [sentence]. The cue shown at [positionMs]
+ * wins over identical lines elsewhere, then the nearest one.
  */
+internal fun cueIndexForSentence(cues: List<WatchSubtitleCue>, sentence: String, positionMs: Long): Int? {
+    fun flat(index: Int) = cues[index].text.replace("\n", "")
+    return activeCueIndices(cues, positionMs).firstOrNull { flat(it) == sentence }
+        ?: cues.indices.filter { flat(it) == sentence }.minByOrNull { abs(cues[it].startMs - positionMs) }
+}
+
+/** The [lineCount] subtitle lines before and after the line whose text is [sentence], as AI context. */
 internal fun subtitleAiContext(
     cues: List<WatchSubtitleCue>,
     sentence: String,
@@ -197,9 +204,7 @@ internal fun subtitleAiContext(
     lineCount: Int = 2,
 ): AiSentenceContext? {
     fun flat(index: Int) = cues[index].text.replace("\n", "")
-    val index = activeCueIndices(cues, positionMs).firstOrNull { flat(it) == sentence }
-        ?: cues.indices.filter { flat(it) == sentence }.minByOrNull { abs(cues[it].startMs - positionMs) }
-        ?: return null
+    val index = cueIndexForSentence(cues, sentence, positionMs) ?: return null
     return AiSentenceContext(
         before = (maxOf(0, index - lineCount) until index).map(::flat),
         after = (index + 1 until minOf(cues.size, index + 1 + lineCount)).map(::flat),

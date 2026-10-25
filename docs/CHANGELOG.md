@@ -29,7 +29,12 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   two lines before and after it as context. A line list panel shows the whole
   track next to the video, follows playback, jumps to a line when you tap its
   time, and looks up words like the subtitles do. Open it from the player or
-  by swiping in from the right edge; swipe it to the right to close it. Tsukimi keeps only
+  by swiping in from the right edge; swipe it to the right to close it. The
+  popup's Anki button in Watch adds the card in the background while the video
+  continues, with a progress chip (Cancel, duplicate warning), the tags
+  `tsukimi`, `tsukimi::watch` and the title, and two new Anki field values:
+  `{source}` (series, episode and time) and `{sentence-translation}` (the
+  English subtitle lines at that time). Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

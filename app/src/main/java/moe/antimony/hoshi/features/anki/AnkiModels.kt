@@ -312,6 +312,12 @@ data class AnkiMiningContext(
     val coverPath: String? = null,
     val sasayakiAudioPath: String? = null,
     val sentenceOffset: Int? = null,
+    /** Where the sentence comes from, e.g. series, episode and timestamp; `{source}`. */
+    val source: String? = null,
+    /** Translation of the sentence, e.g. the English subtitle lines; `{sentence-translation}`. */
+    val sentenceTranslation: String? = null,
+    /** Tags added to the card format's own tags. */
+    val extraTags: Set<String> = emptySet(),
 )
 
 object AnkiHandlebarRenderer {
@@ -377,6 +383,8 @@ object AnkiHandlebarRenderer {
             "{pitch-accent-graphs-first}" -> firstPitchAccentGraph(payload.pitchAccentGraphs)
             "{phonetic-transcriptions}" -> payload.phoneticTranscriptions
             "{document-title}" -> context.documentTitle.orEmpty()
+            "{source}" -> context.source.orEmpty()
+            "{sentence-translation}" -> context.sentenceTranslation.orEmpty()
             "{book-cover}" -> context.coverPath.orEmpty()
             "{sasayaki-audio}" -> context.sasayakiAudioPath.orEmpty()
             else -> ""

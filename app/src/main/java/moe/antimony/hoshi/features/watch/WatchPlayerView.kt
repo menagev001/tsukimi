@@ -89,8 +89,13 @@ import moe.antimony.hoshi.R
 import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.features.ai.AiLookupState
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
+import moe.antimony.hoshi.features.anki.AnkiCardJobChip
+import moe.antimony.hoshi.features.anki.AnkiCardJobsViewModel
+import moe.antimony.hoshi.features.anki.AnkiCardRequest
+import moe.antimony.hoshi.features.anki.AnkiMiningPayload
 import moe.antimony.hoshi.features.reader.LookupPopupAiRequests
 import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
+import moe.antimony.hoshi.features.reader.LookupPopupMineHandler
 import moe.antimony.hoshi.features.reader.ReaderSelectionData
 import moe.antimony.hoshi.features.reader.ReaderSettings
 import moe.antimony.hoshi.features.reader.rememberLookupPopupHost
@@ -129,6 +134,8 @@ internal fun WatchPlayerView(
     val currentLines by rememberUpdatedState(uiState.subtitles.primaryLines)
     val cueTexts = remember(uiState.subtitles.cues) { uiState.subtitles.cues.map { it.text } }
     val currentCueTexts by rememberUpdatedState(cueTexts)
+    val cardJobs: AnkiCardJobsViewModel = hiltViewModel()
+    val newestCardJobId = cardJobs.jobs.collectAsStateWithLifecycle().value.lastOrNull()?.id
     val popupHost = rememberLookupPopupHost(
         readerSettings = readerSettings,
         darkInterface = true,
@@ -137,6 +144,20 @@ internal fun WatchPlayerView(
         documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
         rootPopupVertical = false,
         aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
+        mineEntry = remember(viewModel, cardJobs) {
+            LookupPopupMineHandler { formatId, payloadJson, context, selection ->
+                cardJobs.start(
+                    AnkiCardRequest(
+                        label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
+                            ?.takeIf(String::isNotBlank) ?: selection.text,
+                        formatId = formatId,
+                        payloadJson = payloadJson,
+                        context = viewModel.cardContext(context),
+                    ),
+                )
+                true
+            }
+        },
         // Lines on screen first; a lookup in the line list finds its line in the whole track.
         transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines + currentCueTexts) },
     )
@@ -145,6 +166,10 @@ internal fun WatchPlayerView(
     LaunchedEffect(lookupActive) {
         viewModel.onLookupActiveChanged(lookupActive)
         if (lookupActive) controlsVisible = false
+    }
+    // The card is built in the background; close the popup so playback continues meanwhile.
+    LaunchedEffect(newestCardJobId) {
+        if (newestCardJobId != null) popupHost.dismiss()
     }
     LaunchedEffect(seekFlash) {
         if (seekFlash != null) {
@@ -253,6 +278,13 @@ internal fun WatchPlayerView(
                     onClose = onClose,
                 )
             }
+
+            AnkiCardJobChip(
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .safeDrawingPadding()
+                    .padding(top = 64.dp),
+            )
 
             LookupPopupHostLayers(
                 host = popupHost,

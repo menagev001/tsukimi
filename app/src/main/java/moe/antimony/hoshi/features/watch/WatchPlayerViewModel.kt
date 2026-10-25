@@ -20,6 +20,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
 import moe.antimony.hoshi.features.ai.AiSentenceContext
+import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import java.util.Locale
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
@@ -83,6 +84,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private var isReporting = false
 
     private var primaryCues: List<WatchSubtitleCue> = emptyList()
+    private var englishCues: List<WatchSubtitleCue> = emptyList()
     private var resumeAfterLookup = true
     private var pausedForLookup = false
     private var subtitlesLoadedFor: String? = null
@@ -223,6 +225,21 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     fun aiContextFor(sentence: String): AiSentenceContext? =
         subtitleAiContext(primaryCues, sentence, player.currentPosition - _uiState.value.subtitles.offsetMs)
 
+    /**
+     * Adds what a Watch card knows beyond the popup: `{source}`, `{sentence-translation}` and the
+     * tags. Times are video times, so the subtitle offset is applied.
+     */
+    fun cardContext(base: AnkiMiningContext): AnkiMiningContext {
+        val item = activeSource?.item ?: return base
+        val offsetMs = _uiState.value.subtitles.offsetMs
+        val lines = watchCardLines(primaryCues, base.sentence, player.currentPosition - offsetMs)
+        return base.copy(
+            source = watchCardSource(item, (lines?.startMs ?: (player.currentPosition - offsetMs)) + offsetMs),
+            sentenceTranslation = lines?.let { watchCardTranslation(englishCues, it.startMs, it.endMs) },
+            extraTags = base.extraTags + watchCardTags(item),
+        )
+    }
+
     fun seekToCue(cueIndex: Int) {
         val cue = primaryCues.getOrNull(cueIndex) ?: return
         player.seekTo((cue.startMs + _uiState.value.subtitles.offsetMs).coerceAtLeast(0))
@@ -275,6 +292,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         viewModelScope.launch {
             val subtitles = subtitleRepository.load(itemId, source.mediaSourceId.orEmpty(), source.subtitleTracks)
             primaryCues = subtitles.japanese?.cues.orEmpty()
+            englishCues = subtitles.english?.cues.orEmpty()
             updateSubtitles {
                 it.copy(isLoading = false, selectedTrackIndex = subtitles.japanese?.track?.index, cues = primaryCues)
             }

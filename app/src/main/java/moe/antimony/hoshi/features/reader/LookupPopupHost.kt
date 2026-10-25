@@ -30,6 +30,7 @@ import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.dictionary.DictionaryRepository
 import moe.antimony.hoshi.features.ai.AiLookupOverlay
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
+import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiViewModel
 import moe.antimony.hoshi.features.audio.AudioRequestHandler
 import moe.antimony.hoshi.features.audio.AudioSettings
@@ -66,6 +67,12 @@ internal interface LookupPopupAiRequests {
     }
 
     companion object Default : LookupPopupAiRequests
+}
+
+/** Lets a screen build cards itself, e.g. in the background, instead of the popup waiting for it. */
+internal fun interface LookupPopupMineHandler {
+    /** Returns true when it took the card over; the popup then shows it as added. */
+    fun mine(formatId: String?, payloadJson: String, context: AnkiMiningContext, selection: ReaderSelectionData): Boolean
 }
 
 /**
@@ -302,6 +309,16 @@ internal class LookupPopupHost(
             is ReaderLookupPopupBridgeMessage.MineEntry -> {
                 val popup = popupById(message.popupId) ?: return
                 val messageId = message.messageId ?: return
+                val takenOver = inputs.value.mineEntry?.mine(
+                    formatId = message.formatId,
+                    payloadJson = message.payloadJson,
+                    context = popup.state.ankiContext,
+                    selection = popup.state.selection,
+                ) == true
+                if (takenOver) {
+                    replyMessage(message.popupId, messageId, "true")
+                    return
+                }
                 ankiViewModel.mineEntryAsync(message.formatId, message.payloadJson, popup.state.ankiContext) { mined ->
                     replyMessage(message.popupId, messageId, mined.toString())
                 }
@@ -394,6 +411,7 @@ internal data class LookupPopupHostInputs(
     val aiRequests: LookupPopupAiRequests,
     /** Adjusts a root text selection before lookup, e.g. to use a whole subtitle line as the sentence. */
     val transformSelection: (ReaderSelectionData) -> ReaderSelectionData,
+    val mineEntry: LookupPopupMineHandler?,
     val dictionaryRepository: DictionaryRepository,
     val knownWordsRepository: KnownWordsRepository,
 )
@@ -408,6 +426,7 @@ internal fun rememberLookupPopupHost(
     rootPopupVertical: Boolean,
     aiRequests: LookupPopupAiRequests = LookupPopupAiRequests,
     transformSelection: (ReaderSelectionData) -> ReaderSelectionData = { it },
+    mineEntry: LookupPopupMineHandler? = null,
 ): LookupPopupHost {
     val context = LocalContext.current
     val appContainer = LocalHoshiUiDependencies.current
@@ -442,6 +461,7 @@ internal fun rememberLookupPopupHost(
             rootPopupVertical = rootPopupVertical,
             aiRequests = aiRequests,
             transformSelection = transformSelection,
+            mineEntry = mineEntry,
             dictionaryRepository = dictionaryRepository,
             knownWordsRepository = appContainer.knownWordsRepository,
         ),

@@ -188,6 +188,7 @@ internal class AnkiRepository(
         decks: List<AnkiDeck>,
         noteTypes: List<AnkiNoteType>,
         formatId: String? = null,
+        allowDuplicates: Boolean? = null,
     ): Boolean = withContext(Dispatchers.IO) {
         val settings = settings.first()
         val format = settings.resolveAnkiCardFormat(formatId) ?: return@withContext false
@@ -217,6 +218,8 @@ internal class AnkiRepository(
                 addHashedMediaFile(it, "hoshi_sasayaki", activeBackend, settings.backendKind)
             },
             sentenceOffset = context.sentenceOffset,
+            source = context.source,
+            sentenceTranslation = context.sentenceTranslation,
         )
         val mediaPayload = payload.copy(
             audio = payload.audio.takeIf { needsAudio && it.isNotBlank() }
@@ -242,8 +245,8 @@ internal class AnkiRepository(
             deck = deck,
             noteType = noteType,
             fieldsByName = fields,
-            tags = format.tags.split(Regex("\\s+")).filter { it.isNotBlank() }.toSet(),
-            allowDupes = settings.allowDupes,
+            tags = format.tags.split(Regex("\\s+")).filter { it.isNotBlank() }.toSet() + context.extraTags,
+            allowDupes = allowDuplicates ?: settings.allowDupes,
             duplicateScope = settings.duplicateScope,
             checkDuplicatesAcrossAllModels = settings.checkDuplicatesAcrossAllModels,
         )
