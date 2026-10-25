@@ -298,4 +298,27 @@ class AnkiHandlebarRendererTest {
             ),
         )
     }
+
+    @Test
+    fun rendersWatchHandlebarsAndCardTypeSwitches() {
+        val payload = AnkiMiningPayload(expression = "食べる")
+        val watch = AnkiMiningContext(
+            sentence = "パンを食べる。",
+            source = "Show S01E02 3:13",
+            sentenceTranslation = "I eat bread.",
+            screenshotPath = "<img src=\"frame.jpg\">",
+            sentenceAudioPath = "[sound:line.aac]",
+        )
+        val template = "{source}|{sentence-translation}|{screenshot}{book-cover}|{sentence-audio}{sasayaki-audio}|" +
+            "{card-type-audio}|{card-type-sentence}"
+
+        assertEquals(
+            "Show S01E02 3:13|I eat bread.|<img src=\"frame.jpg\">|[sound:line.aac]|x|",
+            AnkiHandlebarRenderer.render(template, payload, watch),
+        )
+        assertEquals(
+            "||cover.jpg|||x",
+            AnkiHandlebarRenderer.render(template, payload, AnkiMiningContext(sentence = "本の文。", coverPath = "cover.jpg")),
+        )
+    }
 }

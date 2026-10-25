@@ -29,6 +29,8 @@ class AnkiFieldTemplatesTest {
                 "FreqSort",
                 "MiscInfo",
                 "IsWordAndSentenceCard",
+                "IsSentenceCard",
+                "IsAudioCard",
             ),
         )
 
@@ -42,14 +44,16 @@ class AnkiFieldTemplatesTest {
                 "SelectionText" to "{popup-selection-text}",
                 "MainDefinition" to "{glossary-first}",
                 "Sentence" to "{sentence}",
-                "SentenceAudio" to "{sasayaki-audio}",
-                "Picture" to "{book-cover}",
+                "SentenceAudio" to "{sentence-audio}{sasayaki-audio}",
+                "Picture" to "{screenshot}{book-cover}",
                 "Glossary" to "{glossary}",
                 "PitchPosition" to "{pitch-accent-positions}",
                 "PitchCategories" to "{pitch-accent-categories}",
                 "Frequency" to "{frequencies}",
                 "FreqSort" to "{frequency-harmonic-rank}",
                 "MiscInfo" to "{document-title}",
+                "IsSentenceCard" to "{card-type-sentence}",
+                "IsAudioCard" to "{card-type-audio}",
             ),
             AnkiFieldTemplates.defaultMappings(noteType),
         )

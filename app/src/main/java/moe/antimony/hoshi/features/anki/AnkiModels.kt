@@ -320,6 +320,8 @@ data class AnkiMiningContext(
     val extraTags: Set<String> = emptySet(),
     /** Image file of the moment the sentence was seen, e.g. a video frame; `{screenshot}`. */
     val screenshotPath: String? = null,
+    /** Audio file of the sentence itself, e.g. a clip of the subtitle lines; `{sentence-audio}`. */
+    val sentenceAudioPath: String? = null,
 )
 
 object AnkiHandlebarRenderer {
@@ -390,6 +392,10 @@ object AnkiHandlebarRenderer {
             "{book-cover}" -> context.coverPath.orEmpty()
             "{sasayaki-audio}" -> context.sasayakiAudioPath.orEmpty()
             "{screenshot}" -> context.screenshotPath.orEmpty()
+            "{sentence-audio}" -> context.sentenceAudioPath.orEmpty()
+            // Lapis card type switches: an audio card only when the card has its sentence's audio.
+            "{card-type-audio}" -> if (context.sentenceAudioPath.isNullOrBlank()) "" else "x"
+            "{card-type-sentence}" -> if (context.sentenceAudioPath.isNullOrBlank()) "x" else ""
             else -> ""
         }
     }

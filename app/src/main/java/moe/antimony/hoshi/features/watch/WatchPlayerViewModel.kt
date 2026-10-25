@@ -32,6 +32,8 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,6 +41,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 import moe.antimony.hoshi.di.IoDispatcher
 
 data class WatchPlayerUiState(
@@ -85,6 +88,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private val reporter: WatchPlaybackReporter,
     private val subtitleRepository: WatchSubtitleRepository,
     private val preferencesRepository: WatchPreferencesRepository,
+    private val audioClipper: WatchSentenceAudioClipper,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WatchPlayerUiState())
     val uiState: StateFlow<WatchPlayerUiState> = _uiState.asStateFlow()
@@ -297,7 +301,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
 
     /**
      * A card for the popup's Anki button. [frame] is the video frame copied when the button was
-     * pressed; it is saved inside the job and deleted when the job ends.
+     * pressed. Inside the job the frame is saved and the lines' audio is clipped; both files are
+     * deleted when the job ends. A failed clip still adds the card, tagged as missing its audio.
      */
     fun cardRequest(
         formatId: String?,
@@ -307,6 +312,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         frame: Deferred<Bitmap?>,
     ): AnkiCardRequest {
         var screenshot: File? = null
+        var sentenceAudio: File? = null
+        val audioClip = audioClipRequest(context.sentence)
         return AnkiCardRequest(
             label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
                 ?.takeIf(String::isNotBlank) ?: selectionText,
@@ -314,12 +321,39 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             payloadJson = payloadJson,
             context = cardContext(context),
             prepareContext = { cardContext ->
-                screenshot = frame.await()?.let { bitmap ->
-                    withContext(ioDispatcher) { saveWatchScreenshot(bitmap, screenshotDirectory) }
+                coroutineScope {
+                    val clip = async {
+                        audioClip?.let { withTimeoutOrNull(AudioClipTimeoutMs) { audioClipper.clip(it) } }
+                    }
+                    screenshot = frame.await()?.let { bitmap ->
+                        withContext(ioDispatcher) { saveWatchScreenshot(bitmap, screenshotDirectory) }
+                    }
+                    sentenceAudio = clip.await()
                 }
-                cardContext.copy(screenshotPath = screenshot?.path)
+                cardContext.copy(
+                    screenshotPath = screenshot?.path,
+                    sentenceAudioPath = sentenceAudio?.path,
+                    extraTags = cardContext.extraTags + listOfNotNull(AudioMissingTag.takeIf { audioClip != null && sentenceAudio == null }),
+                )
             },
-            cleanUp = { screenshot?.delete() },
+            cleanUp = {
+                screenshot?.delete()
+                sentenceAudio?.delete()
+            },
+        )
+    }
+
+    /** The card's lines in video time, padded on both sides, from the original file. */
+    private fun audioClipRequest(sentence: String): WatchAudioClipRequest? {
+        val source = activeSource ?: return null
+        val selection = cardSelectionFor(sentence) ?: return null
+        val offsetMs = _uiState.value.subtitles.offsetMs
+        return WatchAudioClipRequest(
+            streamUrl = source.originalStreamUrl,
+            requestHeaders = source.requestHeaders,
+            startMs = primaryCues[selection.range.first].startMs + offsetMs - SentenceAudioPaddingMs,
+            endMs = primaryCues[selection.range.last].endMs + offsetMs + SentenceAudioPaddingMs,
+            audioLanguage = source.audioStreams.firstOrNull { it.index == source.audioStreamIndex }?.language,
         )
     }
 
@@ -499,5 +533,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         const val ProgressReportIntervalMs = 10_000L
         const val CueTickMs = 100L
         const val MaxSubtitleOffsetMs = 30_000L
+        const val SentenceAudioPaddingMs = 250L
+        const val AudioClipTimeoutMs = 60_000L
+        const val AudioMissingTag = "tsukimi::audio-missing"
     }
 }

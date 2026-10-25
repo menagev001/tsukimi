@@ -221,6 +221,50 @@ class AnkiRepositoryBackendSelectionTest {
     }
 
     @Test
+    fun mineEntryAddsSentenceAudioAndMarksAudioCard() = runBlocking {
+        val deck = AnkiDeck(10L, "Mining")
+        val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression", "SentenceAudio", "IsAudioCard", "IsSentenceCard"))
+        val ankiConnect = RecordingBackend(decks = listOf(deck), noteTypes = listOf(noteType))
+        val repository = repository(
+            settingsRepository = InMemoryAnkiSettingsRepository(
+                AnkiSettings(
+                    backendKind = AnkiBackendKind.AnkiConnect,
+                    ankiConnectUrl = "https://anki.example.com",
+                    selectedDeckId = deck.id,
+                    selectedDeckName = deck.name,
+                    selectedNoteTypeId = noteType.id,
+                    selectedNoteTypeName = noteType.name,
+                    availableDecks = listOf(deck),
+                    availableNoteTypes = listOf(noteType),
+                    fieldMappings = mapOf(
+                        "Expression" to "{expression}",
+                        "SentenceAudio" to "{sentence-audio}{sasayaki-audio}",
+                        "IsAudioCard" to "{card-type-audio}",
+                        "IsSentenceCard" to "{card-type-sentence}",
+                    ),
+                ),
+            ),
+            ankiConnectBackendFactory = { _, _ -> ankiConnect },
+        )
+        val clip = Files.createTempFile("line", ".aac").toFile().apply { writeBytes(byteArrayOf(1, 2, 3)) }
+
+        assertTrue(
+            repository.mineEntry(
+                rawPayload = """{"expression":"食べる"}""",
+                context = AnkiMiningContext(sentence = "パンを食べる。", sentenceAudioPath = clip.path),
+                decks = emptyList(),
+                noteTypes = emptyList(),
+            ),
+        )
+
+        assertEquals("audio/aac", ankiConnect.lastMediaMimeType)
+        assertTrue(ankiConnect.lastMediaName.startsWith("tsukimi_sentence_"))
+        assertEquals(ankiConnect.lastMediaName, ankiConnect.lastFields["SentenceAudio"])
+        assertEquals("x", ankiConnect.lastFields["IsAudioCard"])
+        assertEquals(null, ankiConnect.lastFields["IsSentenceCard"])
+    }
+
+    @Test
     fun mineEntryForceSyncsAnkiDroidAfterSuccessfulAddWhenEnabled() = runBlocking {
         val deck = AnkiDeck(10L, "Mining")
         val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression"))

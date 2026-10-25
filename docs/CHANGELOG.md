@@ -39,7 +39,13 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   sentence that is spread over several subtitles; the card, its translation and
   Explain Word / Sentence Breakdown then use the joined sentence. A new Anki
   field value `{screenshot}` adds the video frame of the line (without
-  subtitles, at most 1280 px wide). Tsukimi keeps only
+  subtitles, at most 1280 px wide), and `{sentence-audio}` the audio of the
+  line(s), cut from the original file with 0.25 s padding; when that fails
+  the card is still added, tagged `tsukimi::audio-missing`.
+  `{card-type-audio}` / `{card-type-sentence}` switch Lapis between an audio
+  card (the card has its sentence audio) and a sentence card. The default
+  Lapis mapping now fills `SentenceAudio`, `Picture`, the card type and the
+  `Source` / `SentenceTranslation` fields for books, manga and video alike. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

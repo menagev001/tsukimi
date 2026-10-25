@@ -209,6 +209,7 @@ internal class AnkiRepository(
         val needsSasayakiAudio = fieldMappings.referencesAnkiHandlebar("{sasayaki-audio}")
         val needsAudio = fieldMappings.referencesAnkiHandlebar("{audio}")
         val needsScreenshot = fieldMappings.referencesAnkiHandlebar("{screenshot}")
+        val needsSentenceAudio = fieldMappings.referencesAnkiHandlebar("{sentence-audio}")
         val mediaContext = AnkiMiningContext(
             sentence = context.sentence,
             documentTitle = context.documentTitle,
@@ -223,6 +224,9 @@ internal class AnkiRepository(
             sentenceTranslation = context.sentenceTranslation,
             screenshotPath = context.screenshotPath?.takeIf { needsScreenshot }?.let {
                 addHashedMediaFile(it, "tsukimi_screenshot", activeBackend, settings.backendKind)
+            },
+            sentenceAudioPath = context.sentenceAudioPath?.takeIf { needsSentenceAudio }?.let {
+                addHashedMediaFile(it, "tsukimi_sentence", activeBackend, settings.backendKind)
             },
         )
         val mediaPayload = payload.copy(

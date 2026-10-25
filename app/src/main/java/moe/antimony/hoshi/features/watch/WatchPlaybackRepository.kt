@@ -40,6 +40,8 @@ data class WatchPlaybackSource(
     val preferredAudioLanguage: String?,
     /** Text subtitle streams; Tsukimi downloads and draws these itself. */
     val subtitleTracks: List<WatchSubtitleTrack>,
+    /** The original file, also when playback is transcoded; sentence audio clips read from it. */
+    val originalStreamUrl: String,
 )
 
 data class WatchAudioStream(
@@ -130,6 +132,7 @@ class WatchPlaybackRepository @Inject constructor(
                     audioStreamIndex = requestedAudioIndex ?: source.defaultAudioStreamIndex,
                     preferredAudioLanguage = preferences.audioLanguage.playerCode,
                     subtitleTracks = source.mediaStreams.orEmpty().toWatchSubtitleTracks(),
+                    originalStreamUrl = staticStreamUrl(session, id, source, info.playSessionId),
                 ),
             )
         } catch (error: CancellationException) {
@@ -146,16 +149,7 @@ class WatchPlaybackRepository @Inject constructor(
         source: MediaSourceInfo,
         playSessionId: String?,
     ): Pair<String, Boolean> {
-        if (source.supportsDirectPlay) {
-            return session.api.videoApi.getVideoStreamUrl(
-                itemId = itemId,
-                container = source.container,
-                static = true,
-                tag = source.eTag,
-                playSessionId = playSessionId,
-                mediaSourceId = source.id,
-            ) to false
-        }
+        if (source.supportsDirectPlay) return staticStreamUrl(session, itemId, source, playSessionId) to false
         val transcodingUrl = source.transcodingUrl ?: throw WatchPlaybackUnavailableException()
         val baseUrl = session.api.baseUrl.orEmpty().trimEnd('/')
         return "$baseUrl$transcodingUrl" to true
@@ -163,6 +157,20 @@ class WatchPlaybackRepository @Inject constructor(
 
     private fun isActiveNetworkMetered(): Boolean =
         context.getSystemService(ConnectivityManager::class.java)?.isActiveNetworkMetered ?: false
+
+    private fun staticStreamUrl(
+        session: JellyfinSession,
+        itemId: UUID,
+        source: MediaSourceInfo,
+        playSessionId: String?,
+    ): String = session.api.videoApi.getVideoStreamUrl(
+        itemId = itemId,
+        container = source.container,
+        static = true,
+        tag = source.eTag,
+        playSessionId = playSessionId,
+        mediaSourceId = source.id,
+    )
 
     private suspend fun capabilities(): WatchDecoderCapabilities =
         decoderCapabilities ?: withContext(defaultDispatcher) { detectWatchDecoderCapabilities() }

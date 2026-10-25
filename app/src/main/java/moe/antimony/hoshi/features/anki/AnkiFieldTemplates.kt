@@ -2,6 +2,7 @@ package moe.antimony.hoshi.features.anki
 
 object AnkiFieldTemplates {
     private val templates = mapOf(
+        // One format for books, manga and video: values that do not apply to a source are empty.
         "Lapis" to mapOf(
             "Expression" to "{expression}",
             "ExpressionFurigana" to "{furigana-plain}",
@@ -10,8 +11,12 @@ object AnkiFieldTemplates {
             "SelectionText" to "{popup-selection-text}",
             "MainDefinition" to "{glossary-first}",
             "Sentence" to "{sentence}",
-            "SentenceAudio" to "{sasayaki-audio}",
-            "Picture" to "{book-cover}",
+            "SentenceAudio" to "{sentence-audio}{sasayaki-audio}",
+            "Picture" to "{screenshot}{book-cover}",
+            "IsAudioCard" to "{card-type-audio}",
+            "IsSentenceCard" to "{card-type-sentence}",
+            "Source" to "{source}",
+            "SentenceTranslation" to "{sentence-translation}",
             "Glossary" to "{glossary}",
             "PitchPosition" to "{pitch-accent-positions}",
             "PitchCategories" to "{pitch-accent-categories}",
