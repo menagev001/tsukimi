@@ -155,6 +155,8 @@ handlebars like `{expression}`). New handlebars:
 | `{screenshot}` | Video frame of the line |
 | `{sentence-audio}` | Audio clip of the line (or merged lines) |
 | `{source}` | Film or series title, `S01E03`, timestamp `12:34` |
+| `{card-type-audio}` | `x` when the card's sentence audio matches its sentence (Watch cards that keep the original line), empty otherwise |
+| `{card-type-sentence}` | `x` for all other cards (books, manga, Watch cards with an AI example sentence), empty otherwise |
 
 Existing handlebars keep working: `{expression}`, `{reading}`,
 `{furigana-plain}`, `{audio}` (word audio), `{glossary-first}`, `{glossary}`,
@@ -162,7 +164,9 @@ Existing handlebars keep working: `{expression}`, `{reading}`,
 audiobook clip in books. Video, books and manga share **one** card format
 (decided 2026-10-25): handlebars that do not apply to the source are empty, so
 Lapis' `SentenceAudio` maps to `{sentence-audio}{sasayaki-audio}` and `Picture`
-to `{screenshot}{book-cover}`.
+to `{screenshot}{book-cover}`. Lapis' card type follows the source (decided
+2026-10-25): `IsAudioCard` maps to `{card-type-audio}` and `IsSentenceCard` to
+`{card-type-sentence}`.
 
 Lapis has no fields for the AI results. The note type gets extra fields
 (`AINuance`, `AIBreakdown`, `OriginalSentence`, `SentenceTranslation`, `Source`)
@@ -229,6 +233,9 @@ the series/book title.
   background job: AI nuance, AI breakdown and (for long sentences, after the
   confirm dialog) the example sentence are added, using the shared field
   mapping above.
+- Manga cards get a `{screenshot}`: the page image cut around the tapped speech
+  bubble (mokuro block box plus a margin). Whole comic panels cannot be cut out,
+  because mokuro has no panel borders.
 - One-time import of the open rows (`card_created` = FALSE) of the "Sentence
   Mining" sheet: export as CSV, import in Tsukimi (Settings → Anki → Import word
   list), each row runs the normal card builder with dictionary lookup. Rows
