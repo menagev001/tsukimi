@@ -66,6 +66,9 @@ import moe.antimony.hoshi.features.audio.AudioSettings
 import moe.antimony.hoshi.features.audio.LocalAudioRepository
 import moe.antimony.hoshi.features.audio.WordAudioPlayer
 import moe.antimony.hoshi.features.ai.AiLookupOverlay
+import moe.antimony.hoshi.features.anki.AnkiCardJobChip
+import moe.antimony.hoshi.features.anki.AnkiCardJobsViewModel
+import moe.antimony.hoshi.features.anki.AnkiLongSentenceDialog
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiViewModel
 import moe.antimony.hoshi.features.export.WordExport
@@ -265,6 +268,7 @@ fun ReaderWebView(
     val ankiViewModel: AnkiViewModel = hiltViewModel()
     val ankiUiState by ankiViewModel.uiState.collectAsStateWithLifecycle()
     val aiLookupViewModel: AiLookupViewModel = hiltViewModel()
+    val cardJobs: AnkiCardJobsViewModel = hiltViewModel()
     val aiLookupState by aiLookupViewModel.state.collectAsStateWithLifecycle()
     val popupAssets = remember(context) { LookupPopupAssets.load(context) }
     val readerPopupBridgeHolder = remember { ReaderLookupPopupBridgeCallbackHolder() }
@@ -812,14 +816,24 @@ fun ReaderWebView(
             is ReaderLookupPopupBridgeMessage.MineEntry -> {
                 val popup = popupById(message.popupId) ?: return
                 val messageId = message.messageId ?: return
-                val ankiContext = popup.sasayakiCue?.takeIf { ankiUiState.popupSettings.needsSasayakiAudio }?.let { cue ->
-                    popup.state.ankiContext.copy(
-                        sasayakiAudioPath = sasayakiPlayer?.exportCueAudio(cue, popup.state.selection.sentence)?.absolutePath,
-                    )
-                } ?: popup.state.ankiContext
-                ankiViewModel.mineEntryAsync(message.formatId, message.payloadJson, ankiContext) { mined ->
-                    replyReaderPopupMessage(message.popupId, messageId, mined.toString())
-                }
+                val player = sasayakiPlayer
+                val cue = popup.sasayakiCue?.takeIf { ankiUiState.popupSettings.needsSasayakiAudio }
+                // The card is built in the background; the popup shows it as added right away.
+                cardJobs.requestCard(
+                    bookPendingCard(
+                        formatId = message.formatId,
+                        payloadJson = message.payloadJson,
+                        context = popup.state.ankiContext,
+                        selectionText = popup.state.selection.text,
+                        title = book.title,
+                        exportSasayakiAudio = if (player != null && cue != null) {
+                            { player.exportCueAudio(cue, popup.state.selection.sentence) }
+                        } else {
+                            null
+                        },
+                    ),
+                )
+                replyReaderPopupMessage(message.popupId, messageId, "true")
             }
             is ReaderLookupPopupBridgeMessage.DuplicateCheck -> {
                 ankiViewModel.duplicateStatesAsync(message.valuesByHandlebar) { states ->
@@ -2062,6 +2076,12 @@ fun ReaderWebView(
             onRetry = aiLookupViewModel::retry,
             modifier = Modifier.fillMaxSize(),
         )
+        AnkiCardJobChip(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = stableStatusBarPadding + 48.dp),
+        )
+        AnkiLongSentenceDialog(cardJobs)
         if (effectiveSettings.eInkReduceGhosting) {
             var eInkFlashVisible by remember { mutableStateOf(false) }
             LaunchedEffect(eInkFlashTrigger) {
