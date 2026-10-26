@@ -171,7 +171,8 @@ to `{screenshot}{book-cover}`. Lapis' card type follows the source (decided
 Lapis has no fields for the AI results. The note type gets extra fields
 (`AINuance`, `AIBreakdown`, `OriginalSentence`, `SentenceTranslation`, `Source`)
 added once in Anki on the desktop, plus a back-template block that shows them.
-The Phase 3 setup step lists exactly what to add.
+`docs/ANKI_LAPIS_SETUP.md` lists exactly what to add, including the front
+template change that leaves only a play button on audio cards.
 
 Card tags: `tsukimi`, `tsukimi::watch`, `tsukimi::book` or `tsukimi::manga`, and
 the series/book title.
@@ -268,7 +269,6 @@ the series/book title.
 
 ## Open Points
 
-- Exact Lapis field names to add, and the back-template block (Phase 3 setup).
 
 Decided: Tsukimi uses `jellyfin-public` (jellyfin.feathercomet.com) only; Jellyfin
 Kotlin SDK 1.9.2.
