@@ -111,7 +111,14 @@ class AnkiCardJobRunner @Inject internal constructor(
         if (request.useAiExampleSentence && expression.isNotBlank()) {
             aiRepository.askExampleSentence(expression)
                 .onSuccess { example ->
-                    result = result.copy(sentence = example, sentenceOffset = null, originalSentence = context.sentence)
+                    // The original's translation (e.g. its English subtitle) does not fit the example.
+                    val translation = aiRepository.askTranslation(example).onFailure { aiFailed = true }.getOrNull()
+                    result = result.copy(
+                        sentence = example,
+                        sentenceOffset = null,
+                        originalSentence = context.sentence,
+                        sentenceTranslation = translation?.let(::ankiTextFieldHtml),
+                    )
                 }
                 .onFailure { aiFailed = true }
         }

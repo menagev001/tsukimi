@@ -199,8 +199,9 @@ the series/book title.
   the card's main sentence (`{sentence}`, shorter is better for flashcards) and
   the original goes to `{original-sentence}` (field `OriginalSentence`, empty
   when the original is kept). A Watch card with an AI example gets no sentence
-  audio (it would not match) and becomes a sentence card; screenshot and
-  translation stay those of the original line. A button in the popup asks for
+  audio (it would not match) and becomes a sentence card; its translation is an
+  AI translation of the example. The screenshot stays that of the original
+  line. A button in the popup asks for
   one by hand.
 
 ### Screenshot

@@ -69,6 +69,14 @@ class AiRepository @Inject constructor(
             systemPromptTransform = { it.replace(WordPlaceholder, word) },
         ).map { it.trim() }
 
+    /** A natural English translation of [sentence], e.g. for an AI example sentence on a card. */
+    suspend fun askTranslation(sentence: String): Result<String> =
+        ask(
+            promptAsset = TranslationPromptAsset,
+            promptOverride = { "" },
+            userMessage = sentence,
+        ).map { it.trim() }
+
     private suspend fun ask(
         promptAsset: String,
         promptOverride: (AiSettings) -> String,
@@ -118,6 +126,7 @@ class AiRepository @Inject constructor(
         const val WordNuancePromptAsset = "ai-prompts/word_nuance.md"
         const val SentenceBreakdownPromptAsset = "ai-prompts/sentence_breakdown.md"
         const val ExampleSentencePromptAsset = "ai-prompts/example_sentence.md"
+        const val TranslationPromptAsset = "ai-prompts/translation.md"
         const val WordPlaceholder = "[word]"
     }
 }
