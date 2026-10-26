@@ -8,14 +8,18 @@ import org.junit.Test
 
 class MangaCardsTest {
     @Test
-    fun cropAddsMarginAroundTheBubbleInsideThePage() {
+    fun cropShowsTheSceneAroundTheBubble() {
+        // Page 1000x1500: at least 600x750, centred on the bubble (centre 200,400), inside the page.
         val bubble = MangaBubbleImage("p1.jpg", listOf(100.0, 200.0, 300.0, 600.0), imgWidth = 1000, imgHeight = 1500)
-        // 30 % of the longer side (400 px) is a 120 px margin.
-        assertEquals(MangaCropRect(0, 80, 420, 720), mangaBubbleCropRect(bubble))
+        assertEquals(MangaCropRect(0, 25, 600, 775), mangaBubbleCropRect(bubble))
 
+        // Near the bottom right corner the crop moves inwards instead of shrinking.
         val corner = MangaBubbleImage("p1.jpg", listOf(900.0, 1400.0, 990.0, 1490.0), imgWidth = 1000, imgHeight = 1500)
-        // A small bubble still gets 48 px, clamped to the page edges.
-        assertEquals(MangaCropRect(852, 1352, 1000, 1500), mangaBubbleCropRect(corner))
+        assertEquals(MangaCropRect(400, 750, 1000, 1500), mangaBubbleCropRect(corner))
+
+        // A bubble larger than the minimum keeps its margin, limited to the page.
+        val big = MangaBubbleImage("p1.jpg", listOf(100.0, 100.0, 900.0, 1100.0), imgWidth = 1000, imgHeight = 1500)
+        assertEquals(MangaCropRect(0, 0, 1000, 1500), mangaBubbleCropRect(big))
 
         assertNull(mangaBubbleCropRect(bubble.copy(box = listOf(10.0, 10.0, 10.0, 50.0))))
     }

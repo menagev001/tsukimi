@@ -23,8 +23,11 @@ internal data class MangaBubbleImage(
 /** A pixel rectangle; [right] and [bottom] are exclusive. */
 internal data class MangaCropRect(val left: Int, val top: Int, val right: Int, val bottom: Int)
 
+// The crop shows the scene around the bubble: at least this share of the page, or the bubble
+// with a margin when that is larger.
+private const val MinCropPageWidthFraction = 0.6
+private const val MinCropPageHeightFraction = 0.5
 private const val BubbleMarginFraction = 0.3
-private const val MinBubbleMarginPx = 48.0
 internal const val MangaScreenshotMaxWidth = 1280
 
 private val bubbleJson = Json { ignoreUnknownKeys = true }
@@ -35,19 +38,28 @@ internal fun mangaBubbleImageFromWebViewResult(result: String?): MangaBubbleImag
     bubbleJson.decodeFromString<MangaBubbleImage>(json).takeIf { it.box.size == 4 }
 }.getOrNull()
 
-/** The bubble with some of the panel around it, inside the page. */
+/**
+ * The part of the page around the bubble: at least 60 % of the page width and 50 % of its height,
+ * centred on the bubble and moved inwards at the page edges.
+ */
 internal fun mangaBubbleCropRect(bubble: MangaBubbleImage): MangaCropRect? {
     val (x1, y1, x2, y2) = bubble.box
-    val width = x2 - x1
-    val height = y2 - y1
-    if (width <= 0 || height <= 0 || bubble.imgWidth <= 0 || bubble.imgHeight <= 0) return null
-    val margin = max(max(width, height) * BubbleMarginFraction, MinBubbleMarginPx)
+    val bubbleWidth = x2 - x1
+    val bubbleHeight = y2 - y1
+    val pageWidth = bubble.imgWidth.toDouble()
+    val pageHeight = bubble.imgHeight.toDouble()
+    if (bubbleWidth <= 0 || bubbleHeight <= 0 || pageWidth <= 0 || pageHeight <= 0) return null
+    val margin = max(bubbleWidth, bubbleHeight) * BubbleMarginFraction
+    val width = max(bubbleWidth + 2 * margin, pageWidth * MinCropPageWidthFraction).coerceAtMost(pageWidth)
+    val height = max(bubbleHeight + 2 * margin, pageHeight * MinCropPageHeightFraction).coerceAtMost(pageHeight)
+    val left = ((x1 + x2) / 2 - width / 2).coerceIn(0.0, pageWidth - width)
+    val top = ((y1 + y2) / 2 - height / 2).coerceIn(0.0, pageHeight - height)
     return MangaCropRect(
-        left = (x1 - margin).roundToInt().coerceIn(0, bubble.imgWidth - 1),
-        top = (y1 - margin).roundToInt().coerceIn(0, bubble.imgHeight - 1),
-        right = (x2 + margin).roundToInt().coerceIn(1, bubble.imgWidth),
-        bottom = (y2 + margin).roundToInt().coerceIn(1, bubble.imgHeight),
-    ).takeIf { it.right > it.left && it.bottom > it.top }
+        left = left.roundToInt(),
+        top = top.roundToInt(),
+        right = (left + width).roundToInt().coerceAtMost(bubble.imgWidth),
+        bottom = (top + height).roundToInt().coerceAtMost(bubble.imgHeight),
+    )
 }
 
 /** Cuts the bubble out of [pageFile] as a JPEG in [directory], at most [MangaScreenshotMaxWidth] wide. */
