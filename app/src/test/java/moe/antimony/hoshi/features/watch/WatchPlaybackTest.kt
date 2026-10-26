@@ -49,13 +49,15 @@ class WatchPlaybackTest {
     }
 
     @Test
-    fun resumeSkipsFinishedAndBarelyStartedItems() {
+    fun resumeSkipsNearlyFinishedAndBarelyStartedPositions() {
         val item = WatchItem(id = "1", name = "Film", kind = WatchItemKind.Movie, runTimeMs = 100 * 60_000L)
 
         assertEquals(30 * 60_000L, resumePositionMs(item.copy(positionMs = 30 * 60_000L)))
         assertEquals(0L, resumePositionMs(item.copy(positionMs = 5_000L)))
         assertEquals(0L, resumePositionMs(item.copy(positionMs = 98 * 60_000L)))
-        assertEquals(0L, resumePositionMs(item.copy(positionMs = 30 * 60_000L, played = true)))
+        // A watched item started again keeps its played flag next to the new position.
+        assertEquals(30 * 60_000L, resumePositionMs(item.copy(positionMs = 30 * 60_000L, played = true)))
+        assertEquals(0L, resumePositionMs(item.copy(positionMs = 0L, played = true)))
     }
 
     @Test

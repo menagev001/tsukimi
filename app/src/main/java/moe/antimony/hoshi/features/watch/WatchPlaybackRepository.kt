@@ -110,6 +110,7 @@ class WatchPlaybackRepository @Inject constructor(
             }
             val (streamUrl, isTranscoding) = streamUrl(session, id, source, info.playSessionId)
             Log.i(Tag, "Playing ${source.container} by ${if (isTranscoding) "transcoding" else "direct play"}")
+            Log.i(Tag, "Saved position ${watchItem.positionMs} ms of ${watchItem.runTimeMs} ms, starting at ${startPositionMs ?: resumePositionMs(watchItem)} ms")
             val api = session.api
             Result.success(
                 WatchPlaybackSource(
@@ -206,9 +207,11 @@ internal fun preferredAudioStreamIndex(streams: List<WatchAudioStream>, language
     return streams.firstOrNull { it.language?.lowercase() in codes }?.index
 }
 
-/** Resume from the saved position unless the item was finished or barely started. */
+/**
+ * Resume from the saved position unless it is barely started or nearly finished. The played flag
+ * is ignored: Jellyfin keeps it when a watched item is started again, next to the new position.
+ */
 internal fun resumePositionMs(item: WatchItem): Long {
-    if (item.played) return 0
     val runTime = item.runTimeMs ?: return item.positionMs
     return item.positionMs.takeIf { it in MinResumeMs until (runTime * MaxResumeFraction).toLong() } ?: 0
 }
