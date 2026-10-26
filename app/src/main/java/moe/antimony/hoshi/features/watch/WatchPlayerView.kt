@@ -37,7 +37,6 @@ import androidx.compose.material.icons.rounded.Replay10
 import androidx.compose.material.icons.rounded.SkipNext
 import androidx.compose.material.icons.rounded.SkipPrevious
 import androidx.compose.material.icons.rounded.Subtitles
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -68,7 +67,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -96,6 +94,7 @@ import moe.antimony.hoshi.features.ai.AiLookupState
 import moe.antimony.hoshi.features.ai.AiLookupViewModel
 import moe.antimony.hoshi.features.anki.AnkiCardJobChip
 import moe.antimony.hoshi.features.anki.AnkiCardJobsViewModel
+import moe.antimony.hoshi.features.anki.AnkiLongSentenceDialog
 import moe.antimony.hoshi.features.reader.LookupPopupAiRequests
 import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
 import moe.antimony.hoshi.features.reader.LookupPopupMineHandler
@@ -148,11 +147,11 @@ internal fun WatchPlayerView(
         documentTitle = (uiState.source as? WatchLoadState.Ready)?.value?.item?.let { it.seriesName ?: it.name } ?: title,
         rootPopupVertical = false,
         aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
-        mineEntry = remember(viewModel, framePlayer) {
+        mineEntry = remember(viewModel, framePlayer, cardJobs) {
             LookupPopupMineHandler { formatId, payloadJson, context, selection ->
                 // Copy the frame now, before the popup closes and playback moves on.
                 val frame = framePlayer.captureFrame()
-                viewModel.addCard(formatId, payloadJson, context, selection.text, frame)
+                cardJobs.requestCard(viewModel.card(formatId, payloadJson, context, selection.text, frame))
                 true
             }
         },
@@ -160,7 +159,8 @@ internal fun WatchPlayerView(
         transformSelection = { selection -> withSubtitleLineSentence(selection, currentLines + currentCueTexts) },
     )
     val aiLookupState by popupHost.aiLookupViewModel.state.collectAsStateWithLifecycle()
-    val lookupActive = popupHost.isOpen || aiLookupState != AiLookupState.Hidden || uiState.pendingLongCard != null
+    val pendingLongCard by cardJobs.pendingLongCard.collectAsStateWithLifecycle()
+    val lookupActive = popupHost.isOpen || aiLookupState != AiLookupState.Hidden || pendingLongCard != null
     LaunchedEffect(lookupActive) {
         viewModel.onLookupActiveChanged(lookupActive)
         if (lookupActive) controlsVisible = false
@@ -295,14 +295,7 @@ internal fun WatchPlayerView(
                 )
             }
 
-            uiState.pendingLongCard?.let { pending ->
-                WatchLongSentenceDialog(
-                    sentenceLength = pending.sentenceLength,
-                    onKeepOriginal = { viewModel.confirmLongCard(useAiExample = false) },
-                    onUseAiExample = { viewModel.confirmLongCard(useAiExample = true) },
-                    onCancel = { viewModel.confirmLongCard(useAiExample = null) },
-                )
-            }
+            AnkiLongSentenceDialog(cardJobs)
 
             AnkiCardJobChip(
                 modifier = Modifier
@@ -321,30 +314,6 @@ internal fun WatchPlayerView(
             )
         }
     }
-}
-
-/** Asks how to make a card whose sentence is longer than the long sentence limit. */
-@Composable
-private fun WatchLongSentenceDialog(
-    sentenceLength: Int,
-    onKeepOriginal: () -> Unit,
-    onUseAiExample: () -> Unit,
-    onCancel: () -> Unit,
-) {
-    AlertDialog(
-        onDismissRequest = onCancel,
-        title = { Text(stringResource(R.string.anki_long_sentence_title)) },
-        text = { Text(pluralStringResource(R.plurals.anki_long_sentence_message, sentenceLength, sentenceLength)) },
-        confirmButton = {
-            TextButton(onClick = onUseAiExample) { Text(stringResource(R.string.anki_long_sentence_use_ai_example)) }
-        },
-        dismissButton = {
-            Row {
-                TextButton(onClick = onCancel) { Text(stringResource(R.string.action_cancel)) }
-                TextButton(onClick = onKeepOriginal) { Text(stringResource(R.string.anki_long_sentence_keep_original)) }
-            }
-        },
-    )
 }
 
 /** The sentence a card will use, with buttons to add the line before or after it. */

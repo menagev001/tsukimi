@@ -675,8 +675,8 @@
     <string name="anki_long_sentence_keep_original">Keep Original</string>
     <string name="anki_long_sentence_use_ai_example">AI Example Sentence</string>
     <plurals name="anki_long_sentence_message">
-        <item quantity="one">This sentence is %1$d character long. Keep it with its audio, or let AI write a short example sentence for the word? With the example, the original stays on the card as the original sentence, without audio.</item>
-        <item quantity="other">This sentence is %1$d characters long. Keep it with its audio, or let AI write a short example sentence for the word? With the example, the original stays on the card as the original sentence, without audio.</item>
+        <item quantity="one">This sentence is %1$d character long. Keep it, or let AI write a short example sentence for the word? The example then becomes the card\'s sentence and the original stays on the card as the original sentence.</item>
+        <item quantity="other">This sentence is %1$d characters long. Keep it, or let AI write a short example sentence for the word? The example then becomes the card\'s sentence and the original stays on the card as the original sentence.</item>
     </plurals>
     <string name="ai_base_url">Base URL</string>
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">Model</string>
