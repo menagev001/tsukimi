@@ -52,6 +52,16 @@ For reader web asset changes, run the focused JavaScript tests:
 node --test app/src/test/js/*.test.mjs
 ```
 
+If a debug build crashes with `NoSuchMethodError` inside generated Hilt/Dagger
+code (`DaggerHoshiApplication_HiltComponents_SingletonC...`), typically right
+after an injected constructor changed, the incremental build or the Gradle build
+cache mixed old and new generated classes. Rebuild from scratch without the
+cache before debugging the code:
+
+```bash
+./gradlew :app:clean :app:assembleDebug --no-build-cache
+```
+
 ## Device And Emulator Safety
 
 - Preserve app data by default.
