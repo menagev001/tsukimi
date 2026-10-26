@@ -24,7 +24,7 @@ import moe.antimony.hoshi.features.ai.AiSentenceContext
 import moe.antimony.hoshi.features.anki.AnkiCardRequest
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiPendingCard
-import moe.antimony.hoshi.features.anki.AnkiMiningPayload
+import moe.antimony.hoshi.features.anki.ankiCardLabel
 import java.io.File
 import java.util.Locale
 import dagger.assisted.AssistedFactory
@@ -328,8 +328,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         var sentenceAudio: File? = null
         val audioClip = audioClipRequest(context.sentence).takeUnless { useAiExample }
         return AnkiCardRequest(
-            label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
-                ?.takeIf(String::isNotBlank) ?: selectionText,
+            label = ankiCardLabel(payloadJson, selectionText),
             formatId = formatId,
             payloadJson = payloadJson,
             context = cardContext(context),

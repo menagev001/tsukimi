@@ -292,6 +292,11 @@
             // sentence-context lookups to the nearest `p, .glossary-content, .expr-tag` ancestor,
             // so this tag is load-bearing regardless of which positioning strategy is used below.
             blockEl.className = 'hoshi-manga-block';
+            // Where the bubble is in the original page image, for card screenshots (activeBlockImage).
+            blockEl.dataset.imgPath = pageJson.img_path || '';
+            blockEl.dataset.box = box.join(',');
+            blockEl.dataset.imgWidth = String(pageJson.img_width || 0);
+            blockEl.dataset.imgHeight = String(pageJson.img_height || 0);
             blockEl.style.writingMode = writingMode;
             blockEl.style.left = boxLeft + 'px';
             blockEl.style.top = boxTop + 'px';
@@ -492,6 +497,19 @@
     }
 
     window.hoshiManga = {
+        // The revealed OCR block's page image and box in that image's pixels, or null.
+        activeBlockImage: function () {
+            if (!activeBlockEl || !activeBlockEl.dataset.imgPath) return null;
+            var box = activeBlockEl.dataset.box.split(',').map(Number);
+            if (box.length !== 4 || box.some(isNaN)) return null;
+            return {
+                imgPath: activeBlockEl.dataset.imgPath,
+                box: box,
+                imgWidth: Number(activeBlockEl.dataset.imgWidth),
+                imgHeight: Number(activeBlockEl.dataset.imgHeight),
+            };
+        },
+
         configure: function (options) {
             options = options || {};
             state.rtl = options.rtl !== false;

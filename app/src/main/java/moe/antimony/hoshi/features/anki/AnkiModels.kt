@@ -514,3 +514,11 @@ object AnkiHandlebarRenderer {
         "{selected-glossary-no-dictionary-fallback}",
     )
 }
+
+/** The chip label of a card: the payload's expression, or [fallback]. */
+internal fun ankiCardLabel(payloadJson: String, fallback: String): String =
+    runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()?.takeIf(String::isNotBlank) ?: fallback
+
+/** A title as an Anki tag: Anki tags cannot contain spaces. */
+internal fun ankiTitleTag(title: String): String? =
+    title.trim().replace(Regex("\\s+"), "_").takeIf(String::isNotEmpty)

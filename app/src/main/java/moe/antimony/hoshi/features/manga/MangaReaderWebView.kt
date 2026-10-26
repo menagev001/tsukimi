@@ -50,9 +50,14 @@ import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import java.io.File
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import moe.antimony.hoshi.features.anki.AnkiCardJobChip
+import moe.antimony.hoshi.features.anki.AnkiCardJobsViewModel
+import moe.antimony.hoshi.features.anki.AnkiLongSentenceDialog
 import moe.antimony.hoshi.LocalHoshiUiDependencies
 import moe.antimony.hoshi.content.ContentLanguageProfile
 import moe.antimony.hoshi.features.reader.ReaderLookupPopupViewport
@@ -64,6 +69,7 @@ import moe.antimony.hoshi.features.reader.androidPixelsToCssPixels
 import moe.antimony.hoshi.features.reader.readerSelectionMaxLength
 import moe.antimony.hoshi.features.reader.usesDarkInterface
 import moe.antimony.hoshi.features.reader.LookupPopupHostLayers
+import moe.antimony.hoshi.features.reader.LookupPopupMineHandler
 import moe.antimony.hoshi.features.reader.rememberLookupPopupHost
 import moe.antimony.hoshi.features.reader.ReaderAppearanceSheet
 import moe.antimony.hoshi.features.reader.ReaderHardwareKeyAction
@@ -178,6 +184,8 @@ internal fun MangaReaderWebView(
     }
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val cardJobs: AnkiCardJobsViewModel = hiltViewModel()
+    val currentWebView = rememberUpdatedState(webView)
     val popupHost = rememberLookupPopupHost(
         readerSettings = readerSettings,
         darkInterface = darkInterface,
@@ -185,6 +193,33 @@ internal fun MangaReaderWebView(
         contentLanguageProfile = contentLanguageProfile,
         documentTitle = volumeEntry.displayTitle,
         rootPopupVertical = true,
+        mineEntry = remember(volumeEntry, cardJobs) {
+            LookupPopupMineHandler { formatId, payloadJson, ankiContext, selection ->
+                // Ask now which bubble the lookup came from, before the reader moves on.
+                val bubble = CompletableDeferred<MangaBubbleImage?>()
+                val view = currentWebView.value
+                if (view == null) {
+                    bubble.complete(null)
+                } else {
+                    view.evaluateJavascript(MangaActiveBlockImageScript) { result ->
+                        bubble.complete(mangaBubbleImageFromWebViewResult(result))
+                    }
+                }
+                cardJobs.requestCard(
+                    mangaPendingCard(
+                        formatId = formatId,
+                        payloadJson = payloadJson,
+                        context = ankiContext,
+                        selectionText = selection.text,
+                        title = volumeEntry.displayTitle,
+                        pagesDirectory = volumeEntry.root.resolve("pages"),
+                        screenshotDirectory = File(context.cacheDir, "anki-media"),
+                        bubble = bubble,
+                    ),
+                )
+                true
+            }
+        },
     )
     val cropViewModel: MangaCropViewModel = hiltViewModel()
     LaunchedEffect(volumeId) {
@@ -628,6 +663,14 @@ internal fun MangaReaderWebView(
         }
     }
 
+    AnkiCardJobChip(
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .statusBarsPadding()
+            .padding(top = 64.dp),
+    )
+    AnkiLongSentenceDialog(cardJobs)
+
     LookupPopupHostLayers(
         host = popupHost,
         viewportWidthDp = popupViewportWidthDp,
@@ -685,3 +728,6 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     is ContextWrapper -> baseContext.findActivity()
     else -> null
 }
+
+private const val MangaActiveBlockImageScript =
+    "JSON.stringify(window.hoshiManga ? window.hoshiManga.activeBlockImage() : null)"

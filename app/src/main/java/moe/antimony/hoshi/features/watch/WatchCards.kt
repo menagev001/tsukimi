@@ -1,6 +1,7 @@
 package moe.antimony.hoshi.features.watch
 
 import java.util.Locale
+import moe.antimony.hoshi.features.anki.ankiTitleTag
 
 /** `{source}`: "Series S05E01 3:13" for episodes, "Film 1:02:03" otherwise. */
 internal fun watchCardSource(item: WatchItem, videoTimeMs: Long): String {
@@ -22,8 +23,7 @@ internal fun watchCardTranslation(englishCues: List<WatchSubtitleCue>, startMs: 
 /** Card tags: tsukimi, tsukimi::watch and the series or film title (Anki tags cannot contain spaces). */
 internal fun watchCardTags(item: WatchItem): Set<String> {
     val title = if (item.kind == WatchItemKind.Episode) item.seriesName ?: item.name else item.name
-    val titleTag = title.trim().replace(Regex("\\s+"), "_")
-    return setOfNotNull("tsukimi", "tsukimi::watch", titleTag.takeIf(String::isNotEmpty))
+    return setOfNotNull("tsukimi", "tsukimi::watch", ankiTitleTag(title))
 }
 
 /**
