@@ -63,7 +63,7 @@ class AnkiRepositoryFetchTest {
     }
 
     @Test
-    fun fetchResetsEveryFormatWhilePreservingIdentityNameIconAndTags() = runBlocking {
+    fun fetchKeepsEachFormatsDeckAndNoteTypeAndResetsMappingsToDefaults() = runBlocking {
         val settingsRepository = InMemoryAnkiSettingsRepository(
             AnkiSettings(
                 cardFormats = listOf(
@@ -94,26 +94,28 @@ class AnkiRepositoryFetchTest {
 
         assertEquals(
             listOf(
+                // Its own deck and note type still exist, so it keeps them.
                 AnkiCardFormat(
                     id = "word",
                     name = "Word",
                     icon = AnkiFormatIcon.Circle,
-                    selectedDeckId = 2L,
-                    selectedDeckName = "Mining",
+                    selectedDeckId = 1L,
+                    selectedDeckName = "Default",
                     selectedNoteTypeId = 5L,
                     selectedNoteTypeName = "Basic",
                     fieldMappings = emptyMap(),
                     tags = "word-tag",
                 ),
+                // Nothing chosen yet: the first deck that is not Default, and Lapis over Basic.
                 AnkiCardFormat(
                     id = "sentence",
                     name = "Sentence",
                     icon = AnkiFormatIcon.DiamondSmall,
                     selectedDeckId = 2L,
                     selectedDeckName = "Mining",
-                    selectedNoteTypeId = 5L,
-                    selectedNoteTypeName = "Basic",
-                    fieldMappings = emptyMap(),
+                    selectedNoteTypeId = 7L,
+                    selectedNoteTypeName = "Lapis",
+                    fieldMappings = mapOf("Expression" to "{expression}", "MainDefinition" to "{glossary-first}"),
                     tags = "sentence-tag",
                 ),
             ),

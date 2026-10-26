@@ -138,26 +138,35 @@ internal class AnkiRepository(
             )
         }
         settingsRepository.update { current ->
-            val selectedDeck = decks.firstOrNull { !it.name.equals("Default", ignoreCase = true) }
+            val fallbackDeck = decks.firstOrNull { !it.name.equals("Default", ignoreCase = true) }
                 ?: decks.first()
-            val selectedNoteType = noteTypes.first()
+            val fallbackNoteType = noteTypes.firstOrNull { AnkiFieldTemplates.matches(it) } ?: noteTypes.first()
+            // Unlike iOS, a format keeps its deck and note type when they still exist, and a note type
+            // Tsukimi has defaults for wins over the first one; the mapping is reset to the defaults.
             val formats = current.cardFormats
                 .ifEmpty { listOf(defaultAnkiCardFormat(UUID.randomUUID().toString())) }
                 .map { format ->
+                    val deck = decks.firstOrNull { it.id == format.selectedDeckId }
+                        ?: decks.firstOrNull { it.name == format.selectedDeckName }
+                        ?: fallbackDeck
+                    val noteType = noteTypes.firstOrNull { it.id == format.selectedNoteTypeId }
+                        ?: noteTypes.firstOrNull { it.name == format.selectedNoteTypeName }
+                        ?: fallbackNoteType
                     format.copy(
-                        selectedDeckId = selectedDeck.id,
-                        selectedDeckName = selectedDeck.name,
-                        selectedNoteTypeId = selectedNoteType.id,
-                        selectedNoteTypeName = selectedNoteType.name,
-                        fieldMappings = AnkiFieldTemplates.defaultMappings(selectedNoteType),
+                        selectedDeckId = deck.id,
+                        selectedDeckName = deck.name,
+                        selectedNoteTypeId = noteType.id,
+                        selectedNoteTypeName = noteType.name,
+                        fieldMappings = AnkiFieldTemplates.defaultMappings(noteType),
                     )
                 }
+            val first = formats.first()
             current.copy(
                 cardFormats = formats,
-                selectedDeckId = selectedDeck.id,
-                selectedDeckName = selectedDeck.name,
-                selectedNoteTypeId = selectedNoteType.id,
-                selectedNoteTypeName = selectedNoteType.name,
+                selectedDeckId = first.selectedDeckId,
+                selectedDeckName = first.selectedDeckName,
+                selectedNoteTypeId = first.selectedNoteTypeId,
+                selectedNoteTypeName = first.selectedNoteTypeName,
                 availableDecks = decks,
                 availableNoteTypes = noteTypes,
                 fieldMappings = formats.first().fieldMappings,

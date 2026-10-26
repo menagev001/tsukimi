@@ -59,6 +59,10 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Changed
 
+- Fetch in Settings → Anki now keeps each card format's deck and note type
+  when they still exist, prefers a note type Tsukimi knows (Lapis, Kiku,
+  Senren) over the first one, and resets the field mapping to Tsukimi's
+  defaults, so a single Fetch maps every known Lapis field.
 - Rename the app to 月見 Tsukimi. It now has its own application ID
   (`com.feathercomet.tsukimi`), so it installs next to Hoshi Reader instead of
   updating it: move books and dictionaries with a `.hoshi` backup from
