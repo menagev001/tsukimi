@@ -27,9 +27,13 @@ internal class AiSettingsViewModel @Inject constructor(
     private val _defaultSentenceBreakdownPrompt = MutableStateFlow("")
     val defaultSentenceBreakdownPrompt: StateFlow<String> = _defaultSentenceBreakdownPrompt.asStateFlow()
 
+    private val _defaultExampleSentencePrompt = MutableStateFlow("")
+    val defaultExampleSentencePrompt: StateFlow<String> = _defaultExampleSentencePrompt.asStateFlow()
+
     init {
         viewModelScope.launch { _defaultWordNuancePrompt.value = repository.defaultWordNuancePrompt() }
         viewModelScope.launch { _defaultSentenceBreakdownPrompt.value = repository.defaultSentenceBreakdownPrompt() }
+        viewModelScope.launch { _defaultExampleSentencePrompt.value = repository.defaultExampleSentencePrompt() }
     }
 
     fun updateBaseUrl(value: String) {
@@ -51,4 +55,14 @@ internal class AiSettingsViewModel @Inject constructor(
     fun updateSentenceBreakdownPromptOverride(value: String) {
         viewModelScope.launch { repository.updateSentenceBreakdownPromptOverride(value) }
     }
+
+    fun updateExampleSentencePromptOverride(value: String) {
+        viewModelScope.launch { repository.updateExampleSentencePromptOverride(value) }
+    }
+
+    fun updateLongSentenceLimit(value: Int) {
+        viewModelScope.launch { repository.updateLongSentenceLimit(value.coerceIn(LongSentenceLimitRange)) }
+    }
 }
+
+internal val LongSentenceLimitRange = 10..200

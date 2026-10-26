@@ -6,6 +6,8 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.coroutines.cancellation.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,6 +15,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import moe.antimony.hoshi.di.ApplicationScope
+import moe.antimony.hoshi.features.ai.AiRepository
+import moe.antimony.hoshi.features.ai.AiSentenceContext
 
 /** One card from a popup's Anki button, built in the background. */
 data class AnkiCardRequest(
@@ -24,6 +28,10 @@ data class AnkiCardRequest(
     val prepareContext: (suspend (AnkiMiningContext) -> AnkiMiningContext)? = null,
     /** Runs when the job ends in any way, e.g. to delete temporary media files. */
     val cleanUp: () -> Unit = {},
+    /** Lines around the sentence for the AI fields, e.g. neighbouring subtitle lines. */
+    val aiContext: AiSentenceContext? = null,
+    /** Replace the sentence by an AI example sentence; the original goes to `{original-sentence}`. */
+    val useAiExampleSentence: Boolean = false,
 )
 
 data class AnkiCardJob(
@@ -50,6 +58,7 @@ sealed interface AnkiCardJobStatus {
 @Singleton
 class AnkiCardJobRunner @Inject internal constructor(
     private val repository: AnkiRepository,
+    private val aiRepository: AiRepository,
     @param:ApplicationScope private val scope: CoroutineScope,
 ) {
     private val nextId = AtomicLong()
@@ -62,10 +71,12 @@ class AnkiCardJobRunner @Inject internal constructor(
         _jobs.update { (it + AnkiCardJob(id, request.label, AnkiCardJobStatus.Working)).takeLast(MaxKeptJobs) }
         running[id] = scope.launch {
             val status = try {
-                val expression = runCatching { AnkiMiningPayload.fromJson(request.payloadJson).expression }.getOrDefault("")
+                val payload = runCatching { AnkiMiningPayload.fromJson(request.payloadJson) }.getOrNull()
+                val expression = payload?.expression.orEmpty()
                 val duplicate = expression.isNotBlank() &&
                     runCatching { repository.isDuplicate(expression, emptyList(), emptyList()) }.getOrDefault(false)
-                val context = request.prepareContext?.invoke(request.context) ?: request.context
+                val prepared = request.prepareContext?.invoke(request.context) ?: request.context
+                val context = withAiFields(request, prepared, expression, payload?.matched.orEmpty().ifBlank { expression })
                 val added = repository.mineEntry(
                     rawPayload = request.payloadJson,
                     context = context,
@@ -88,6 +99,40 @@ class AnkiCardJobRunner @Inject internal constructor(
         return id
     }
 
+    /** Adds the AI example sentence and AI fields the card format uses; failures tag the card. */
+    private suspend fun withAiFields(
+        request: AnkiCardRequest,
+        context: AnkiMiningContext,
+        expression: String,
+        word: String,
+    ): AnkiMiningContext {
+        var result = context
+        var aiFailed = false
+        if (request.useAiExampleSentence && expression.isNotBlank()) {
+            aiRepository.askExampleSentence(expression)
+                .onSuccess { example ->
+                    result = result.copy(sentence = example, sentenceOffset = null, originalSentence = context.sentence)
+                }
+                .onFailure { aiFailed = true }
+        }
+        // Context lines belong to the original line, not to an example sentence.
+        val aiContext = request.aiContext.takeIf { result.originalSentence == null }
+        val usesNuance = word.isNotBlank() && repository.formatUsesHandlebar(request.formatId, "{ai-word-nuance}")
+        val usesBreakdown = repository.formatUsesHandlebar(request.formatId, "{ai-sentence-breakdown}")
+        coroutineScope {
+            val nuance = async { if (usesNuance) aiRepository.askWordNuance(word, result.sentence, aiContext) else null }
+            val breakdown = async { if (usesBreakdown) aiRepository.askSentenceBreakdown(result.sentence, aiContext) else null }
+            val nuanceResult = nuance.await()
+            val breakdownResult = breakdown.await()
+            if (nuanceResult?.isFailure == true || breakdownResult?.isFailure == true) aiFailed = true
+            result = result.copy(
+                aiWordNuance = nuanceResult?.getOrNull()?.let(::ankiTextFieldHtml),
+                aiSentenceBreakdown = breakdownResult?.getOrNull()?.let(::ankiTextFieldHtml),
+            )
+        }
+        return if (aiFailed) result.copy(extraTags = result.extraTags + AiMissingTag) else result
+    }
+
     /** Stops a job that has not added its note yet. */
     fun cancel(id: Long) {
         running[id]?.cancel()
@@ -106,5 +151,15 @@ class AnkiCardJobRunner @Inject internal constructor(
     private companion object {
         const val Tag = "AnkiCardJobRunner"
         const val MaxKeptJobs = 5
+        const val AiMissingTag = "tsukimi::ai-missing"
     }
 }
+
+/** Plain AI text as Anki field HTML: markup characters escaped, line breaks kept. */
+internal fun ankiTextFieldHtml(text: String): String =
+    text.trim()
+        .replace("&", "&amp;")
+        .replace("<", "&lt;")
+        .replace(">", "&gt;")
+        .replace("\r\n", "\n")
+        .replace("\n", "<br>")

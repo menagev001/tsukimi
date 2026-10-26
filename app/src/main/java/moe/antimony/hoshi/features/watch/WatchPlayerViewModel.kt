@@ -20,7 +20,10 @@ import androidx.media3.datasource.DefaultHttpDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
+import moe.antimony.hoshi.features.ai.AiRepository
 import moe.antimony.hoshi.features.ai.AiSentenceContext
+import moe.antimony.hoshi.features.ai.AiSettings
+import moe.antimony.hoshi.features.anki.AnkiCardJobRunner
 import moe.antimony.hoshi.features.anki.AnkiCardRequest
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiMiningPayload
@@ -52,6 +55,18 @@ data class WatchPlayerUiState(
     val subtitles: WatchSubtitlesUiState = WatchSubtitlesUiState(),
     /** The lines a card from the open lookup would use; null without a lookup on a subtitle. */
     val cardSelection: WatchCardSelection? = null,
+    /** A card whose sentence is over the long sentence limit, waiting for the user's choice. */
+    val pendingLongCard: WatchPendingCard? = null,
+)
+
+/** The Anki button's input for a card that waits for the long sentence dialog. */
+data class WatchPendingCard(
+    val sentenceLength: Int,
+    internal val formatId: String?,
+    internal val payloadJson: String,
+    internal val context: AnkiMiningContext,
+    internal val selectionText: String,
+    internal val frame: Deferred<Bitmap?>,
 )
 
 data class WatchSubtitlesUiState(
@@ -89,6 +104,8 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private val subtitleRepository: WatchSubtitleRepository,
     private val preferencesRepository: WatchPreferencesRepository,
     private val audioClipper: WatchSentenceAudioClipper,
+    private val cardJobs: AnkiCardJobRunner,
+    aiRepository: AiRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(WatchPlayerUiState())
     val uiState: StateFlow<WatchPlayerUiState> = _uiState.asStateFlow()
@@ -101,6 +118,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     private var primaryCues: List<WatchSubtitleCue> = emptyList()
     private var englishCues: List<WatchSubtitleCue> = emptyList()
     private var resumeAfterLookup = true
+    private var longSentenceLimit = AiSettings.DEFAULT_LONG_SENTENCE_LIMIT
     private var pausedForLookup = false
     private var subtitlesLoadedFor: String? = null
 
@@ -179,6 +197,9 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
                 resumeAfterLookup = preferences.resumeAfterLookup
                 updateSubtitles { it.copy(fontSizePx = preferences.subtitleSize.fontSizePx) }
             }
+        }
+        viewModelScope.launch {
+            aiRepository.settings.collect { longSentenceLimit = it.longSentenceLimit }
         }
         viewModelScope.launch {
             preferencesRepository.subtitleOffsetMs(itemId).collect { offsetMs ->
@@ -300,46 +321,78 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
     }
 
     /**
-     * A card for the popup's Anki button. [frame] is the video frame copied when the button was
-     * pressed. Inside the job the frame is saved and the lines' audio is clipped; both files are
+     * Handles the popup's Anki button. [frame] is the video frame copied when the button was
+     * pressed. A sentence over the long sentence limit waits for [confirmLongCard].
+     */
+    fun addCard(formatId: String?, payloadJson: String, context: AnkiMiningContext, selectionText: String, frame: Deferred<Bitmap?>) {
+        val length = cardSelectionFor(context.sentence)?.text?.length ?: context.sentence.length
+        if (length > longSentenceLimit) {
+            _uiState.update {
+                it.copy(pendingLongCard = WatchPendingCard(length, formatId, payloadJson, context, selectionText, frame))
+            }
+        } else {
+            startCard(formatId, payloadJson, context, selectionText, frame, useAiExample = false)
+        }
+    }
+
+    /** The long sentence dialog's answer: keep the original, use an AI example, or cancel (null). */
+    fun confirmLongCard(useAiExample: Boolean?) {
+        val pending = _uiState.value.pendingLongCard ?: return
+        _uiState.update { it.copy(pendingLongCard = null) }
+        if (useAiExample == null) {
+            pending.frame.cancel()
+            return
+        }
+        startCard(pending.formatId, pending.payloadJson, pending.context, pending.selectionText, pending.frame, useAiExample)
+    }
+
+    /**
+     * Starts the card job. Inside the job the frame is saved and, unless an AI example replaces
+     * the sentence (its audio would not match), the lines' audio is clipped; both files are
      * deleted when the job ends. A failed clip still adds the card, tagged as missing its audio.
      */
-    fun cardRequest(
+    private fun startCard(
         formatId: String?,
         payloadJson: String,
         context: AnkiMiningContext,
         selectionText: String,
         frame: Deferred<Bitmap?>,
-    ): AnkiCardRequest {
+        useAiExample: Boolean,
+    ) {
         var screenshot: File? = null
         var sentenceAudio: File? = null
-        val audioClip = audioClipRequest(context.sentence)
-        return AnkiCardRequest(
-            label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
-                ?.takeIf(String::isNotBlank) ?: selectionText,
-            formatId = formatId,
-            payloadJson = payloadJson,
-            context = cardContext(context),
-            prepareContext = { cardContext ->
-                coroutineScope {
-                    val clip = async {
-                        audioClip?.let { withTimeoutOrNull(AudioClipTimeoutMs) { audioClipper.clip(it) } }
+        val audioClip = audioClipRequest(context.sentence).takeUnless { useAiExample }
+        cardJobs.start(
+            AnkiCardRequest(
+                label = runCatching { AnkiMiningPayload.fromJson(payloadJson).expression }.getOrNull()
+                    ?.takeIf(String::isNotBlank) ?: selectionText,
+                formatId = formatId,
+                payloadJson = payloadJson,
+                context = cardContext(context),
+                prepareContext = { cardContext ->
+                    coroutineScope {
+                        val clip = async {
+                            audioClip?.let { withTimeoutOrNull(AudioClipTimeoutMs) { audioClipper.clip(it) } }
+                        }
+                        screenshot = frame.await()?.let { bitmap ->
+                            withContext(ioDispatcher) { saveWatchScreenshot(bitmap, screenshotDirectory) }
+                        }
+                        sentenceAudio = clip.await()
                     }
-                    screenshot = frame.await()?.let { bitmap ->
-                        withContext(ioDispatcher) { saveWatchScreenshot(bitmap, screenshotDirectory) }
-                    }
-                    sentenceAudio = clip.await()
-                }
-                cardContext.copy(
-                    screenshotPath = screenshot?.path,
-                    sentenceAudioPath = sentenceAudio?.path,
-                    extraTags = cardContext.extraTags + listOfNotNull(AudioMissingTag.takeIf { audioClip != null && sentenceAudio == null }),
-                )
-            },
-            cleanUp = {
-                screenshot?.delete()
-                sentenceAudio?.delete()
-            },
+                    cardContext.copy(
+                        screenshotPath = screenshot?.path,
+                        sentenceAudioPath = sentenceAudio?.path,
+                        extraTags = cardContext.extraTags +
+                            listOfNotNull(AudioMissingTag.takeIf { audioClip != null && sentenceAudio == null }),
+                    )
+                },
+                cleanUp = {
+                    screenshot?.delete()
+                    sentenceAudio?.delete()
+                },
+                aiContext = cardSelectionFor(context.sentence)?.let { subtitleAiContext(primaryCues, it.range) },
+                useAiExampleSentence = useAiExample,
+            ),
         )
     }
 

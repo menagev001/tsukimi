@@ -321,4 +321,28 @@ class AnkiHandlebarRendererTest {
             AnkiHandlebarRenderer.render(template, payload, AnkiMiningContext(sentence = "本の文。", coverPath = "cover.jpg")),
         )
     }
+
+    @Test
+    fun rendersAiFieldsAndOriginalSentence() {
+        val context = AnkiMiningContext(
+            sentence = "パンを食べる。",
+            originalSentence = "昨日は朝からずっと忙しくて、やっと夜になってパンを食べることができた。",
+            aiWordNuance = "食べる (たべる)<br>Meaning: eat",
+            aiSentenceBreakdown = "パンを — bread",
+        )
+
+        assertEquals(
+            "昨日は朝からずっと忙しくて、やっと夜になってパンを食べることができた。|食べる (たべる)<br>Meaning: eat|パンを — bread",
+            AnkiHandlebarRenderer.render(
+                "{original-sentence}|{ai-word-nuance}|{ai-sentence-breakdown}",
+                AnkiMiningPayload(expression = "食べる"),
+                context,
+            ),
+        )
+    }
+
+    @Test
+    fun aiTextBecomesEscapedFieldHtml() {
+        assertEquals("a &lt;b&gt; &amp; c<br>next", ankiTextFieldHtml("  a <b> & c\r\nnext \n"))
+    }
 }

@@ -671,6 +671,13 @@
     <string name="anki_card_job_added_duplicate_format">Added %1$s to Anki (it was already in the deck)</string>
     <string name="anki_card_job_failed_format">Could not add %1$s to Anki</string>
     <string name="anki_card_job_cancelled">Card cancelled</string>
+    <string name="anki_long_sentence_title">Long Sentence</string>
+    <string name="anki_long_sentence_keep_original">Keep Original</string>
+    <string name="anki_long_sentence_use_ai_example">AI Example Sentence</string>
+    <plurals name="anki_long_sentence_message">
+        <item quantity="one">This sentence is %1$d character long. Keep it with its audio, or let AI write a short example sentence for the word? With the example, the original stays on the card as the original sentence, without audio.</item>
+        <item quantity="other">This sentence is %1$d characters long. Keep it with its audio, or let AI write a short example sentence for the word? With the example, the original stays on the card as the original sentence, without audio.</item>
+    </plurals>
     <string name="ai_base_url">Base URL</string>
     <string name="ai_model" comment="AI provider settings label, intentionally matching the Anki note-type model label.">Model</string>
     <string name="ai_api_key">API Key</string>
@@ -684,6 +691,9 @@
     <string name="ai_prompt_using_default">Using bundled prompt</string>
     <string name="ai_prompt_using_custom">Using custom prompt</string>
     <string name="ai_prompt_reset_to_default">Reset to Default</string>
+    <string name="ai_example_sentence_prompt_label">Example Sentence Prompt</string>
+    <string name="ai_long_sentence_limit">Long Sentence Limit</string>
+    <string name="ai_long_sentence_limit_hint">Characters. Adding a card with a longer sentence asks whether to use an AI example sentence instead.</string>
     <string name="settings_watch" comment="Settings row label, intentionally matching the Watch main tab label.">Watch</string>
     <string name="watch_jellyfin_server">Jellyfin Server</string>
     <string name="watch_server_url">Server URL</string>

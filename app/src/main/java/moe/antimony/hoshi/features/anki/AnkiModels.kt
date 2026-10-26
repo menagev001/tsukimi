@@ -322,6 +322,11 @@ data class AnkiMiningContext(
     val screenshotPath: String? = null,
     /** Audio file of the sentence itself, e.g. a clip of the subtitle lines; `{sentence-audio}`. */
     val sentenceAudioPath: String? = null,
+    /** The sentence as read, when an AI example sentence replaced it as [sentence]; `{original-sentence}`. */
+    val originalSentence: String? = null,
+    /** AI answers as Anki field HTML; `{ai-word-nuance}`, `{ai-sentence-breakdown}`. */
+    val aiWordNuance: String? = null,
+    val aiSentenceBreakdown: String? = null,
 )
 
 object AnkiHandlebarRenderer {
@@ -393,6 +398,9 @@ object AnkiHandlebarRenderer {
             "{sasayaki-audio}" -> context.sasayakiAudioPath.orEmpty()
             "{screenshot}" -> context.screenshotPath.orEmpty()
             "{sentence-audio}" -> context.sentenceAudioPath.orEmpty()
+            "{original-sentence}" -> context.originalSentence.orEmpty()
+            "{ai-word-nuance}" -> context.aiWordNuance.orEmpty()
+            "{ai-sentence-breakdown}" -> context.aiSentenceBreakdown.orEmpty()
             // Lapis card type switches: an audio card only when the card has its sentence's audio.
             "{card-type-audio}" -> if (context.sentenceAudioPath.isNullOrBlank()) "" else "x"
             "{card-type-sentence}" -> if (context.sentenceAudioPath.isNullOrBlank()) "x" else ""

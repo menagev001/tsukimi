@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -15,10 +16,14 @@ data class AiSettings(
     val apiKey: String = "",
     val wordNuancePromptOverride: String = "",
     val sentenceBreakdownPromptOverride: String = "",
+    val exampleSentencePromptOverride: String = "",
+    /** Cards with a longer sentence ask whether to use an AI example sentence instead. */
+    val longSentenceLimit: Int = DEFAULT_LONG_SENTENCE_LIMIT,
 ) {
     companion object {
         const val DEFAULT_BASE_URL = "https://api.anthropic.com"
         const val DEFAULT_MODEL = "claude-sonnet-5"
+        const val DEFAULT_LONG_SENTENCE_LIMIT = 40
     }
 }
 
@@ -37,6 +42,8 @@ class AiSettingsRepository(
             apiKey = preferences[KEY_API_KEY] ?: "",
             wordNuancePromptOverride = preferences[KEY_WORD_NUANCE_PROMPT] ?: "",
             sentenceBreakdownPromptOverride = preferences[KEY_SENTENCE_BREAKDOWN_PROMPT] ?: "",
+            exampleSentencePromptOverride = preferences[KEY_EXAMPLE_SENTENCE_PROMPT] ?: "",
+            longSentenceLimit = preferences[KEY_LONG_SENTENCE_LIMIT] ?: AiSettings.DEFAULT_LONG_SENTENCE_LIMIT,
         )
     }
 
@@ -60,11 +67,21 @@ class AiSettingsRepository(
         dataStore.edit { it[KEY_SENTENCE_BREAKDOWN_PROMPT] = value }
     }
 
+    suspend fun updateExampleSentencePromptOverride(value: String) {
+        dataStore.edit { it[KEY_EXAMPLE_SENTENCE_PROMPT] = value }
+    }
+
+    suspend fun updateLongSentenceLimit(value: Int) {
+        dataStore.edit { it[KEY_LONG_SENTENCE_LIMIT] = value }
+    }
+
     private companion object {
         val KEY_BASE_URL = stringPreferencesKey("baseUrl")
         val KEY_MODEL = stringPreferencesKey("model")
         val KEY_API_KEY = stringPreferencesKey("apiKey")
         val KEY_WORD_NUANCE_PROMPT = stringPreferencesKey("wordNuancePromptOverride")
         val KEY_SENTENCE_BREAKDOWN_PROMPT = stringPreferencesKey("sentenceBreakdownPromptOverride")
+        val KEY_EXAMPLE_SENTENCE_PROMPT = stringPreferencesKey("exampleSentencePromptOverride")
+        val KEY_LONG_SENTENCE_LIMIT = intPreferencesKey("longSentenceLimit")
     }
 }

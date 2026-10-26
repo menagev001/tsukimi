@@ -261,8 +261,9 @@ the series/book title.
 
 - Watch: server URL, login, quality away from home, default audio language,
   subtitle size, resume after lookup, subtitle offset.
-- Anki: audio padding, example-sentence length limit.
-- AI: Example sentence prompt (next to the two existing prompts).
+- Anki: audio padding.
+- AI: Example sentence prompt (next to the two existing prompts) and the long
+  sentence limit for the example-sentence dialog.
 
 ## Open Points
 

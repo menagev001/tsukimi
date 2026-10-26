@@ -30,6 +30,9 @@ class AiRepository @Inject constructor(
         settingsRepository.updateWordNuancePromptOverride(value)
     suspend fun updateSentenceBreakdownPromptOverride(value: String) =
         settingsRepository.updateSentenceBreakdownPromptOverride(value)
+    suspend fun updateExampleSentencePromptOverride(value: String) =
+        settingsRepository.updateExampleSentencePromptOverride(value)
+    suspend fun updateLongSentenceLimit(value: Int) = settingsRepository.updateLongSentenceLimit(value)
 
     suspend fun defaultWordNuancePrompt(): String = withContext(ioDispatcher) {
         loadPromptAsset(WordNuancePromptAsset)
@@ -37,6 +40,10 @@ class AiRepository @Inject constructor(
 
     suspend fun defaultSentenceBreakdownPrompt(): String = withContext(ioDispatcher) {
         loadPromptAsset(SentenceBreakdownPromptAsset)
+    }
+
+    suspend fun defaultExampleSentencePrompt(): String = withContext(ioDispatcher) {
+        loadPromptAsset(ExampleSentencePromptAsset)
     }
 
     suspend fun askWordNuance(word: String, sentence: String, context: AiSentenceContext? = null): Result<String> =
@@ -53,10 +60,20 @@ class AiRepository @Inject constructor(
             userMessage = aiUserMessage(word = null, sentence = sentence, context = context),
         )
 
+    /** One example sentence for [word]; the prompt's `[word]` is replaced by it. */
+    suspend fun askExampleSentence(word: String): Result<String> =
+        ask(
+            promptAsset = ExampleSentencePromptAsset,
+            promptOverride = { it.exampleSentencePromptOverride },
+            userMessage = word,
+            systemPromptTransform = { it.replace(WordPlaceholder, word) },
+        ).map { it.trim() }
+
     private suspend fun ask(
         promptAsset: String,
         promptOverride: (AiSettings) -> String,
         userMessage: String,
+        systemPromptTransform: (String) -> String = { it },
     ): Result<String> = withContext(ioDispatcher) {
         var result: Result<String>
         var attempt = 1
@@ -66,8 +83,9 @@ class AiRepository @Inject constructor(
                 if (currentSettings.apiKey.isBlank()) {
                     throw AiRequestException("No API key configured")
                 }
-                val systemPrompt = promptOverride(currentSettings).takeIf(String::isNotBlank)
-                    ?: loadPromptAsset(promptAsset)
+                val systemPrompt = systemPromptTransform(
+                    promptOverride(currentSettings).takeIf(String::isNotBlank) ?: loadPromptAsset(promptAsset),
+                )
                 client.ask(
                     baseUrl = currentSettings.baseUrl,
                     model = currentSettings.model,
@@ -99,5 +117,7 @@ class AiRepository @Inject constructor(
         const val RetryBackoffMillis = 750L
         const val WordNuancePromptAsset = "ai-prompts/word_nuance.md"
         const val SentenceBreakdownPromptAsset = "ai-prompts/sentence_breakdown.md"
+        const val ExampleSentencePromptAsset = "ai-prompts/example_sentence.md"
+        const val WordPlaceholder = "[word]"
     }
 }

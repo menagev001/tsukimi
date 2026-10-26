@@ -45,7 +45,15 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   `{card-type-audio}` / `{card-type-sentence}` switch Lapis between an audio
   card (the card has its sentence audio) and a sentence card. The default
   Lapis mapping now fills `SentenceAudio`, `Picture`, the card type and the
-  `Source` / `SentenceTranslation` fields for books, manga and video alike. Tsukimi keeps only
+  `Source` / `SentenceTranslation` fields for books, manga and video alike.
+  Cards can also carry AI answers: `{ai-word-nuance}` and
+  `{ai-sentence-breakdown}` are asked in the background when the card format
+  uses them (a failed request adds the card anyway, tagged
+  `tsukimi::ai-missing`). When a Watch card's sentence is longer than the long
+  sentence limit (AI Settings, default 40 characters), a dialog offers to keep
+  it or to let AI write a short example sentence for the word, which then
+  becomes the card's sentence while `{original-sentence}` keeps the original.
+  The example sentence prompt is editable in AI Settings. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 

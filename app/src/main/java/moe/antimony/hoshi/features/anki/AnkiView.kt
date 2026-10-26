@@ -742,6 +742,9 @@ internal object AnkiHandlebarOptions {
         "{sentence-audio}",
         "{card-type-audio}",
         "{card-type-sentence}",
+        "{original-sentence}",
+        "{ai-word-nuance}",
+        "{ai-sentence-breakdown}",
     )
 
     private val AdvancedOptions = listOf(

@@ -228,6 +228,9 @@ internal class AnkiRepository(
             sentenceAudioPath = context.sentenceAudioPath?.takeIf { needsSentenceAudio }?.let {
                 addHashedMediaFile(it, "tsukimi_sentence", activeBackend, settings.backendKind)
             },
+            originalSentence = context.originalSentence,
+            aiWordNuance = context.aiWordNuance,
+            aiSentenceBreakdown = context.aiSentenceBreakdown,
         )
         val mediaPayload = payload.copy(
             audio = payload.audio.takeIf { needsAudio && it.isNotBlank() }
@@ -266,6 +269,10 @@ internal class AnkiRepository(
         }
         added
     }
+
+    /** Whether the card format's field mapping uses [handlebar], e.g. to skip unused AI requests. */
+    suspend fun formatUsesHandlebar(formatId: String?, handlebar: String): Boolean =
+        settings.first().resolveAnkiCardFormat(formatId)?.fieldMappings?.referencesAnkiHandlebar(handlebar) == true
 
     suspend fun duplicateStates(
         valuesByHandlebar: Map<String, String>,

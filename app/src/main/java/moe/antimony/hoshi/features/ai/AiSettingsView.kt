@@ -10,11 +10,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.foundation.text.input.TextObfuscationMode
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -28,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
@@ -39,7 +45,9 @@ import moe.antimony.hoshi.ui.hoshiOutlinedTextFieldColors
 import moe.antimony.hoshi.ui.hoshiSingleLineTextFieldLineLimits
 import moe.antimony.hoshi.ui.rememberSyncedTextFieldState
 
-private enum class AiPromptKind { WordNuance, SentenceBreakdown }
+private enum class AiPromptKind { WordNuance, SentenceBreakdown, ExampleSentence }
+
+private const val LongSentenceLimitStep = 5
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -77,6 +85,19 @@ fun AiSettingsView(
             currentOverride = settings.sentenceBreakdownPromptOverride,
             defaultPrompt = defaultPrompt,
             onSave = viewModel::updateSentenceBreakdownPromptOverride,
+            onClose = { editingPromptKind = null },
+            modifier = modifier,
+        )
+        return
+    }
+
+    if (editingPromptKind == AiPromptKind.ExampleSentence) {
+        val defaultPrompt by viewModel.defaultExampleSentencePrompt.collectAsStateWithLifecycle()
+        PromptEditorView(
+            title = stringResource(R.string.ai_example_sentence_prompt_label),
+            currentOverride = settings.exampleSentencePromptOverride,
+            defaultPrompt = defaultPrompt,
+            onSave = viewModel::updateExampleSentencePromptOverride,
             onClose = { editingPromptKind = null },
             modifier = modifier,
         )
@@ -296,6 +317,51 @@ fun AiSettingsView(
                         trailingContent = {
                             TextButton(onClick = { editingPromptKind = AiPromptKind.SentenceBreakdown }) {
                                 Text(stringResource(R.string.action_edit))
+                            }
+                        },
+                    )
+                    HorizontalDivider()
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                        headlineContent = { Text(stringResource(R.string.ai_example_sentence_prompt_label)) },
+                        supportingContent = {
+                            Text(
+                                if (settings.exampleSentencePromptOverride.isBlank()) {
+                                    stringResource(R.string.ai_prompt_using_default)
+                                } else {
+                                    stringResource(R.string.ai_prompt_using_custom)
+                                },
+                            )
+                        },
+                        trailingContent = {
+                            TextButton(onClick = { editingPromptKind = AiPromptKind.ExampleSentence }) {
+                                Text(stringResource(R.string.action_edit))
+                            }
+                        },
+                    )
+                }
+            }
+            item {
+                AiSettingsCard {
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                        headlineContent = { Text(stringResource(R.string.ai_long_sentence_limit)) },
+                        supportingContent = { Text(stringResource(R.string.ai_long_sentence_limit_hint)) },
+                        trailingContent = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                IconButton(
+                                    onClick = { viewModel.updateLongSentenceLimit(settings.longSentenceLimit - LongSentenceLimitStep) },
+                                    enabled = settings.longSentenceLimit > LongSentenceLimitRange.first,
+                                ) {
+                                    Icon(Icons.Rounded.Remove, contentDescription = stringResource(R.string.action_decrease))
+                                }
+                                Text(settings.longSentenceLimit.toString(), style = MaterialTheme.typography.titleMedium)
+                                IconButton(
+                                    onClick = { viewModel.updateLongSentenceLimit(settings.longSentenceLimit + LongSentenceLimitStep) },
+                                    enabled = settings.longSentenceLimit < LongSentenceLimitRange.last,
+                                ) {
+                                    Icon(Icons.Rounded.Add, contentDescription = stringResource(R.string.action_increase))
+                                }
                             }
                         },
                     )
