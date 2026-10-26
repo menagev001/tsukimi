@@ -137,6 +137,12 @@ class AnkiCardJobRunner @Inject internal constructor(
                 aiSentenceBreakdown = breakdownResult?.getOrNull()?.let(::ankiTextFieldHtml),
             )
         }
+        Log.i(
+            Tag,
+            "AI fields: example=${request.useAiExampleSentence}, sentence=${result.sentence.length} chars, " +
+                "original=${result.originalSentence?.length ?: 0} chars, nuance=${result.aiWordNuance != null}, " +
+                "breakdown=${result.aiSentenceBreakdown != null}, failed=$aiFailed",
+        )
         return if (aiFailed) result.copy(extraTags = result.extraTags + AiMissingTag) else result
     }
 
