@@ -201,7 +201,7 @@ internal fun MangaReaderWebView(
                 if (view == null) {
                     bubble.complete(null)
                 } else {
-                    view.evaluateJavascript(MangaActiveBlockImageScript) { result ->
+                    view.evaluateJavascript(mangaActiveBlockImageScript(ankiContext.sentence)) { result ->
                         bubble.complete(mangaBubbleImageFromWebViewResult(result))
                     }
                 }
@@ -729,5 +729,6 @@ private tailrec fun Context.findActivity(): Activity? = when (this) {
     else -> null
 }
 
-private const val MangaActiveBlockImageScript =
-    "JSON.stringify(window.hoshiManga ? window.hoshiManga.activeBlockImage() : null)"
+/** The revealed bubble with the boxes of [sentence] in it, for the card screenshot's marker. */
+private fun mangaActiveBlockImageScript(sentence: String): String =
+    "JSON.stringify(window.hoshiManga ? window.hoshiManga.activeBlockImage(${Json.encodeToString(sentence)}) : null)"

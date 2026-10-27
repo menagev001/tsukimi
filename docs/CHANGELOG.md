@@ -80,7 +80,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   in the background with a progress chip, like in Watch: the AI fields, the
   long-sentence dialog with its AI example sentence, and the tags `tsukimi`,
   `tsukimi::book` / `tsukimi::manga` and the title. Manga cards get the
-  tapped speech bubble, cut out of the page, as `{screenshot}`.
+  scene around the tapped speech bubble as `{screenshot}`, with the mined
+  sentence marked in yellow like a highlighter.
 - Fetch in Settings → Anki now keeps each card format's deck and note type
   when they still exist, prefers a note type Tsukimi knows (Lapis, Kiku,
   Senren) over the first one, and resets the field mapping to Tsukimi's

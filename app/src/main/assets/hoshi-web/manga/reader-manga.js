@@ -144,7 +144,52 @@
     // Pure geometry helpers, kept side-effect-free and exposed separately so they're testable
     // without a DOM -- mirrors the window.hoshiRubyGeometry convention used elsewhere in this
     // reader (see shared/selection.js).
+    // Where a sentence sits in a block's lines, whitespace ignored: one {line, start, end} per line
+    // it touches (UTF-16 offsets into that line, end exclusive); [] when the block lacks it.
+    function sentenceLineRanges(lines, sentence) {
+        var target = String(sentence || '').replace(/\s+/g, '');
+        if (!target) return [];
+        var joined = '';
+        var chars = [];
+        for (var l = 0; l < lines.length; l++) {
+            var text = String(lines[l] || '');
+            for (var i = 0; i < text.length; i++) {
+                if (/\s/.test(text[i])) continue;
+                joined += text[i];
+                chars.push({ line: l, index: i });
+            }
+        }
+        var at = joined.indexOf(target);
+        if (at < 0) return [];
+        var ranges = [];
+        for (var k = at; k < at + target.length; k++) {
+            var c = chars[k];
+            var last = ranges[ranges.length - 1];
+            if (last && last.line === c.line) {
+                last.end = c.index + 1;
+            } else {
+                ranges.push({ line: c.line, start: c.index, end: c.index + 1 });
+            }
+        }
+        return ranges;
+    }
+
+    // A client rect inside a block, in page image pixels: the block's own client rect and its page
+    // box give the mapping, so zoom and scrolling cancel out.
+    function clientRectToPageBox(rect, blockRect, box) {
+        var sx = (box[2] - box[0]) / blockRect.width;
+        var sy = (box[3] - box[1]) / blockRect.height;
+        return [
+            box[0] + (rect.left - blockRect.left) * sx,
+            box[1] + (rect.top - blockRect.top) * sy,
+            box[0] + (rect.right - blockRect.left) * sx,
+            box[1] + (rect.bottom - blockRect.top) * sy,
+        ];
+    }
+
     window.hoshiMangaGeometry = {
+        sentenceLineRanges: sentenceLineRanges,
+        clientRectToPageBox: clientRectToPageBox,
         fitDisplaySize: fitDisplaySize,
         fitSpreadDisplaySize: fitSpreadDisplaySize,
         normalizedCrop: normalizedCrop,
@@ -498,15 +543,33 @@
 
     window.hoshiManga = {
         // The revealed OCR block's page image and box in that image's pixels, or null.
-        activeBlockImage: function () {
+        // highlights: the drawn glyphs of [sentence] in page image pixels, for the card's marker.
+        activeBlockImage: function (sentence) {
             if (!activeBlockEl || !activeBlockEl.dataset.imgPath) return null;
             var box = activeBlockEl.dataset.box.split(',').map(Number);
             if (box.length !== 4 || box.some(isNaN)) return null;
+            var highlights = [];
+            var blockRect = activeBlockEl.getBoundingClientRect();
+            if (sentence && blockRect.width > 0 && blockRect.height > 0) {
+                var lineEls = activeBlockEl.querySelectorAll('.hoshi-manga-line');
+                var lines = Array.prototype.map.call(lineEls, function (lineEl) { return lineEl.textContent; });
+                sentenceLineRanges(lines, sentence).forEach(function (range) {
+                    var node = lineEls[range.line].firstChild;
+                    if (!node) return;
+                    var domRange = document.createRange();
+                    domRange.setStart(node, range.start);
+                    domRange.setEnd(node, range.end);
+                    Array.prototype.forEach.call(domRange.getClientRects(), function (rect) {
+                        if (rect.width > 0 && rect.height > 0) highlights.push(clientRectToPageBox(rect, blockRect, box));
+                    });
+                });
+            }
             return {
                 imgPath: activeBlockEl.dataset.imgPath,
                 box: box,
                 imgWidth: Number(activeBlockEl.dataset.imgWidth),
                 imgHeight: Number(activeBlockEl.dataset.imgHeight),
+                highlights: highlights,
             };
         },
 

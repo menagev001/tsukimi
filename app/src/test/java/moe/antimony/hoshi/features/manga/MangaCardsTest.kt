@@ -52,4 +52,35 @@ class MangaCardsTest {
     fun tagsNameTheVolume() {
         assertEquals(setOf("tsukimi", "tsukimi::manga", "ダンジョン飯_1"), mangaCardTags("ダンジョン飯 1"))
     }
+
+    @Test
+    fun markerRectsFollowTheCropFileScaleAndSampleSize() {
+        val bubble = MangaBubbleImage(
+            imgPath = "p1.jpg",
+            box = listOf(100.0, 100.0, 200.0, 300.0),
+            imgWidth = 1000,
+            imgHeight = 1500,
+            highlights = listOf(listOf(150.0, 120.0, 175.0, 220.0), listOf(1.0, 2.0)),
+        )
+
+        val rects = mangaMarkerRects(
+            bubble,
+            region = MangaCropRect(left = 100, top = 200, right = 1100, bottom = 1700),
+            fileScaleX = 2.0,
+            fileScaleY = 2.0,
+            sampleSize = 2,
+        )
+
+        // Padding is 8 % of the box's short side (25 → 2), then file scale 2, minus the region, halved.
+        assertEquals(listOf(MangaMarkerRect(98f, 18f, 127f, 122f)), rects)
+    }
+
+    @Test
+    fun bubbleJsonWithoutHighlightsStillParses() {
+        val bubble = mangaBubbleImageFromWebViewResult(
+            "\"{\\\"imgPath\\\":\\\"p1.jpg\\\",\\\"box\\\":[1,2,3,4],\\\"imgWidth\\\":10,\\\"imgHeight\\\":20}\"",
+        )
+
+        assertEquals(emptyList<List<Double>>(), bubble?.highlights)
+    }
 }

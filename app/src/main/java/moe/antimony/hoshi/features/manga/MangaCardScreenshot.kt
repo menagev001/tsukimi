@@ -3,7 +3,13 @@ package moe.antimony.hoshi.features.manga
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.graphics.BitmapRegionDecoder
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
+import android.graphics.RectF
 import android.os.Build
 import java.io.File
 import kotlin.math.max
@@ -11,14 +17,21 @@ import kotlin.math.roundToInt
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-/** The revealed OCR block's page image and its box in that image's pixels (`activeBlockImage` in reader-manga.js). */
+/**
+ * The revealed OCR block's page image and its box in that image's pixels (`activeBlockImage` in
+ * reader-manga.js). [highlights] are the mined sentence's glyph boxes, in the same pixels.
+ */
 @Serializable
 internal data class MangaBubbleImage(
     val imgPath: String,
     val box: List<Double>,
     val imgWidth: Int,
     val imgHeight: Int,
+    val highlights: List<List<Double>> = emptyList(),
 )
+
+/** A marker rectangle in the saved screenshot's pixels. */
+internal data class MangaMarkerRect(val left: Float, val top: Float, val right: Float, val bottom: Float)
 
 /** A pixel rectangle; [right] and [bottom] are exclusive. */
 internal data class MangaCropRect(val left: Int, val top: Int, val right: Int, val bottom: Int)
@@ -62,6 +75,45 @@ internal fun mangaBubbleCropRect(bubble: MangaBubbleImage): MangaCropRect? {
     )
 }
 
+/**
+ * [MangaBubbleImage.highlights] in the pixels of a bitmap decoded from [region] of the page file
+ * (which is [fileScaleX] × [fileScaleY] the mokuro page size) at [sampleSize], padded a little so
+ * the marker covers the glyphs like a highlighter.
+ */
+internal fun mangaMarkerRects(
+    bubble: MangaBubbleImage,
+    region: MangaCropRect,
+    fileScaleX: Double,
+    fileScaleY: Double,
+    sampleSize: Int,
+): List<MangaMarkerRect> =
+    bubble.highlights.filter { it.size == 4 }.map { (x1, y1, x2, y2) ->
+        val pad = minOf(x2 - x1, y2 - y1) * MarkerPaddingFraction
+        MangaMarkerRect(
+            left = (((x1 - pad) * fileScaleX - region.left) / sampleSize).toFloat(),
+            top = (((y1 - pad) * fileScaleY - region.top) / sampleSize).toFloat(),
+            right = (((x2 + pad) * fileScaleX - region.left) / sampleSize).toFloat(),
+            bottom = (((y2 + pad) * fileScaleY - region.top) / sampleSize).toFloat(),
+        )
+    }
+
+/** Paints [rects] like a yellow highlighter: multiplied, so dark ink stays dark. */
+private fun drawMangaMarker(bitmap: Bitmap, rects: List<MangaMarkerRect>) {
+    if (rects.isEmpty()) return
+    val canvas = Canvas(bitmap)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = MarkerColor
+        xfermode = PorterDuffXfermode(PorterDuff.Mode.MULTIPLY)
+    }
+    rects.forEach { rect ->
+        val radius = minOf(rect.right - rect.left, rect.bottom - rect.top) * 0.15f
+        canvas.drawRoundRect(RectF(rect.left, rect.top, rect.right, rect.bottom), radius, radius, paint)
+    }
+}
+
+private const val MarkerPaddingFraction = 0.08
+private val MarkerColor = Color.rgb(255, 230, 64)
+
 /** Cuts the bubble out of [pageFile] as a JPEG in [directory], at most [MangaScreenshotMaxWidth] wide. */
 internal fun saveMangaBubbleScreenshot(pageFile: File, bubble: MangaBubbleImage, directory: File): File? = runCatching {
     val crop = mangaBubbleCropRect(bubble) ?: return null
@@ -83,7 +135,22 @@ internal fun saveMangaBubbleScreenshot(pageFile: File, bubble: MangaBubbleImage,
         )
         var sampleSize = 1
         while (region.width() / (sampleSize * 2) >= MangaScreenshotMaxWidth) sampleSize *= 2
-        decoder.decodeRegion(region, BitmapFactory.Options().apply { inSampleSize = sampleSize })
+        decoder.decodeRegion(
+            region,
+            BitmapFactory.Options().apply {
+                inSampleSize = sampleSize
+                inMutable = true
+            },
+        ).also { decoded ->
+            val markers = mangaMarkerRects(
+                bubble,
+                MangaCropRect(region.left, region.top, region.right, region.bottom),
+                scaleX,
+                scaleY,
+                sampleSize,
+            )
+            drawMangaMarker(decoded, markers)
+        }
     } finally {
         decoder.recycle()
     }

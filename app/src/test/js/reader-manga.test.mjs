@@ -452,3 +452,34 @@ test('visibleRect keeps only the part of a block inside its slot', () => {
     );
     assert.equal(geometry.visibleRect({ left: 110, top: 10, right: 130, bottom: 30 }, slot).left, Infinity);
 });
+
+test('sentenceLineRanges finds the sentence across lines, ignoring whitespace', () => {
+    const geometry = loadMangaGeometry();
+
+    const ranges = geometry.sentenceLineRanges(['おれは', 'もう 行く。', 'じゃあな'], 'もう行く。じゃ');
+
+    assert.deepEqual(plain(ranges), [
+        { line: 1, start: 0, end: 6 },
+        { line: 2, start: 0, end: 2 },
+    ]);
+});
+
+test('sentenceLineRanges returns nothing for a sentence that is not in the block', () => {
+    const geometry = loadMangaGeometry();
+
+    assert.deepEqual(plain(geometry.sentenceLineRanges(['おれは'], 'ちがう')), []);
+    assert.deepEqual(plain(geometry.sentenceLineRanges(['おれは'], '')), []);
+});
+
+test('clientRectToPageBox maps a glyph rect through the block rect into page pixels', () => {
+    const geometry = loadMangaGeometry();
+
+    // A 100x200 page box drawn at half size and scrolled to (10, 20) on screen.
+    const box = geometry.clientRectToPageBox(
+        { left: 20, top: 40, right: 30, bottom: 60 },
+        { left: 10, top: 20, width: 50, height: 100 },
+        [300, 400, 400, 600],
+    );
+
+    assert.deepEqual(plain(box), [320, 440, 340, 480]);
+});
