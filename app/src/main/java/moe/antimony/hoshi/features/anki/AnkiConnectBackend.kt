@@ -16,6 +16,7 @@ import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.longOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -160,17 +161,45 @@ class AnkiConnectBackend(
 
     override fun addMediaFromUri(uriString: String, preferredName: String, mimeType: String): String? = null
 
-    override fun searchNoteFields(query: String): List<List<String>> =
+    override fun searchNotes(query: String): List<AnkiNoteRecord> =
         wrapFetch {
             val ids = requestArray("findNotes", buildJsonObject { put("query", query) })
             if (ids.isEmpty()) return@wrapFetch emptyList()
-            requestArray("notesInfo", buildJsonObject { put("notes", ids) }).map { note ->
-                note.jsonObject["fields"]?.jsonObject?.values.orEmpty()
-                    .map { it.jsonObject }
-                    .sortedBy { it["order"]?.jsonPrimitive?.intOrNull ?: 0 }
-                    .map { it["value"]?.jsonPrimitive?.contentOrNull.orEmpty() }
+            requestArray("notesInfo", buildJsonObject { put("notes", ids) }).map { element ->
+                val note = element.jsonObject
+                AnkiNoteRecord(
+                    id = note["noteId"]?.jsonPrimitive?.longOrNull ?: 0L,
+                    fields = note["fields"]?.jsonObject?.values.orEmpty()
+                        .map { it.jsonObject }
+                        .sortedBy { it["order"]?.jsonPrimitive?.intOrNull ?: 0 }
+                        .map { it["value"]?.jsonPrimitive?.contentOrNull.orEmpty() },
+                    tags = note["tags"]?.jsonArray.orEmpty().mapNotNull { it.jsonPrimitive.contentOrNull }.toSet(),
+                )
             }
         }
+
+    override fun updateNote(noteType: AnkiNoteType, note: AnkiNoteRecord): Boolean =
+        runCatching {
+            request(
+                "updateNote",
+                buildJsonObject {
+                    put(
+                        "note",
+                        buildJsonObject {
+                            put("id", note.id)
+                            put(
+                                "fields",
+                                buildJsonObject {
+                                    noteType.fields.zip(note.fields).forEach { (name, value) -> put(name, value) }
+                                },
+                            )
+                            put("tags", buildJsonArray { note.tags.forEach { add(JsonPrimitive(it)) } })
+                        },
+                    )
+                },
+            )
+            true
+        }.getOrDefault(false)
 
     override fun createDeck(name: String): AnkiDeck? =
         runCatching {

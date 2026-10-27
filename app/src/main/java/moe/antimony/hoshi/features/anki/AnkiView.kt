@@ -48,6 +48,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.input.ImeAction
@@ -223,6 +224,11 @@ fun AnkiView(
                             onSelect = { name -> viewModel.updateSourceDeck(source, name) },
                         )
                     }
+                }
+            }
+            item {
+                AnkiCard {
+                    AnkiFillAiFieldsRow()
                 }
             }
             item {
@@ -518,6 +524,40 @@ private fun AnkiNoteTypeRow(
         items = uiState.availableNoteTypes,
         itemLabel = { it.name },
         onSelect = onSelect,
+    )
+}
+
+@Composable
+private fun AnkiFillAiFieldsRow() {
+    val viewModel: AnkiAiFillViewModel = hiltViewModel()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val status = uiState.status
+    val missing = uiState.missingCount
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        headlineContent = { Text(stringResource(R.string.anki_fill_ai_title)) },
+        supportingContent = {
+            Text(
+                when (status) {
+                    is AnkiAiFillStatus.Running -> stringResource(R.string.anki_fill_ai_running, status.done + 1, status.total)
+                    is AnkiAiFillStatus.Done -> stringResource(R.string.anki_fill_ai_done, status.filled, status.failed)
+                    is AnkiAiFillStatus.Failed -> stringResource(status.failure.userMessageRes)
+                    AnkiAiFillStatus.Idle -> when (missing) {
+                        null -> stringResource(R.string.anki_fill_ai_unknown)
+                        0 -> stringResource(R.string.anki_fill_ai_none)
+                        else -> pluralStringResource(R.plurals.anki_fill_ai_count, missing, missing)
+                    }
+                },
+            )
+        },
+        trailingContent = {
+            OutlinedButton(
+                onClick = viewModel::fill,
+                enabled = status !is AnkiAiFillStatus.Running && missing != 0,
+            ) {
+                Text(stringResource(R.string.anki_fill_ai_action))
+            }
+        },
     )
 }
 

@@ -89,21 +89,36 @@ class AndroidAnkiContentApi @Inject constructor(
      * The note provider's plain content URI takes an Anki browser search as its selection. It
      * returns no cursor when the search finds nothing.
      */
-    override fun searchNoteFields(query: String): List<List<String>> =
+    override fun searchNotes(query: String): List<AnkiNoteRecord> =
         readAnkiApi(AnkiFetchFailure.ProviderFailure) {
             val cursor = appContext.contentResolver.query(
                 FlashCardsContract.Note.CONTENT_URI,
-                arrayOf(FlashCardsContract.Note.FLDS),
+                arrayOf(FlashCardsContract.Note._ID, FlashCardsContract.Note.FLDS, FlashCardsContract.Note.TAGS),
                 query,
                 null,
                 null,
             ) ?: return@readAnkiApi emptyList()
             cursor.use {
-                val column = it.getColumnIndexOrThrow(FlashCardsContract.Note.FLDS)
+                val id = it.getColumnIndexOrThrow(FlashCardsContract.Note._ID)
+                val fields = it.getColumnIndexOrThrow(FlashCardsContract.Note.FLDS)
+                val tags = it.getColumnIndexOrThrow(FlashCardsContract.Note.TAGS)
                 buildList {
-                    while (it.moveToNext()) add(it.getString(column).orEmpty().split('\u001f'))
+                    while (it.moveToNext()) {
+                        add(
+                            AnkiNoteRecord(
+                                id = it.getLong(id),
+                                fields = it.getString(fields).orEmpty().split('\u001f'),
+                                tags = it.getString(tags).orEmpty().split(' ').filter(String::isNotBlank).toSet(),
+                            ),
+                        )
+                    }
                 }
             }
+        }
+
+    override fun updateNote(note: AnkiNoteRecord): Boolean =
+        readAnkiApi(AnkiFetchFailure.ProviderFailure) {
+            api.updateNoteFields(note.id, note.fields.toTypedArray()) && api.updateNoteTags(note.id, note.tags)
         }
 
 

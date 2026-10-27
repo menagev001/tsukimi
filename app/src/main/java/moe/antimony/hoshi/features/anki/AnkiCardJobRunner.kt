@@ -143,7 +143,7 @@ class AnkiCardJobRunner @Inject internal constructor(
                 "original=${result.originalSentence?.length ?: 0} chars, nuance=${result.aiWordNuance != null}, " +
                 "breakdown=${result.aiSentenceBreakdown != null}, failed=$aiFailed",
         )
-        return if (aiFailed) result.copy(extraTags = result.extraTags + AiMissingTag) else result
+        return if (aiFailed) result.copy(extraTags = result.extraTags + AnkiAiMissingTag) else result
     }
 
     /** Stops a job that has not added its note yet. */
@@ -164,9 +164,11 @@ class AnkiCardJobRunner @Inject internal constructor(
     private companion object {
         const val Tag = "AnkiCardJobRunner"
         const val MaxKeptJobs = 5
-        const val AiMissingTag = "tsukimi::ai-missing"
     }
 }
+
+/** Tag of cards whose AI fields could not be filled when they were added. */
+internal const val AnkiAiMissingTag = "tsukimi::ai-missing"
 
 /** Plain AI text as Anki field HTML: markup characters escaped, line breaks kept. */
 internal fun ankiTextFieldHtml(text: String): String =

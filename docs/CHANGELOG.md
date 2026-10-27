@@ -49,7 +49,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   Cards can also carry AI answers: `{ai-word-nuance}` and
   `{ai-sentence-breakdown}` are asked in the background when the card format
   uses them (a failed request adds the card anyway, tagged
-  `tsukimi::ai-missing`). When a Watch card's sentence is longer than the long
+  `tsukimi::ai-missing`; Settings → Anki → Fill Missing AI Fields fills those
+  cards later and removes the tag). When a Watch card's sentence is longer than the long
   sentence limit (AI Settings, default 40 characters), a dialog offers to keep
   it or to let AI write a short example sentence for the word, which then
   becomes the card's sentence while `{original-sentence}` keeps the original;

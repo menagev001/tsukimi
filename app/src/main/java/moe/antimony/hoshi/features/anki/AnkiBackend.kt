@@ -38,9 +38,18 @@ interface AnkiBackend {
     /** Adds a deck, e.g. one named for a card source that the collection does not have yet. */
     fun createDeck(name: String): AnkiDeck? = null
 
-    /** Field values, in note type order, of the notes an Anki search finds. */
-    fun searchNoteFields(query: String): List<List<String>> = emptyList()
+    /** The notes an Anki search finds, with field values in note type order. */
+    fun searchNotes(query: String): List<AnkiNoteRecord> = emptyList()
+
+    /** Replaces a note's fields (in note type order) and tags. */
+    fun updateNote(noteType: AnkiNoteType, note: AnkiNoteRecord): Boolean = false
 }
+
+data class AnkiNoteRecord(
+    val id: Long,
+    val fields: List<String>,
+    val tags: Set<String>,
+)
 
 enum class AnkiFetchFailure(
     @param:StringRes val userMessageRes: Int,
@@ -95,7 +104,8 @@ interface AnkiContentApi {
     fun sync(): Boolean = false
     fun isAvailable(): Boolean = true
     fun addNewDeck(name: String): Long? = null
-    fun searchNoteFields(query: String): List<List<String>> = emptyList()
+    fun searchNotes(query: String): List<AnkiNoteRecord> = emptyList()
+    fun updateNote(note: AnkiNoteRecord): Boolean = false
 }
 
 class AnkiDroidBackendAdapter @Inject constructor(
@@ -204,7 +214,9 @@ class AnkiDroidBackendAdapter @Inject constructor(
 
     override fun createDeck(name: String): AnkiDeck? = api.addNewDeck(name)?.let { AnkiDeck(it, name) }
 
-    override fun searchNoteFields(query: String): List<List<String>> = api.searchNoteFields(query)
+    override fun searchNotes(query: String): List<AnkiNoteRecord> = api.searchNotes(query)
+
+    override fun updateNote(noteType: AnkiNoteType, note: AnkiNoteRecord): Boolean = api.updateNote(note)
 }
 
 internal fun List<AnkiDeck>.sortedAnkiDecks(): List<AnkiDeck> =

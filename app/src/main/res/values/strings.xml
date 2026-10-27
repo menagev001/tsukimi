@@ -616,6 +616,16 @@
     <string name="anki_format">Card Format</string>
     <string name="anki_format_default_name">Format %1$d</string>
     <string name="anki_add_format">Add Card Format</string>
+    <string name="anki_fill_ai_title">Fill Missing AI Fields</string>
+    <string name="anki_fill_ai_unknown">Cards whose AI fields could not be filled when they were added carry the tag tsukimi::ai-missing.</string>
+    <string name="anki_fill_ai_none">No cards are missing AI fields.</string>
+    <plurals name="anki_fill_ai_count">
+        <item quantity="one">%1$d card is missing AI fields (tag tsukimi::ai-missing).</item>
+        <item quantity="other">%1$d cards are missing AI fields (tag tsukimi::ai-missing).</item>
+    </plurals>
+    <string name="anki_fill_ai_running">Filling %1$d of %2$d…</string>
+    <string name="anki_fill_ai_done">Filled: %1$d · Not filled: %2$d</string>
+    <string name="anki_fill_ai_action">Fill</string>
     <string name="anki_source_decks_title">Decks by Source</string>
     <string name="anki_source_decks_description">Cards from books, manga and Watch go to these decks. A new deck is created with its first card.</string>
     <string name="anki_source_deck_format">Card format’s deck</string>

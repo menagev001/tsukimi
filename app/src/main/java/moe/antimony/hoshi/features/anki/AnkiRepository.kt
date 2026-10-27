@@ -288,7 +288,19 @@ internal class AnkiRepository(
      * types of the card formats: the first field is the word, the field mapped to `{reading}` its
      * reading. Throws [AnkiFetchException] when Anki cannot be read.
      */
-    suspend fun wordsWithInterval(minIntervalDays: Int): List<AnkiWord> = withContext(Dispatchers.IO) {
+    suspend fun wordsWithInterval(minIntervalDays: Int): List<AnkiWord> =
+        findFormatNotes("prop:ivl>=$minIntervalDays").mapNotNull { formatNote ->
+            val word = formatNote.note.fields.firstOrNull()?.let(::ankiPlainText).orEmpty()
+            if (word.isEmpty()) return@mapNotNull null
+            val reading = formatNote.fieldFor("{reading}")?.let(::ankiPlainText).orEmpty()
+            AnkiWord(word, reading.ifEmpty { word })
+        }.distinct()
+
+    /**
+     * The notes an Anki [search] finds in the note types of the card formats, each with its
+     * format's field mapping. Throws [AnkiFetchException] when Anki cannot be read.
+     */
+    suspend fun findFormatNotes(search: String): List<AnkiFormatNote> = withContext(Dispatchers.IO) {
         val settings = settings.first()
         val activeBackend = activeBackendOrError(settings).getOrElse { error ->
             throw AnkiFetchException(AnkiFetchFailure.ApiUnavailable, cause = error)
@@ -299,22 +311,20 @@ internal class AnkiRepository(
             .mapNotNull { format ->
                 val noteType = noteTypes.firstOrNull { it.id == format.selectedNoteTypeId }
                     ?: noteTypes.firstOrNull { it.name == format.selectedNoteTypeName }
-                    ?: return@mapNotNull null
-                val readingField = format.fieldMappings.entries
-                    .firstOrNull { (_, template) -> template.trim() == "{reading}" }?.key
-                noteType to noteType.fields.indexOf(readingField)
+                noteType?.let { it to format.fieldMappings }
             }
             .distinctBy { (noteType, _) -> noteType.id }
-            .flatMap { (noteType, readingIndex) ->
-                val query = "\"note:${noteType.name.replace("\"", "")}\" prop:ivl>=$minIntervalDays"
-                activeBackend.searchNoteFields(query).mapNotNull { fields ->
-                    val word = fields.firstOrNull()?.let(::ankiPlainText).orEmpty()
-                    if (word.isEmpty()) return@mapNotNull null
-                    val reading = fields.getOrNull(readingIndex)?.let(::ankiPlainText).orEmpty()
-                    AnkiWord(word, reading.ifEmpty { word })
-                }
+            .flatMap { (noteType, fieldMappings) ->
+                val query = "\"note:${noteType.name.replace("\"", "")}\" $search"
+                activeBackend.searchNotes(query).map { AnkiFormatNote(noteType, fieldMappings, it) }
             }
-            .distinct()
+    }
+
+    /** Writes [note]'s fields and tags back to Anki. */
+    suspend fun updateNote(noteType: AnkiNoteType, note: AnkiNoteRecord): Boolean = withContext(Dispatchers.IO) {
+        val settings = settings.first()
+        val activeBackend = activeBackendOrError(settings).getOrElse { return@withContext false }
+        activeBackend.updateNote(noteType, note)
     }
 
     /** Whether the card format's field mapping uses [handlebar], e.g. to skip unused AI requests. */
@@ -482,6 +492,22 @@ internal class AnkiRepository(
 }
 
 data class AnkiWord(val word: String, val reading: String)
+
+/** A note found in a card format's note type, with that format's field mapping. */
+data class AnkiFormatNote(
+    val noteType: AnkiNoteType,
+    val fieldMappings: Map<String, String>,
+    val note: AnkiNoteRecord,
+) {
+    /** Index of the field mapped to exactly [handlebar], e.g. `{ai-word-nuance}`. */
+    fun fieldIndex(handlebar: String): Int? =
+        fieldMappings.entries.firstOrNull { (_, template) -> template.trim() == handlebar }
+            ?.key
+            ?.let(noteType.fields::indexOf)
+            ?.takeIf { it >= 0 }
+
+    fun fieldFor(handlebar: String): String? = fieldIndex(handlebar)?.let(note.fields::getOrNull)
+}
 
 /** A field's text without markup, furigana brackets or spaces, e.g. `<b>食[た]べる</b>` → `食べる`. */
 internal fun ankiPlainText(field: String): String =

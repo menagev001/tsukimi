@@ -938,9 +938,9 @@ class AnkiRepositoryBackendSelectionTest {
     ) : AnkiBackend {
         val searchQueries = mutableListOf<String>()
 
-        override fun searchNoteFields(query: String): List<List<String>> {
+        override fun searchNotes(query: String): List<AnkiNoteRecord> {
             searchQueries += query
-            return noteFields
+            return noteFields.mapIndexed { index, fields -> AnkiNoteRecord(index.toLong(), fields, emptySet()) }
         }
 
         var fetchDecksCalls = 0
