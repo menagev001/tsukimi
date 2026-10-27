@@ -19,8 +19,8 @@ Add these fields to Lapis (names exactly as written):
 - `AIBreakdown`
 
 Then in Tsukimi: **Settings → Anki → Fetch**. Fetch maps every field Tsukimi
-knows, including `SentenceAudio`, `Picture`, `IsAudioCard` and
-`IsSentenceCard`.
+knows, including `SentenceFurigana`, `SentenceAudio`, `Picture`,
+`IsAudioCard` and `IsSentenceCard`.
 
 ## 2. Front template: audio card with only a play button
 

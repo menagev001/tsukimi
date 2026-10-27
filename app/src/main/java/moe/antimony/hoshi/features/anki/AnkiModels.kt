@@ -333,6 +333,8 @@ data class AnkiMiningContext(
     /** AI answers as Anki field HTML; `{ai-word-nuance}`, `{ai-sentence-breakdown}`. */
     val aiWordNuance: String? = null,
     val aiSentenceBreakdown: String? = null,
+    /** The rendered `{sentence}` in Anki furigana syntax; `{sentence-furigana}`. */
+    val sentenceFurigana: String? = null,
     /** Picks the deck from [AnkiSettings.sourceDeckNames]; null uses the format's deck. */
     val cardSource: AnkiCardSource? = null,
 )
@@ -407,6 +409,7 @@ object AnkiHandlebarRenderer {
             "{screenshot}" -> context.screenshotPath.orEmpty()
             "{sentence-audio}" -> context.sentenceAudioPath.orEmpty()
             "{original-sentence}" -> context.originalSentence.orEmpty()
+            "{sentence-furigana}" -> context.sentenceFurigana.orEmpty()
             "{ai-word-nuance}" -> context.aiWordNuance.orEmpty()
             "{ai-sentence-breakdown}" -> context.aiSentenceBreakdown.orEmpty()
             // Lapis card type switches: an audio card only when the card has its sentence's audio.

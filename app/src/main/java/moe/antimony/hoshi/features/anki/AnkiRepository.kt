@@ -8,6 +8,10 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import moe.antimony.hoshi.R
 import moe.antimony.hoshi.dictionary.DictionaryRepository
+import moe.antimony.hoshi.features.furigana.FuriganaSegmenter
+import moe.antimony.hoshi.features.furigana.FuriganaWordSpan
+import moe.antimony.hoshi.features.furigana.ankiFuriganaHtml
+import moe.antimony.hoshi.features.furigana.asFuriganaLookup
 import moe.antimony.hoshi.features.audio.LocalAudioFile
 import moe.antimony.hoshi.features.audio.LocalAudioRepository
 import moe.antimony.hoshi.features.audio.LocalAudioResolver
@@ -29,6 +33,8 @@ internal class AnkiRepository(
     private val localAudioRepository: LocalAudioRepository,
     private val ankiConnectBackendFactory: (String, String) -> AnkiBackend,
     private val loadDictionaryMedia: (DictionaryMedia) -> ByteArray?,
+    /** Dictionary words of a text, for `{sentence-furigana}`; empty when there is no dictionary. */
+    private val segmentFurigana: (String) -> List<FuriganaWordSpan> = { emptyList() },
 ) {
     @Inject
     constructor(
@@ -46,6 +52,11 @@ internal class AnkiRepository(
             AnkiConnectBackend(endpoint, apiKey = apiKey)
         },
         loadDictionaryMedia = { media -> dictionaryRepository.dictionaryMedia(media.dictionary, media.path) },
+        segmentFurigana = FuriganaSegmenter(
+            lookup = dictionaryRepository.asFuriganaLookup(),
+            // A card shows every reading; Anki's furigana filter decides when they appear.
+            isKnownWord = { _, _ -> false },
+        )::segment,
     )
 
     internal constructor(
@@ -223,6 +234,7 @@ internal class AnkiRepository(
         val needsAudio = fieldMappings.referencesAnkiHandlebar("{audio}")
         val needsScreenshot = fieldMappings.referencesAnkiHandlebar("{screenshot}")
         val needsSentenceAudio = fieldMappings.referencesAnkiHandlebar("{sentence-audio}")
+        val needsSentenceFurigana = fieldMappings.referencesAnkiHandlebar("{sentence-furigana}")
         val mediaContext = AnkiMiningContext(
             sentence = context.sentence,
             documentTitle = context.documentTitle,
@@ -244,6 +256,14 @@ internal class AnkiRepository(
             originalSentence = context.originalSentence,
             aiWordNuance = context.aiWordNuance,
             aiSentenceBreakdown = context.aiSentenceBreakdown,
+            sentenceFurigana = if (needsSentenceFurigana) {
+                ankiFuriganaHtml(
+                    AnkiHandlebarRenderer.render("{sentence}", payload, context, settings.selectedGlossaryFallback),
+                    segmentFurigana,
+                )
+            } else {
+                null
+            },
         )
         val mediaPayload = payload.copy(
             audio = payload.audio.takeIf { needsAudio && it.isNotBlank() }

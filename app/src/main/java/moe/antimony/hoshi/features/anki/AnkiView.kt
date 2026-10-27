@@ -867,6 +867,7 @@ internal object AnkiHandlebarOptions {
         "{card-type-audio}",
         "{card-type-sentence}",
         "{original-sentence}",
+        "{sentence-furigana}",
         "{ai-word-nuance}",
         "{ai-sentence-breakdown}",
     )

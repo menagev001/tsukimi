@@ -11,6 +11,7 @@ object AnkiFieldTemplates {
             "SelectionText" to "{popup-selection-text}",
             "MainDefinition" to "{glossary-first}",
             "Sentence" to "{sentence}",
+            "SentenceFurigana" to "{sentence-furigana}",
             "SentenceAudio" to "{sentence-audio}{sasayaki-audio}",
             "Picture" to "{screenshot}{book-cover}",
             "IsAudioCard" to "{card-type-audio}",
