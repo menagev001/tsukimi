@@ -96,7 +96,7 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   of 星). It now has its own application ID
   (`com.feathercomet.tsukimi`), so it installs next to Hoshi Reader instead of
   updating it: move books and dictionaries with a `.hoshi` backup from
-  Settings; manga volumes and settings such as the AI key and Anki mappings
+  Settings (see `docs/MIGRATING_FROM_HOSHI_READER.md`); manga volumes and settings such as the AI key and Anki mappings
   are not part of the backup and need to be imported and set up again. Update
   checks, the About page and issue reports now use the Tsukimi repository on
   GitHub, and dictionary deep links use `tsukimi://search?text=...` instead of
