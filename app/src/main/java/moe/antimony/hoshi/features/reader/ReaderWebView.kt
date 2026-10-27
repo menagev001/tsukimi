@@ -832,6 +832,7 @@ fun ReaderWebView(
                             null
                         },
                     ),
+                    message.chooseSentence,
                 )
                 replyReaderPopupMessage(message.popupId, messageId, "true")
             }

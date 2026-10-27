@@ -50,12 +50,14 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   `{ai-sentence-breakdown}` are asked in the background when the card format
   uses them (a failed request adds the card anyway, tagged
   `tsukimi::ai-missing`; Settings → Anki → Fill Missing AI Fields fills those
-  cards later and removes the tag). When a Watch card's sentence is longer than the long
-  sentence limit (AI Settings, default 40 characters), a dialog offers to keep
-  it or to let AI write a short example sentence for the word, which then
-  becomes the card's sentence while `{original-sentence}` keeps the original;
-  `{sentence-translation}` then holds an AI translation of the example.
-  The example sentence prompt is editable in AI Settings. Tsukimi keeps only
+  cards later and removes the tag). When a Watch card's sentence is longer
+  than the long sentence limit (AI Settings, default 40 characters), a dialog
+  offers to keep it or to let AI write a short example sentence for the word,
+  which then becomes the card's sentence while `{original-sentence}` keeps
+  the original; `{sentence-translation}` then holds an AI translation of the
+  example. Long-press the popup's Anki button to get the same choice for a
+  sentence of any length. The example sentence prompt is editable in AI
+  Settings. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
 - Add Decks by Source to Settings → Anki: cards from books, manga and Watch

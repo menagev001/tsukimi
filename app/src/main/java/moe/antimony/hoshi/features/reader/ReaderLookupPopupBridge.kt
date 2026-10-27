@@ -10,6 +10,7 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
@@ -234,6 +235,8 @@ internal sealed class ReaderLookupPopupBridgeMessage {
         override val messageId: String?,
         val formatId: String,
         val payloadJson: String,
+        /** Long-press: ask whether to keep the sentence or use an AI example, whatever its length. */
+        val chooseSentence: Boolean = false,
     ) : ReaderLookupPopupBridgeMessage()
 
     data class DuplicateCheck(
@@ -357,6 +360,7 @@ internal sealed class ReaderLookupPopupBridgeMessage {
                         messageId = messageId ?: return null,
                         formatId = body.string("formatId") ?: return null,
                         payloadJson = body["payload"]?.takeIf { it !is JsonNull }?.toString() ?: return null,
+                        chooseSentence = body["chooseSentence"]?.jsonPrimitive?.booleanOrNull == true,
                     )
                 }
                 "duplicateCheck" -> DuplicateCheck(

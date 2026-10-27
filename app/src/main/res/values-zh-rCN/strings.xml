@@ -684,6 +684,8 @@
     <string name="anki_long_sentence_title">长句</string>
     <string name="anki_long_sentence_keep_original">保留原句</string>
     <string name="anki_long_sentence_use_ai_example">AI 例句</string>
+    <string name="anki_choose_sentence_title">卡片句子</string>
+    <string name="anki_choose_sentence_message">保留这句话，还是让 AI 为这个词写一个简短例句？选择例句时，例句成为卡片的句子，原句以“原句”保留在卡片上。</string>
     <plurals name="anki_long_sentence_message">
         <item quantity="one">这句话有 %1$d 个字符。保留原句，还是让 AI 为这个词写一个简短例句？选择例句时，例句成为卡片的句子，原句以“原句”保留在卡片上。</item>
         <item quantity="other">这句话有 %1$d 个字符。保留原句，还是让 AI 为这个词写一个简短例句？选择例句时，例句成为卡片的句子，原句以“原句”保留在卡片上。</item>

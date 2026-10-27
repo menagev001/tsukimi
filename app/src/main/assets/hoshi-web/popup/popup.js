@@ -1132,7 +1132,7 @@ function getFrequencyHarmonicRank(frequencies) {
     return String(Math.floor(values.length / sumOfReciprocals));
 }
 
-async function mineEntry(expression, reading, frequencies, pitches, rules, matched, entryIndex, popupSelectionText, formatId = null) {
+async function mineEntry(expression, reading, frequencies, pitches, rules, matched, entryIndex, popupSelectionText, formatId = null, chooseSentence = false) {
     const idx = entryIndex || 0;
     const furiganaPlain = constructFuriganaPlain(expression, reading);
     currentDictionaryMedia = new Map();
@@ -1173,7 +1173,7 @@ async function mineEntry(expression, reading, frequencies, pitches, rules, match
         selectedDictionary: selectedDictionaries[idx]?.name || '',
         dictionaryMedia: JSON.stringify([...dictionaryMedia.values()])
     };
-    return await webkit.messageHandlers.mineEntry.postMessage({ formatId, payload });
+    return await webkit.messageHandlers.mineEntry.postMessage({ formatId, payload, chooseSentence });
 }
 
 function renderStructuredContent(parent, node, language = null, dictName = null, exporting = false) {
@@ -1582,6 +1582,8 @@ function playWordAudio(audioUrl) {
     }
 }
 
+const LongPressMs = 500;
+
 function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, formatIcon = 'square') {
     const slot = el('button', {
         className: 'button-slot',
@@ -1601,9 +1603,38 @@ function createButtonSlot(kind, entryIndex, enabled = true, formatId = null, for
             : kind === 'known' ? 'Mark as known'
             : 'Add to Anki',
     );
+    // Long-pressing the Anki button asks whether to keep the sentence or use an AI example.
+    let longPressTimer = null;
+    let longPressed = false;
+    if (kind === 'mine') {
+        const clearLongPress = () => {
+            clearTimeout(longPressTimer);
+            longPressTimer = null;
+        };
+        slot.addEventListener('pointerdown', () => {
+            longPressed = false;
+            clearLongPress();
+            longPressTimer = setTimeout(() => {
+                longPressTimer = null;
+                if (slot.dataset.enabled === 'false') { return; }
+                longPressed = true;
+                const parent = slot.parentElement;
+                const buttonsContainer = parent?.className === 'anki-format-actions'
+                    ? parent.parentElement
+                    : parent;
+                mineEntryAtIndex(entryIndex, formatId, buttonsContainer, true);
+            }, LongPressMs);
+        });
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => slot.addEventListener(type, clearLongPress));
+        slot.addEventListener('contextmenu', (event) => event.preventDefault());
+    }
     slot.addEventListener('click', (event) => {
         event.preventDefault();
         event.stopPropagation();
+        if (longPressed) {
+            longPressed = false;
+            return;
+        }
         if (slot.dataset.enabled === 'false') { return; }
         if (kind === 'audio') {
             playEntryAudio(entryIndex);
@@ -1707,7 +1738,7 @@ function duplicateStateForFormat(states, formatId) {
         : null;
 }
 
-async function mineEntryAtIndex(entryIndex, formatId, buttonsContainer = null) {
+async function mineEntryAtIndex(entryIndex, formatId, buttonsContainer = null, chooseSentence = false) {
     const entry = window.lookupEntries?.[entryIndex];
     if (!entry) { return; }
     const { expression, reading, frequencies, pitches, rules, matched } = entry;
@@ -1720,7 +1751,7 @@ async function mineEntryAtIndex(entryIndex, formatId, buttonsContainer = null) {
         { enabled: false },
     ));
 
-    const mined = await mineEntry(expression, reading, frequencies, pitches, rules, matched, entryIndex, lastSelection, formatId);
+    const mined = await mineEntry(expression, reading, frequencies, pitches, rules, matched, entryIndex, lastSelection, formatId, chooseSentence);
     if (!mined) {
         updateButtonSlot(mineSlot, { state: 'error', enabled: false });
         return;

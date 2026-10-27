@@ -45,6 +45,9 @@ import moe.antimony.hoshi.features.ai.AiSettings
  * A card from a popup's Anki button before it starts. [build] makes the request once it is known
  * whether an AI example sentence replaces the sentence; [onCancel] releases what was prepared.
  */
+/** A card waiting for the keep-or-AI-example answer; [isLong] when over the long sentence limit. */
+internal data class AnkiSentenceChoice(val card: AnkiPendingCard, val isLong: Boolean)
+
 internal class AnkiPendingCard(
     val sentenceLength: Int,
     val build: (useAiExample: Boolean) -> AnkiCardRequest,
@@ -58,18 +61,22 @@ internal class AnkiCardJobsViewModel @Inject constructor(
 ) : ViewModel() {
     val jobs: StateFlow<List<AnkiCardJob>> = runner.jobs
 
-    /** A card over the long sentence limit, waiting for [confirmLongCard]. */
-    private val _pendingLongCard = MutableStateFlow<AnkiPendingCard?>(null)
-    val pendingLongCard: StateFlow<AnkiPendingCard?> = _pendingLongCard.asStateFlow()
+    /** A card waiting for [confirmLongCard]: over the long sentence limit, or long-pressed. */
+    private val _pendingLongCard = MutableStateFlow<AnkiSentenceChoice?>(null)
+    val pendingLongCard: StateFlow<AnkiSentenceChoice?> = _pendingLongCard.asStateFlow()
 
     private val longSentenceLimit = aiRepository.settings
         .map { it.longSentenceLimit }
         .stateIn(viewModelScope, SharingStarted.Eagerly, AiSettings.DEFAULT_LONG_SENTENCE_LIMIT)
 
-    /** Starts [card] now, or asks first when its sentence is longer than the long sentence limit. */
-    fun requestCard(card: AnkiPendingCard) {
-        if (card.sentenceLength > longSentenceLimit.value) {
-            _pendingLongCard.value = card
+    /**
+     * Starts [card] now, or asks first when its sentence is longer than the long sentence limit
+     * or [chooseSentence] (a long-press on the Anki button) asks for the choice.
+     */
+    fun requestCard(card: AnkiPendingCard, chooseSentence: Boolean = false) {
+        val isLong = card.sentenceLength > longSentenceLimit.value
+        if (isLong || chooseSentence) {
+            _pendingLongCard.value = AnkiSentenceChoice(card, isLong)
         } else {
             runner.start(card.build(false))
         }
@@ -77,7 +84,7 @@ internal class AnkiCardJobsViewModel @Inject constructor(
 
     /** The long sentence dialog's answer: keep the original, use an AI example, or cancel (null). */
     fun confirmLongCard(useAiExample: Boolean?) {
-        val card = _pendingLongCard.value ?: return
+        val card = _pendingLongCard.value?.card ?: return
         _pendingLongCard.value = null
         if (useAiExample == null) card.onCancel() else runner.start(card.build(useAiExample))
     }
@@ -91,11 +98,22 @@ internal class AnkiCardJobsViewModel @Inject constructor(
 @Composable
 internal fun AnkiLongSentenceDialog(viewModel: AnkiCardJobsViewModel) {
     val pending by viewModel.pendingLongCard.collectAsStateWithLifecycle()
-    val card = pending ?: return
+    val choice = pending ?: return
+    val length = choice.card.sentenceLength
     AlertDialog(
         onDismissRequest = { viewModel.confirmLongCard(null) },
-        title = { Text(stringResource(R.string.anki_long_sentence_title)) },
-        text = { Text(pluralStringResource(R.plurals.anki_long_sentence_message, card.sentenceLength, card.sentenceLength)) },
+        title = {
+            Text(stringResource(if (choice.isLong) R.string.anki_long_sentence_title else R.string.anki_choose_sentence_title))
+        },
+        text = {
+            Text(
+                if (choice.isLong) {
+                    pluralStringResource(R.plurals.anki_long_sentence_message, length, length)
+                } else {
+                    stringResource(R.string.anki_choose_sentence_message)
+                },
+            )
+        },
         confirmButton = {
             TextButton(onClick = { viewModel.confirmLongCard(true) }) {
                 Text(stringResource(R.string.anki_long_sentence_use_ai_example))

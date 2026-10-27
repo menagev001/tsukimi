@@ -194,7 +194,7 @@ internal fun MangaReaderWebView(
         documentTitle = volumeEntry.displayTitle,
         rootPopupVertical = true,
         mineEntry = remember(volumeEntry, cardJobs) {
-            LookupPopupMineHandler { formatId, payloadJson, ankiContext, selection ->
+            LookupPopupMineHandler { formatId, payloadJson, ankiContext, selection, chooseSentence ->
                 // Ask now which bubble the lookup came from, before the reader moves on.
                 val bubble = CompletableDeferred<MangaBubbleImage?>()
                 val view = currentWebView.value
@@ -216,6 +216,7 @@ internal fun MangaReaderWebView(
                         screenshotDirectory = File(context.cacheDir, "anki-media"),
                         bubble = bubble,
                     ),
+                    chooseSentence,
                 )
                 true
             }

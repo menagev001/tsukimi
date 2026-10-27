@@ -127,6 +127,18 @@ class ReaderLookupPopupBridgeMessageTest {
             ),
         )
         assertEquals(
+            ReaderLookupPopupBridgeMessage.MineEntry(
+                popupId = "child",
+                messageId = "47",
+                formatId = "format-a",
+                payloadJson = """{"expression":"猫"}""",
+                chooseSentence = true,
+            ),
+            ReaderLookupPopupBridgeMessage.fromJson(
+                """{"name":"mineEntry","id":"47","popupId":"child","body":{"formatId":"format-a","payload":{"expression":"猫"},"chooseSentence":true}}""",
+            ),
+        )
+        assertEquals(
             ReaderLookupPopupBridgeMessage.ShowNotes(
                 popupId = "child",
                 messageId = "46",

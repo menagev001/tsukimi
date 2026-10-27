@@ -686,6 +686,8 @@
     <string name="anki_long_sentence_title">Long Sentence</string>
     <string name="anki_long_sentence_keep_original">Keep Original</string>
     <string name="anki_long_sentence_use_ai_example">AI Example Sentence</string>
+    <string name="anki_choose_sentence_title">Card Sentence</string>
+    <string name="anki_choose_sentence_message">Keep this sentence, or let AI write a short example sentence for the word? The example then becomes the card\'s sentence and the original stays on the card as the original sentence.</string>
     <plurals name="anki_long_sentence_message">
         <item quantity="one">This sentence is %1$d character long. Keep it, or let AI write a short example sentence for the word? The example then becomes the card\'s sentence and the original stays on the card as the original sentence.</item>
         <item quantity="other">This sentence is %1$d characters long. Keep it, or let AI write a short example sentence for the word? The example then becomes the card\'s sentence and the original stays on the card as the original sentence.</item>

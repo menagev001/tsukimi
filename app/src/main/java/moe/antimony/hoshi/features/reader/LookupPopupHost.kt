@@ -71,8 +71,17 @@ internal interface LookupPopupAiRequests {
 
 /** Lets a screen build cards itself, e.g. in the background, instead of the popup waiting for it. */
 internal fun interface LookupPopupMineHandler {
-    /** Returns true when it took the card over; the popup then shows it as added. */
-    fun mine(formatId: String?, payloadJson: String, context: AnkiMiningContext, selection: ReaderSelectionData): Boolean
+    /**
+     * Returns true when it took the card over; the popup then shows it as added. [chooseSentence]
+     * asks first whether to keep the sentence or use an AI example (a long-press on the button).
+     */
+    fun mine(
+        formatId: String?,
+        payloadJson: String,
+        context: AnkiMiningContext,
+        selection: ReaderSelectionData,
+        chooseSentence: Boolean,
+    ): Boolean
 }
 
 /**
@@ -314,6 +323,7 @@ internal class LookupPopupHost(
                     payloadJson = message.payloadJson,
                     context = popup.state.ankiContext,
                     selection = popup.state.selection,
+                    chooseSentence = message.chooseSentence,
                 ) == true
                 if (takenOver) {
                     replyMessage(message.popupId, messageId, "true")

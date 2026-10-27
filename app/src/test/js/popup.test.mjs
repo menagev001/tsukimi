@@ -510,6 +510,26 @@ test('explain-word and export buttons fall back to the entry expression when mat
     assert.equal(askAiMessages[0].word, '猫');
 });
 
+test('long-pressing the Anki button asks to choose the sentence and skips the click', async () => {
+    const { context, timers, mineEntryMessages } = popupContext();
+    context.window.lookupEntries = [{ expression: '猫', reading: 'ねこ', glossaries: [] }];
+    const container = new FakeElement();
+    const slot = context.createButtonSlot('mine', 0, true, 'format-a');
+    container.appendChild(slot);
+
+    const fire = (type, event) => (slot.listeners.get(type) ?? []).forEach((listener) => listener(event));
+    fire('pointerdown', {});
+    const longPress = timers.filter(Boolean).find((timer) => timer.delay === 500);
+    longPress.callback();
+    await new Promise((resolve) => setImmediate(resolve));
+    fire('pointerup', {});
+    fire('click', buttonClickEvent());
+    await new Promise((resolve) => setImmediate(resolve));
+
+    assert.equal(mineEntryMessages.length, 1);
+    assert.equal(mineEntryMessages[0].chooseSentence, true);
+});
+
 test('popup renders ordered format buttons with independent icon and disabled state', () => {
     const { context } = popupContext();
     context.window.ankiBackendAvailable = true;

@@ -148,10 +148,10 @@ internal fun WatchPlayerView(
         rootPopupVertical = false,
         aiRequests = remember(viewModel) { WatchAiRequests(viewModel) },
         mineEntry = remember(viewModel, framePlayer, cardJobs) {
-            LookupPopupMineHandler { formatId, payloadJson, context, selection ->
+            LookupPopupMineHandler { formatId, payloadJson, context, selection, chooseSentence ->
                 // Copy the frame now, before the popup closes and playback moves on.
                 val frame = framePlayer.captureFrame()
-                cardJobs.requestCard(viewModel.card(formatId, payloadJson, context, selection.text, frame))
+                cardJobs.requestCard(viewModel.card(formatId, payloadJson, context, selection.text, frame), chooseSentence)
                 true
             }
         },
