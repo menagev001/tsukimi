@@ -37,6 +37,9 @@ interface AnkiBackend {
 
     /** Adds a deck, e.g. one named for a card source that the collection does not have yet. */
     fun createDeck(name: String): AnkiDeck? = null
+
+    /** Field values, in note type order, of the notes an Anki search finds. */
+    fun searchNoteFields(query: String): List<List<String>> = emptyList()
 }
 
 enum class AnkiFetchFailure(
@@ -92,6 +95,7 @@ interface AnkiContentApi {
     fun sync(): Boolean = false
     fun isAvailable(): Boolean = true
     fun addNewDeck(name: String): Long? = null
+    fun searchNoteFields(query: String): List<List<String>> = emptyList()
 }
 
 class AnkiDroidBackendAdapter @Inject constructor(
@@ -199,6 +203,8 @@ class AnkiDroidBackendAdapter @Inject constructor(
     override fun sync(): Boolean = api.sync()
 
     override fun createDeck(name: String): AnkiDeck? = api.addNewDeck(name)?.let { AnkiDeck(it, name) }
+
+    override fun searchNoteFields(query: String): List<List<String>> = api.searchNoteFields(query)
 }
 
 internal fun List<AnkiDeck>.sortedAnkiDecks(): List<AnkiDeck> =

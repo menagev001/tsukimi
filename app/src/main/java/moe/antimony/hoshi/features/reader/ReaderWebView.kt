@@ -1978,7 +1978,6 @@ fun ReaderWebView(
                     stateHolder.recalculateFurigana()
                     stateHolder.dismissAppearance()
                 },
-                onImportKnownWords = knownWordsRepository::importMigakuExport,
                 onDismiss = stateHolder::dismissAppearance,
             )
         }

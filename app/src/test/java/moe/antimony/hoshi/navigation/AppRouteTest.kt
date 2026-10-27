@@ -65,6 +65,7 @@ class AppRouteTest {
                 "Dictionaries",
                 "Anki",
                 "Ai",
+                "KnownWords",
                 "Watch",
                 "Profiles",
                 "Appearance",

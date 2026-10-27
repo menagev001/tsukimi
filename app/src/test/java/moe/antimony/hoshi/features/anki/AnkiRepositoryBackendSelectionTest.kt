@@ -136,6 +136,42 @@ class AnkiRepositoryBackendSelectionTest {
     }
 
     @Test
+    fun wordsWithIntervalSearchesTheFormatNoteTypesForMatureNotes() = runBlocking {
+        val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression", "ExpressionReading", "Sentence"))
+        val backend = RecordingBackend(
+            noteTypes = listOf(noteType),
+            noteFields = listOf(
+                listOf("<b>念願</b>", "ねんがん", "…"),
+                listOf("ピチピチ", "", "…"),
+                listOf("", "から", "…"),
+            ),
+        )
+        val repository = repository(
+            backend = backend,
+            settingsRepository = InMemoryAnkiSettingsRepository(
+                AnkiSettings(
+                    backendKind = AnkiBackendKind.AnkiDroid,
+                    cardFormats = listOf(
+                        AnkiCardFormat(
+                            id = "a",
+                            name = "Default",
+                            selectedNoteTypeId = noteType.id,
+                            selectedNoteTypeName = noteType.name,
+                            fieldMappings = mapOf("Expression" to "{expression}", "ExpressionReading" to "{reading}"),
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        assertEquals(
+            listOf(AnkiWord("念願", "ねんがん"), AnkiWord("ピチピチ", "ピチピチ")),
+            repository.wordsWithInterval(21),
+        )
+        assertEquals(listOf("\"note:Lapis\" prop:ivl>=21"), backend.searchQueries)
+    }
+
+    @Test
     fun mineEntryUsesTheSourceDeckAndCreatesItWhenMissing() = runBlocking {
         val mining = AnkiDeck(10L, "Mining")
         val novels = AnkiDeck(11L, "小説")
@@ -898,7 +934,15 @@ class AnkiRepositoryBackendSelectionTest {
         private val duplicate: Boolean = false,
         private val duplicateKeys: Set<String> = emptySet(),
         private val addNoteResult: Boolean = true,
+        private val noteFields: List<List<String>> = emptyList(),
     ) : AnkiBackend {
+        val searchQueries = mutableListOf<String>()
+
+        override fun searchNoteFields(query: String): List<List<String>> {
+            searchQueries += query
+            return noteFields
+        }
+
         var fetchDecksCalls = 0
             private set
         var addNoteCalled = false

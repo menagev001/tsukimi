@@ -15,6 +15,7 @@ import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
@@ -158,6 +159,18 @@ class AnkiConnectBackend(
         }.getOrDefault(false)
 
     override fun addMediaFromUri(uriString: String, preferredName: String, mimeType: String): String? = null
+
+    override fun searchNoteFields(query: String): List<List<String>> =
+        wrapFetch {
+            val ids = requestArray("findNotes", buildJsonObject { put("query", query) })
+            if (ids.isEmpty()) return@wrapFetch emptyList()
+            requestArray("notesInfo", buildJsonObject { put("notes", ids) }).map { note ->
+                note.jsonObject["fields"]?.jsonObject?.values.orEmpty()
+                    .map { it.jsonObject }
+                    .sortedBy { it["order"]?.jsonPrimitive?.intOrNull ?: 0 }
+                    .map { it["value"]?.jsonPrimitive?.contentOrNull.orEmpty() }
+            }
+        }
 
     override fun createDeck(name: String): AnkiDeck? =
         runCatching {

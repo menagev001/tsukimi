@@ -695,7 +695,6 @@ internal fun MangaReaderWebView(
             },
             fontManager = fontManager,
             onRecalculateFurigana = null,
-            onImportKnownWords = null,
             onDismiss = { showAppearance = false },
         )
     }

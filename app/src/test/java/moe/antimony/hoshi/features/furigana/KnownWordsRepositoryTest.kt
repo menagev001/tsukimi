@@ -104,4 +104,34 @@ class KnownWordsRepositoryTest {
 
         assertEquals(setOf(KnownWordEntry("食べる", "たべる")), repository.knownWordsSnapshot)
     }
+
+    @Test
+    fun importMigakuExportReadsTheExportersKnownCsv() = runBlocking {
+        val repository = repository()
+
+        val summary = repository.importMigakuExport(
+            "\uFEFFdictForm,secondary,hasCard\r\n\"食べる\",\"たべる\",1\r\n\"ああ\",\"\",0\r\n\"a,b\",\"x\"\"y\",0\r\n",
+        )
+
+        assertEquals(3, summary.exportedKnownCount)
+        assertEquals(
+            setOf(KnownWordEntry("食べる", "たべる"), KnownWordEntry("ああ", "ああ"), KnownWordEntry("a,b", "x\"y")),
+            repository.knownWords(),
+        )
+    }
+
+    @Test
+    fun ankiWordsAreReplacedOnEachSyncAndKeepTheOtherLists() = runBlocking {
+        val repository = repository()
+        repository.markKnown("お客", "おきゃく")
+        repository.replaceAnkiWords(listOf(KnownWordEntry("念願", "ねんがん"), KnownWordEntry("お客", "おきゃく")))
+
+        repository.replaceAnkiWords(listOf(KnownWordEntry("幻滅", "げんめつ")))
+
+        assertEquals(
+            setOf(KnownWordEntry("お客", "おきゃく"), KnownWordEntry("幻滅", "げんめつ")),
+            repository.knownWordsSnapshot,
+        )
+        assertEquals(KnownWordsCounts(imported = 0, marked = 1, anki = 1, total = 2), repository.counts())
+    }
 }

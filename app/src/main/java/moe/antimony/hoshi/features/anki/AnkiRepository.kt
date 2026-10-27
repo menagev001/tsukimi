@@ -283,6 +283,40 @@ internal class AnkiRepository(
         added
     }
 
+    /**
+     * The words of notes with a card at an interval of [minIntervalDays] or more, in the note
+     * types of the card formats: the first field is the word, the field mapped to `{reading}` its
+     * reading. Throws [AnkiFetchException] when Anki cannot be read.
+     */
+    suspend fun wordsWithInterval(minIntervalDays: Int): List<AnkiWord> = withContext(Dispatchers.IO) {
+        val settings = settings.first()
+        val activeBackend = activeBackendOrError(settings).getOrElse { error ->
+            throw AnkiFetchException(AnkiFetchFailure.ApiUnavailable, cause = error)
+        }
+        if (!activeBackend.isAvailable()) throw AnkiFetchException(AnkiFetchFailure.ApiUnavailable)
+        val noteTypes = activeBackend.fetchNoteTypes()
+        settings.cardFormats
+            .mapNotNull { format ->
+                val noteType = noteTypes.firstOrNull { it.id == format.selectedNoteTypeId }
+                    ?: noteTypes.firstOrNull { it.name == format.selectedNoteTypeName }
+                    ?: return@mapNotNull null
+                val readingField = format.fieldMappings.entries
+                    .firstOrNull { (_, template) -> template.trim() == "{reading}" }?.key
+                noteType to noteType.fields.indexOf(readingField)
+            }
+            .distinctBy { (noteType, _) -> noteType.id }
+            .flatMap { (noteType, readingIndex) ->
+                val query = "\"note:${noteType.name.replace("\"", "")}\" prop:ivl>=$minIntervalDays"
+                activeBackend.searchNoteFields(query).mapNotNull { fields ->
+                    val word = fields.firstOrNull()?.let(::ankiPlainText).orEmpty()
+                    if (word.isEmpty()) return@mapNotNull null
+                    val reading = fields.getOrNull(readingIndex)?.let(::ankiPlainText).orEmpty()
+                    AnkiWord(word, reading.ifEmpty { word })
+                }
+            }
+            .distinct()
+    }
+
     /** Whether the card format's field mapping uses [handlebar], e.g. to skip unused AI requests. */
     suspend fun formatUsesHandlebar(formatId: String?, handlebar: String): Boolean =
         settings.first().resolveAnkiCardFormat(formatId)?.fieldMappings?.referencesAnkiHandlebar(handlebar) == true
@@ -446,6 +480,18 @@ internal class AnkiRepository(
             }
         }
 }
+
+data class AnkiWord(val word: String, val reading: String)
+
+/** A field's text without markup, furigana brackets or spaces, e.g. `<b>食[た]べる</b>` → `食べる`. */
+internal fun ankiPlainText(field: String): String =
+    field.replace(Regex("<[^>]*>"), "")
+        .replace("&nbsp;", " ")
+        .replace("&amp;", "&")
+        .replace("&lt;", "<")
+        .replace("&gt;", ">")
+        .replace(Regex("\\[[^\\]]*\\]"), "")
+        .replace(Regex("\\s+"), "")
 
 private fun AnkiSettings.resolveAnkiCardFormat(formatId: String?): AnkiCardFormat? {
     if (formatId != null) return cardFormats.firstOrNull { it.id == formatId }

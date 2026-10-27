@@ -16,6 +16,7 @@ import kotlinx.coroutines.runBlocking
 import moe.antimony.hoshi.di.IoDispatcher
 import moe.antimony.hoshi.features.bookshelf.BookCoverRecoveryDecoderFactory
 import moe.antimony.hoshi.features.bookshelf.BookCoverFetcher
+import moe.antimony.hoshi.features.furigana.KnownWordsAnkiSync
 import moe.antimony.hoshi.features.bookshelf.BookCoverKeyer
 import moe.antimony.hoshi.features.bookshelf.BookCoverThumbnailStore
 import moe.antimony.hoshi.features.diagnostics.installCrashDiagnostics
@@ -34,6 +35,7 @@ class HoshiApplication : Application(), Configuration.Provider, SingletonImageLo
     @Inject internal lateinit var workerFactory: HiltWorkerFactory
     @Inject @IoDispatcher internal lateinit var ioDispatcher: CoroutineDispatcher
     @Inject internal lateinit var bookCoverThumbnailStore: Lazy<BookCoverThumbnailStore>
+    @Inject internal lateinit var knownWordsAnkiSync: Lazy<KnownWordsAnkiSync>
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -48,6 +50,7 @@ class HoshiApplication : Application(), Configuration.Provider, SingletonImageLo
         prepareUpdateStartupState()
         updateScheduler.get().sync()
         dictionaryAutoUpdateScheduler.get().registerProcessForegroundChecks()
+        knownWordsAnkiSync.get().registerProcessForegroundChecks()
     }
 
     override fun newImageLoader(context: Context): ImageLoader =

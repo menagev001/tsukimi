@@ -57,6 +57,8 @@ import moe.antimony.hoshi.features.wallpaper.bookCoverWallpaperSettingsRepositor
 import moe.antimony.hoshi.features.watch.JellyfinSettingsRepository
 import moe.antimony.hoshi.features.watch.jellyfinSettingsRepository
 import moe.antimony.hoshi.features.watch.WatchPreferencesRepository
+import moe.antimony.hoshi.features.furigana.KnownWordsSettingsRepository
+import moe.antimony.hoshi.features.furigana.knownWordsSettingsRepository
 import moe.antimony.hoshi.features.watch.watchPreferencesRepository
 import moe.antimony.hoshi.profiles.ProfileRepository
 
@@ -148,6 +150,11 @@ internal object HoshiAppModule {
     @Singleton
     fun provideJellyfinSettingsRepository(@ApplicationContext context: Context): JellyfinSettingsRepository =
         context.jellyfinSettingsRepository()
+
+    @Provides
+    @Singleton
+    fun provideKnownWordsSettingsRepository(@ApplicationContext context: Context): KnownWordsSettingsRepository =
+        context.knownWordsSettingsRepository()
 
     @Provides
     @Singleton

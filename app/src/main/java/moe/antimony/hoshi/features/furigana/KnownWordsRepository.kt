@@ -2,6 +2,7 @@ package moe.antimony.hoshi.features.furigana
 
 import java.io.File
 import javax.inject.Inject
+import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -35,6 +36,14 @@ private data class MigakuKnownWordExport(
     val words: List<MigakuKnownWordEntry> = emptyList(),
 )
 
+/** How many known words come from each list; [total] counts a word in several lists once. */
+data class KnownWordsCounts(
+    val imported: Int,
+    val marked: Int,
+    val anki: Int,
+    val total: Int,
+)
+
 data class KnownWordsImportSummary(
     val exportedKnownCount: Int,
     val newlyAddedCount: Int,
@@ -42,11 +51,13 @@ data class KnownWordsImportSummary(
 )
 
 /**
- * Two files by design, not one: [importedFile] holds the bulk Migaku export (rewritten only on
- * reimport, which is rare, so a full rewrite at 10k+ rows is fine) and [markedFile] holds words
+ * Three files by design, not one: [importedFile] holds the bulk Migaku export (rewritten only on
+ * reimport, which is rare, so a full rewrite at 10k+ rows is fine), [markedFile] holds words
  * marked known one at a time from the reader (rewritten on every mark, but stays small for a
- * long time, so a full rewrite there is cheap). Both are unioned into one in-memory set.
+ * long time, so a full rewrite there is cheap), and [ankiFile] holds the words of mature Anki
+ * cards, replaced on every Anki sync. All are unioned into one in-memory set.
  */
+@Singleton
 class KnownWordsRepository @Inject constructor(
     @FilesDir filesDir: File,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
@@ -54,6 +65,7 @@ class KnownWordsRepository @Inject constructor(
     private val knownWordsDir = File(filesDir, "KnownWords")
     private val importedFile = File(knownWordsDir, "imported.json")
     private val markedFile = File(knownWordsDir, "marked.json")
+    private val ankiFile = File(knownWordsDir, "anki.json")
     private val json = Json {
         ignoreUnknownKeys = true
         prettyPrint = true
@@ -93,17 +105,36 @@ class KnownWordsRepository @Inject constructor(
         }
     }
 
-    suspend fun importMigakuExport(exportJson: String): KnownWordsImportSummary = withContext(ioDispatcher) {
+    suspend fun counts(): KnownWordsCounts = withContext(ioDispatcher) {
         mutex.withLock {
-            val parsed = runCatching {
-                json.decodeFromString(MigakuKnownWordExport.serializer(), exportJson)
-            }.getOrNull()
-            val fromExport = parsed?.words
-                .orEmpty()
-                .asSequence()
-                .filter { it.language == "ja" && it.status == "KNOWN" && it.word.isNotEmpty() }
-                .map { KnownWordEntry(it.word, it.reading) }
-                .toSet()
+            KnownWordsCounts(
+                imported = loadEntries(importedFile).size,
+                marked = loadEntries(markedFile).size,
+                anki = loadEntries(ankiFile).size,
+                total = knownWordsLocked().size,
+            )
+        }
+    }
+
+    /** Replaces the words from Anki with [entries]; returns how many there are now. */
+    suspend fun replaceAnkiWords(entries: Collection<KnownWordEntry>): Int = withContext(ioDispatcher) {
+        mutex.withLock {
+            val distinct = entries.toSet()
+            if (distinct != loadEntries(ankiFile).toSet()) {
+                saveEntries(ankiFile, distinct.toList())
+                refreshCacheLocked()
+            }
+            distinct.size
+        }
+    }
+
+    /**
+     * Adds the known words of a Migaku export: the JSON export, or `known.csv` from the
+     * Migaku Exporter's word lists (columns dictForm, secondary).
+     */
+    suspend fun importMigakuExport(exportText: String): KnownWordsImportSummary = withContext(ioDispatcher) {
+        mutex.withLock {
+            val fromExport = migakuKnownWords(exportText)
 
             val existingImported = loadEntries(importedFile).toSet()
             val mergedImported = existingImported + fromExport
@@ -123,7 +154,33 @@ class KnownWordsRepository @Inject constructor(
     private fun knownWordsLocked(): Set<KnownWordEntry> = cachedKnownWords ?: refreshCacheLocked()
 
     private fun refreshCacheLocked(): Set<KnownWordEntry> =
-        (loadEntries(importedFile) + loadEntries(markedFile)).toSet().also { cachedKnownWords = it }
+        (loadEntries(importedFile) + loadEntries(markedFile) + loadEntries(ankiFile)).toSet()
+            .also { cachedKnownWords = it }
+
+    private fun migakuKnownWords(exportText: String): Set<KnownWordEntry> {
+        val text = exportText.removePrefix("\uFEFF")
+        if (text.trimStart().startsWith("{")) {
+            val parsed = runCatching {
+                json.decodeFromString(MigakuKnownWordExport.serializer(), text)
+            }.getOrNull()
+            return parsed?.words
+                .orEmpty()
+                .asSequence()
+                .filter { it.language == "ja" && it.status == "KNOWN" && it.word.isNotEmpty() }
+                .map { KnownWordEntry(it.word, it.reading) }
+                .toSet()
+        }
+        val rows = parseCsv(text)
+        val header = rows.firstOrNull() ?: return emptySet()
+        val wordColumn = header.indexOf("dictForm").takeIf { it >= 0 } ?: return emptySet()
+        val readingColumn = header.indexOf("secondary")
+        return rows.drop(1).mapNotNull { row ->
+            val word = row.getOrNull(wordColumn).orEmpty()
+            word.takeIf { it.isNotEmpty() }?.let {
+                KnownWordEntry(it, row.getOrNull(readingColumn).orEmpty().ifEmpty { it })
+            }
+        }.toSet()
+    }
 
     private fun loadEntries(file: File): List<KnownWordEntry> {
         if (!file.isFile) return emptyList()
@@ -136,4 +193,39 @@ class KnownWordsRepository @Inject constructor(
         knownWordsDir.mkdirs()
         file.writeText(json.encodeToString(ListSerializer(KnownWordEntry.serializer()), entries))
     }
+}
+
+/** RFC 4180 CSV: quoted fields may hold commas, line breaks and doubled quotes. */
+internal fun parseCsv(text: String): List<List<String>> {
+    val rows = mutableListOf<List<String>>()
+    var row = mutableListOf<String>()
+    val field = StringBuilder()
+    var quoted = false
+    var i = 0
+    while (i < text.length) {
+        val ch = text[i]
+        when {
+            quoted && ch == '"' && text.getOrNull(i + 1) == '"' -> {
+                field.append('"')
+                i++
+            }
+            ch == '"' -> quoted = !quoted
+            !quoted && ch == ',' -> {
+                row += field.toString()
+                field.clear()
+            }
+            !quoted && (ch == '\n' || ch == '\r') -> {
+                if (ch == '\r' && text.getOrNull(i + 1) == '\n') i++
+                row += field.toString()
+                field.clear()
+                if (row.any { it.isNotEmpty() }) rows += row
+                row = mutableListOf()
+            }
+            else -> field.append(ch)
+        }
+        i++
+    }
+    row += field.toString()
+    if (row.any { it.isNotEmpty() }) rows += row
+    return rows
 }

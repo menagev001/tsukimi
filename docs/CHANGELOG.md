@@ -63,6 +63,13 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Changed
 
+- Known words for "Add Furigana to Unknown Words" now have their own
+  Settings → Known Words section, which replaces the import button in the
+  book reader's Appearance settings. It shows how many words come from
+  each list, imports Migaku's known-word JSON export or the `known.csv` from
+  the Migaku Exporter's word lists, and can add the words of mature Anki
+  cards (interval of 21 days or more) automatically: Tsukimi reads AnkiDroid
+  whenever it opens, so the list grows as you learn your cards.
 - The Anki button in the book reader and the manga reader now adds the card
   in the background with a progress chip, like in Watch: the AI fields, the
   long-sentence dialog with its AI example sentence, and the tags `tsukimi`,

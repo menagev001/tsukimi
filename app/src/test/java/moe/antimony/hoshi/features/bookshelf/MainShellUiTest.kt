@@ -49,6 +49,7 @@ class MainShellUiTest {
                 R.string.settings_dictionaries,
                 R.string.settings_anki,
                 R.string.settings_ai,
+                R.string.settings_known_words,
                 R.string.settings_watch,
                 R.string.settings_appearance,
                 R.string.settings_behavior,

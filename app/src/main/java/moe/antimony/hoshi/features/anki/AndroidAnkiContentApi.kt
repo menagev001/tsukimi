@@ -85,6 +85,28 @@ class AndroidAnkiContentApi @Inject constructor(
 
     override fun addNewDeck(name: String): Long? = api.addNewDeck(name)
 
+    /**
+     * The note provider's plain content URI takes an Anki browser search as its selection. It
+     * returns no cursor when the search finds nothing.
+     */
+    override fun searchNoteFields(query: String): List<List<String>> =
+        readAnkiApi(AnkiFetchFailure.ProviderFailure) {
+            val cursor = appContext.contentResolver.query(
+                FlashCardsContract.Note.CONTENT_URI,
+                arrayOf(FlashCardsContract.Note.FLDS),
+                query,
+                null,
+                null,
+            ) ?: return@readAnkiApi emptyList()
+            cursor.use {
+                val column = it.getColumnIndexOrThrow(FlashCardsContract.Note.FLDS)
+                buildList {
+                    while (it.moveToNext()) add(it.getString(column).orEmpty().split('\u001f'))
+                }
+            }
+        }
+
+
     override fun addMediaFromUri(uriString: String, preferredName: String, mimeType: String): String? =
         api.addMediaFromUri(
             Uri.parse(uriString),
