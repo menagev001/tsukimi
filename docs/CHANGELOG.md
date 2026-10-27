@@ -6,6 +6,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ## [Unreleased]
 
+## [v2.0.0] - 2026-10-27
+
 ### Added
 
 - Add a Watch tab for a Jellyfin server (version 12 or newer): sign in under
