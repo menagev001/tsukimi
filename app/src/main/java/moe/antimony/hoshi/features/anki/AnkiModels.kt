@@ -114,7 +114,13 @@ data class AnkiSettings(
     val ankiConnectUrl: String = "",
     val ankiConnectApiKey: String = "",
     val ankiConnectForceSync: Boolean = false,
+    /** Deck name per card source; a card from a source without one goes to its format's deck. */
+    val sourceDeckNames: Map<AnkiCardSource, String> = emptyMap(),
 )
+
+/** Where a card was mined, for [AnkiSettings.sourceDeckNames]. */
+@Serializable
+enum class AnkiCardSource { Book, Manga, Watch }
 
 const val MaxAnkiCardFormats = 3
 
@@ -327,6 +333,8 @@ data class AnkiMiningContext(
     /** AI answers as Anki field HTML; `{ai-word-nuance}`, `{ai-sentence-breakdown}`. */
     val aiWordNuance: String? = null,
     val aiSentenceBreakdown: String? = null,
+    /** Picks the deck from [AnkiSettings.sourceDeckNames]; null uses the format's deck. */
+    val cardSource: AnkiCardSource? = null,
 )
 
 object AnkiHandlebarRenderer {

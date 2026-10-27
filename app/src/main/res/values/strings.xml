@@ -619,6 +619,11 @@
     <string name="anki_format">Card Format</string>
     <string name="anki_format_default_name">Format %1$d</string>
     <string name="anki_add_format">Add Card Format</string>
+    <string name="anki_source_decks_title">Decks by Source</string>
+    <string name="anki_source_decks_description">Cards from books, manga and Watch go to these decks. A new deck is created with its first card.</string>
+    <string name="anki_source_deck_format">Card format’s deck</string>
+    <string name="anki_source_deck_new">New Deck…</string>
+    <string name="anki_source_deck_new_label">Deck name</string>
     <string name="anki_duplicate_format">Duplicate This Format</string>
     <string name="anki_delete_format_title">Delete “%1$s”?</string>
     <string name="anki_delete_format_confirmation">This permanently deletes the card format and its field mappings from Tsukimi.</string>

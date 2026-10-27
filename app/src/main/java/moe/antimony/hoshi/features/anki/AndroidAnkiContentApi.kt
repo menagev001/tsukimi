@@ -83,6 +83,8 @@ class AndroidAnkiContentApi @Inject constructor(
         tags: Set<String>,
     ): Long? = api.addNote(modelId, deckId, fields, tags)
 
+    override fun addNewDeck(name: String): Long? = api.addNewDeck(name)
+
     override fun addMediaFromUri(uriString: String, preferredName: String, mimeType: String): String? =
         api.addMediaFromUri(
             Uri.parse(uriString),

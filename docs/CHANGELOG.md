@@ -57,6 +57,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   The example sentence prompt is editable in AI Settings. Tsukimi keeps only
   the session token, never the password, and Sign out ends the session on the
   server.
+- Add Decks by Source to Settings → Anki: cards from books, manga and Watch
+  can each go to their own deck instead of the card format's deck. A deck
+  name that does not exist yet is created with its first card.
 
 ### Changed
 

@@ -159,6 +159,12 @@ class AnkiConnectBackend(
 
     override fun addMediaFromUri(uriString: String, preferredName: String, mimeType: String): String? = null
 
+    override fun createDeck(name: String): AnkiDeck? =
+        runCatching {
+            request("createDeck", buildJsonObject { put("deck", name) })
+            AnkiDeck(id = ankiConnectStableId("deck", name), name = name)
+        }.getOrNull()
+
     override fun addMediaFromBytes(bytes: ByteArray, preferredName: String, mimeType: String): String? =
         runCatching {
             val filename = ankiConnectMediaFilename(preferredName)

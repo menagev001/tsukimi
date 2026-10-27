@@ -617,6 +617,11 @@
     <string name="anki_format">卡片格式</string>
     <string name="anki_format_default_name">格式 %1$d</string>
     <string name="anki_add_format">添加卡片格式</string>
+    <string name="anki_source_decks_title">按来源选择牌组</string>
+    <string name="anki_source_decks_description">来自书籍、漫画和观看的卡片会加入这些牌组。新牌组会在添加第一张卡片时创建。</string>
+    <string name="anki_source_deck_format">卡片格式的牌组</string>
+    <string name="anki_source_deck_new">新建牌组…</string>
+    <string name="anki_source_deck_new_label">牌组名称</string>
     <string name="anki_duplicate_format">复制此格式</string>
     <string name="anki_delete_format_title">删除“%1$s”？</string>
     <string name="anki_delete_format_confirmation">这会从 Tsukimi 中永久删除该卡片格式及其字段映射。</string>

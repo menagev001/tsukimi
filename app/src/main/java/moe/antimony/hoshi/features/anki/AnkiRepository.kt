@@ -205,7 +205,11 @@ internal class AnkiRepository(
         if (!activeBackend.isAvailable()) return@withContext false
         val availableDecks = decks.ifEmpty { activeBackend.fetchDecks() }
         val availableNoteTypes = noteTypes.ifEmpty { activeBackend.fetchNoteTypes() }
-        val deck = availableDecks.firstOrNull { it.id == format.selectedDeckId }
+        val sourceDeckName = context.cardSource?.let(settings.sourceDeckNames::get)?.takeIf { it.isNotBlank() }
+        val deck = sourceDeckName?.let { name ->
+            availableDecks.firstOrNull { it.name == name } ?: activeBackend.createDeck(name)
+        }
+            ?: availableDecks.firstOrNull { it.id == format.selectedDeckId }
             ?: format.selectedDeckName?.let { name -> availableDecks.firstOrNull { it.name == name } }
             ?: return@withContext false
         val noteType = availableNoteTypes.firstOrNull { it.id == format.selectedNoteTypeId }

@@ -34,6 +34,9 @@ interface AnkiBackend {
         checkDuplicatesAcrossAllModels: Boolean,
     ): Boolean = false
     fun sync(): Boolean = false
+
+    /** Adds a deck, e.g. one named for a card source that the collection does not have yet. */
+    fun createDeck(name: String): AnkiDeck? = null
 }
 
 enum class AnkiFetchFailure(
@@ -88,6 +91,7 @@ interface AnkiContentApi {
     fun openNotes(query: String): Boolean = false
     fun sync(): Boolean = false
     fun isAvailable(): Boolean = true
+    fun addNewDeck(name: String): Long? = null
 }
 
 class AnkiDroidBackendAdapter @Inject constructor(
@@ -193,6 +197,8 @@ class AnkiDroidBackendAdapter @Inject constructor(
     )
 
     override fun sync(): Boolean = api.sync()
+
+    override fun createDeck(name: String): AnkiDeck? = api.addNewDeck(name)?.let { AnkiDeck(it, name) }
 }
 
 internal fun List<AnkiDeck>.sortedAnkiDecks(): List<AnkiDeck> =

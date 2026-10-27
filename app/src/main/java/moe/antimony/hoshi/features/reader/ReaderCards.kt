@@ -4,6 +4,7 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.antimony.hoshi.features.anki.AnkiCardRequest
+import moe.antimony.hoshi.features.anki.AnkiCardSource
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiPendingCard
 import moe.antimony.hoshi.features.anki.ankiCardLabel
@@ -33,7 +34,10 @@ internal fun bookPendingCard(
             label = ankiCardLabel(payloadJson, selectionText),
             formatId = formatId,
             payloadJson = payloadJson,
-            context = context.copy(extraTags = context.extraTags + bookCardTags(title)),
+            context = context.copy(
+                extraTags = context.extraTags + bookCardTags(title),
+                cardSource = AnkiCardSource.Book,
+            ),
             prepareContext = export?.let {
                 { cardContext ->
                     cardContext.copy(sasayakiAudioPath = withContext(Dispatchers.IO) { export() }?.absolutePath)

@@ -292,6 +292,22 @@ internal class AnkiViewModel @Inject constructor(
         viewModelScope.launch { repository.updateSettings { it.updateCardFormat(formatId, transform) } }
     }
 
+    /** [name] null or blank sends cards from [source] to their format's deck again. */
+    fun updateSourceDeck(source: AnkiCardSource, name: String?) {
+        viewModelScope.launch {
+            repository.updateSettings { settings ->
+                val trimmed = name?.trim().orEmpty()
+                settings.copy(
+                    sourceDeckNames = if (trimmed.isEmpty()) {
+                        settings.sourceDeckNames - source
+                    } else {
+                        settings.sourceDeckNames + (source to trimmed)
+                    },
+                )
+            }
+        }
+    }
+
     fun updateAllowDupes(value: Boolean) {
         viewModelScope.launch {
             repository.updateSettings { it.copy(allowDupes = value) }

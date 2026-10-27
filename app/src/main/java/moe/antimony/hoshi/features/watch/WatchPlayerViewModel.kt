@@ -22,6 +22,7 @@ import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import dagger.assisted.Assisted
 import moe.antimony.hoshi.features.ai.AiSentenceContext
 import moe.antimony.hoshi.features.anki.AnkiCardRequest
+import moe.antimony.hoshi.features.anki.AnkiCardSource
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiPendingCard
 import moe.antimony.hoshi.features.anki.ankiCardLabel
@@ -288,6 +289,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             ?: return base.copy(
                 source = watchCardSource(item, player.currentPosition),
                 extraTags = base.extraTags + watchCardTags(item),
+                cardSource = AnkiCardSource.Watch,
             )
         val first = primaryCues[selection.range.first]
         val last = primaryCues[selection.range.last]
@@ -297,6 +299,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
             source = watchCardSource(item, primaryCues[selection.baseIndex].startMs + offsetMs),
             sentenceTranslation = watchCardTranslation(englishCues, first.startMs, last.endMs),
             extraTags = base.extraTags + watchCardTags(item),
+            cardSource = AnkiCardSource.Watch,
         )
     }
 

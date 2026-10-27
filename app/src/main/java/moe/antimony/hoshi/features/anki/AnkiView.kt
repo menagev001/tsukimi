@@ -209,6 +209,24 @@ fun AnkiView(
             }
             item {
                 AnkiCard {
+                    ListItem(
+                        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+                        headlineContent = { Text(stringResource(R.string.anki_source_decks_title)) },
+                        supportingContent = { Text(stringResource(R.string.anki_source_decks_description)) },
+                    )
+                    AnkiCardSource.entries.forEach { source ->
+                        AnkiDivider()
+                        AnkiSourceDeckRow(
+                            source = source,
+                            deckName = uiState.settings.sourceDeckNames[source],
+                            decks = uiState.availableDecks,
+                            onSelect = { name -> viewModel.updateSourceDeck(source, name) },
+                        )
+                    }
+                }
+            }
+            item {
+                AnkiCard {
                     AnkiSwitchRow(
                         label = stringResource(R.string.anki_allow_duplicates),
                         checked = uiState.settings.allowDupes,
@@ -501,6 +519,72 @@ private fun AnkiNoteTypeRow(
         itemLabel = { it.name },
         onSelect = onSelect,
     )
+}
+
+private val AnkiCardSource.labelRes: Int
+    get() = when (this) {
+        AnkiCardSource.Book -> R.string.main_tab_books
+        AnkiCardSource.Manga -> R.string.main_tab_manga
+        AnkiCardSource.Watch -> R.string.main_tab_watch
+    }
+
+/** A source's deck: the card format's deck (null), an existing deck, or a new deck's name. */
+@Composable
+private fun AnkiSourceDeckRow(
+    source: AnkiCardSource,
+    deckName: String?,
+    decks: List<AnkiDeck>,
+    onSelect: (String?) -> Unit,
+) {
+    var expanded by remember { mutableStateOf(false) }
+    var naming by remember { mutableStateOf(false) }
+    ListItem(
+        colors = ListItemDefaults.colors(containerColor = MaterialTheme.colorScheme.surface),
+        headlineContent = { Text(stringResource(source.labelRes)) },
+        supportingContent = { Text(deckName ?: stringResource(R.string.anki_source_deck_format)) },
+        trailingContent = {
+            TextButton(onClick = { expanded = true }) {
+                Text(stringResource(R.string.action_choose))
+            }
+            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.anki_source_deck_format)) },
+                    onClick = {
+                        expanded = false
+                        onSelect(null)
+                    },
+                )
+                decks.forEach { deck ->
+                    DropdownMenuItem(
+                        text = { Text(deck.name) },
+                        onClick = {
+                            expanded = false
+                            onSelect(deck.name)
+                        },
+                    )
+                }
+                DropdownMenuItem(
+                    text = { Text(stringResource(R.string.anki_source_deck_new)) },
+                    onClick = {
+                        expanded = false
+                        naming = true
+                    },
+                )
+            }
+        },
+    )
+    if (naming) {
+        AnkiTextValueDialog(
+            title = stringResource(source.labelRes),
+            textFieldLabel = stringResource(R.string.anki_source_deck_new_label),
+            value = "",
+            onDismiss = { naming = false },
+            onSave = { name ->
+                naming = false
+                if (name.isNotBlank()) onSelect(name)
+            },
+        )
+    }
 }
 
 @Composable

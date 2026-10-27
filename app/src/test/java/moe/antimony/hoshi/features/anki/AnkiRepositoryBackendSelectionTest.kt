@@ -136,6 +136,45 @@ class AnkiRepositoryBackendSelectionTest {
     }
 
     @Test
+    fun mineEntryUsesTheSourceDeckAndCreatesItWhenMissing() = runBlocking {
+        val mining = AnkiDeck(10L, "Mining")
+        val novels = AnkiDeck(11L, "小説")
+        val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression"))
+        val backend = RecordingBackend(decks = listOf(mining, novels), noteTypes = listOf(noteType))
+        val repository = repository(
+            backend = backend,
+            settingsRepository = InMemoryAnkiSettingsRepository(
+                AnkiSettings(
+                    backendKind = AnkiBackendKind.AnkiDroid,
+                    selectedDeckId = mining.id,
+                    selectedDeckName = mining.name,
+                    selectedNoteTypeId = noteType.id,
+                    selectedNoteTypeName = noteType.name,
+                    fieldMappings = mapOf("Expression" to "{expression}"),
+                    sourceDeckNames = mapOf(AnkiCardSource.Book to "小説", AnkiCardSource.Manga to "マンガ"),
+                ),
+            ),
+        )
+        suspend fun mine(source: AnkiCardSource?): AnkiDeck? {
+            assertTrue(
+                repository.mineEntry(
+                    rawPayload = """{"expression":"食べる"}""",
+                    context = AnkiMiningContext(sentence = "パンを食べる。", cardSource = source),
+                    decks = emptyList(),
+                    noteTypes = emptyList(),
+                ),
+            )
+            return backend.lastDeck
+        }
+
+        assertEquals(novels, mine(AnkiCardSource.Book))
+        assertEquals("マンガ", mine(AnkiCardSource.Manga)?.name)
+        assertEquals(listOf("マンガ"), backend.createdDecks)
+        assertEquals(mining, mine(AnkiCardSource.Watch))
+        assertEquals(mining, mine(null))
+    }
+
+    @Test
     fun mineEntryAddsContextTagsSourceAndTranslation() = runBlocking {
         val deck = AnkiDeck(10L, "Mining")
         val noteType = AnkiNoteType(20L, "Lapis", listOf("Expression", "MiscInfo", "SentenceTranslation"))
@@ -940,6 +979,13 @@ class AnkiRepositoryBackendSelectionTest {
         override fun sync(): Boolean {
             syncCalls += 1
             return true
+        }
+
+        val createdDecks = mutableListOf<String>()
+
+        override fun createDeck(name: String): AnkiDeck {
+            createdDecks += name
+            return AnkiDeck(100L + createdDecks.size, name)
         }
 
         override fun openNotes(

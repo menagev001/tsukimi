@@ -5,6 +5,7 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import moe.antimony.hoshi.features.anki.AnkiCardRequest
+import moe.antimony.hoshi.features.anki.AnkiCardSource
 import moe.antimony.hoshi.features.anki.AnkiMiningContext
 import moe.antimony.hoshi.features.anki.AnkiPendingCard
 import moe.antimony.hoshi.features.anki.ankiCardLabel
@@ -36,7 +37,10 @@ internal fun mangaPendingCard(
                 label = ankiCardLabel(payloadJson, selectionText),
                 formatId = formatId,
                 payloadJson = payloadJson,
-                context = context.copy(extraTags = context.extraTags + mangaCardTags(title)),
+                context = context.copy(
+                    extraTags = context.extraTags + mangaCardTags(title),
+                    cardSource = AnkiCardSource.Manga,
+                ),
                 prepareContext = { cardContext ->
                     screenshot = bubble.await()?.let { image ->
                         val pageFile = mangaPageFile(pagesDirectory, image.imgPath) ?: return@let null
