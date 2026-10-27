@@ -82,7 +82,8 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   when they still exist, prefers a note type Tsukimi knows (Lapis, Kiku,
   Senren) over the first one, and resets the field mapping to Tsukimi's
   defaults, so a single Fetch maps every known Lapis field.
-- Rename the app to 月見 Tsukimi. It now has its own application ID
+- Rename the app to 月見 Tsukimi, with a new app icon (the kanji 月 in place
+  of 星). It now has its own application ID
   (`com.feathercomet.tsukimi`), so it installs next to Hoshi Reader instead of
   updating it: move books and dictionaries with a `.hoshi` backup from
   Settings; manga volumes and settings such as the AI key and Anki mappings
