@@ -1,5 +1,6 @@
 package moe.antimony.hoshi.features.manga
 
+import android.util.Log
 import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
@@ -202,7 +203,9 @@ internal fun MangaReaderWebView(
                     bubble.complete(null)
                 } else {
                     view.evaluateJavascript(mangaActiveBlockImageScript(ankiContext.sentence)) { result ->
-                        bubble.complete(mangaBubbleImageFromWebViewResult(result))
+                        val image = mangaBubbleImageFromWebViewResult(result)
+                        if (image == null) Log.w("MangaCardScreenshot", "No bubble for the card: ${result?.take(200)}")
+                        bubble.complete(image)
                     }
                 }
                 cardJobs.requestCard(

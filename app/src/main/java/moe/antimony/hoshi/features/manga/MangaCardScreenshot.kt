@@ -11,6 +11,7 @@ import android.graphics.PorterDuffXfermode
 import android.graphics.Rect
 import android.graphics.RectF
 import android.os.Build
+import android.util.Log
 import java.io.File
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -135,21 +136,29 @@ internal fun saveMangaBubbleScreenshot(pageFile: File, bubble: MangaBubbleImage,
         )
         var sampleSize = 1
         while (region.width() / (sampleSize * 2) >= MangaScreenshotMaxWidth) sampleSize *= 2
-        decoder.decodeRegion(
-            region,
-            BitmapFactory.Options().apply {
-                inSampleSize = sampleSize
-                inMutable = true
-            },
-        ).also { decoded ->
-            val markers = mangaMarkerRects(
-                bubble,
-                MangaCropRect(region.left, region.top, region.right, region.bottom),
-                scaleX,
-                scaleY,
-                sampleSize,
-            )
-            drawMangaMarker(decoded, markers)
+        val decoded = decoder.decodeRegion(region, BitmapFactory.Options().apply { inSampleSize = sampleSize })
+        val markers = mangaMarkerRects(
+            bubble,
+            MangaCropRect(region.left, region.top, region.right, region.bottom),
+            scaleX,
+            scaleY,
+            sampleSize,
+        )
+        // The marker is a bonus: if it cannot be drawn, the card still gets the plain scene.
+        if (markers.isEmpty()) {
+            decoded
+        } else {
+            runCatching {
+                val canvasBitmap = if (decoded.isMutable) {
+                    decoded
+                } else {
+                    decoded.copy(Bitmap.Config.ARGB_8888, true).also { decoded.recycle() }
+                }
+                canvasBitmap.also { drawMangaMarker(it, markers) }
+            }.getOrElse { error ->
+                Log.w(ScreenshotTag, "Could not draw the sentence marker", error)
+                decoded
+            }
         }
     } finally {
         decoder.recycle()
@@ -165,6 +174,7 @@ internal fun saveMangaBubbleScreenshot(pageFile: File, bubble: MangaBubbleImage,
     file.outputStream().use { scaled.compress(Bitmap.CompressFormat.JPEG, MangaScreenshotJpegQuality, it) }
     scaled.recycle()
     file
-}.getOrNull()
+}.onFailure { Log.w(ScreenshotTag, "Could not save the bubble screenshot", it) }.getOrNull()
 
 private const val MangaScreenshotJpegQuality = 85
+private const val ScreenshotTag = "MangaCardScreenshot"

@@ -549,20 +549,25 @@
             var box = activeBlockEl.dataset.box.split(',').map(Number);
             if (box.length !== 4 || box.some(isNaN)) return null;
             var highlights = [];
-            var blockRect = activeBlockEl.getBoundingClientRect();
-            if (sentence && blockRect.width > 0 && blockRect.height > 0) {
-                var lineEls = activeBlockEl.querySelectorAll('.hoshi-manga-line');
-                var lines = Array.prototype.map.call(lineEls, function (lineEl) { return lineEl.textContent; });
-                sentenceLineRanges(lines, sentence).forEach(function (range) {
-                    var node = lineEls[range.line].firstChild;
-                    if (!node) return;
-                    var domRange = document.createRange();
-                    domRange.setStart(node, range.start);
-                    domRange.setEnd(node, range.end);
-                    Array.prototype.forEach.call(domRange.getClientRects(), function (rect) {
-                        if (rect.width > 0 && rect.height > 0) highlights.push(clientRectToPageBox(rect, blockRect, box));
+            // The marker is optional: whatever goes wrong here, the bubble itself is still returned.
+            try {
+                var blockRect = activeBlockEl.getBoundingClientRect();
+                if (sentence && blockRect.width > 0 && blockRect.height > 0) {
+                    var lineEls = activeBlockEl.querySelectorAll('.hoshi-manga-line');
+                    var lines = Array.prototype.map.call(lineEls, function (lineEl) { return lineEl.textContent; });
+                    sentenceLineRanges(lines, sentence).forEach(function (range) {
+                        var node = lineEls[range.line].firstChild;
+                        if (!node || node.nodeType !== 3 || node.length < range.end) return;
+                        var domRange = document.createRange();
+                        domRange.setStart(node, range.start);
+                        domRange.setEnd(node, range.end);
+                        Array.prototype.forEach.call(domRange.getClientRects(), function (rect) {
+                            if (rect.width > 0 && rect.height > 0) highlights.push(clientRectToPageBox(rect, blockRect, box));
+                        });
                     });
-                });
+                }
+            } catch (error) {
+                highlights = [];
             }
             return {
                 imgPath: activeBlockEl.dataset.imgPath,
