@@ -11,7 +11,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** The last Migaku import on this screen: its summary, or a failure. */
+/** The last word list import on this screen: its summary, or a failure. */
 sealed interface KnownWordsImportState {
     data object None : KnownWordsImportState
 
@@ -67,7 +67,7 @@ internal class KnownWordsSettingsViewModel @Inject constructor(
     }
 
     /** [text] is the picked file's content; null when it could not be read. */
-    fun importMigaku(text: String?) {
+    fun importWordList(text: String?) {
         viewModelScope.launch {
             importState.value = KnownWordsImportState.Importing
             val summary = text?.let { runCatching { knownWordsRepository.importMigakuExport(it) }.getOrNull() }

@@ -441,7 +441,7 @@
     <string name="reader_appearance_recalculate_furigana" comment="Label for a button that forces a fresh furigana pass over the current chapter, e.g. after marking new words known.">Recalculate Furigana</string>
     <string name="reader_furigana_scan_progress" comment="Shown under the loading spinner while furigana is being generated for the chapter, e.g. '1,314 / 3,000 characters scanned'. %1$d is characters processed so far, %2$d is the total for this pass.">%1$d / %2$d characters scanned</string>
     <string name="known_words_import_result" comment="Shown after importing a known-words file. %1$d is how many were newly added by this import, %2$d is the total known-word count afterward.">%1$d new words added (%2$d known total)</string>
-    <string name="known_words_import_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid Migaku export.">Couldn\'t import that file</string>
+    <string name="known_words_import_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid known-words file.">Couldn\'t import that file</string>
     <string name="action_recalculate">Recalculate</string>
     <string name="reader_appearance_mode" comment="Reader appearance setting label, intentionally matching dictionary mode.">Mode</string>
     <string name="reader_appearance_paginated">Paginated</string>
@@ -700,15 +700,15 @@
     <string name="ai_long_sentence_limit_hint">Characters. Adding a card with a longer sentence asks whether to use an AI example sentence instead.</string>
     <string name="settings_watch" comment="Settings row label, intentionally matching the Watch main tab label.">Watch</string>
     <string name="settings_known_words">Known Words</string>
-    <string name="known_words_description">Words you know get no furigana in books. The list combines a Migaku import, words marked known in the lookup popup, and the words of your mature Anki cards.</string>
-    <string name="known_words_breakdown">Migaku import: %1$d · Marked known: %2$d · Anki: %3$d</string>
+    <string name="known_words_description">Words you know get no furigana in books. The list combines an imported word list, words marked known in the lookup popup, and the words of your mature Anki cards.</string>
+    <string name="known_words_breakdown">Imported: %1$d · Marked known: %2$d · Anki: %3$d</string>
     <string name="known_words_anki_sync">Add Mature Anki Words</string>
     <string name="known_words_anki_sync_description">Words of cards with an interval of 21 days or more count as known. Tsukimi checks Anki whenever it opens.</string>
     <string name="known_words_sync_now">Sync Now</string>
     <string name="known_words_syncing">Syncing…</string>
     <string name="known_words_last_sync">Last sync: %1$s</string>
-    <string name="known_words_import_title">Import from Migaku</string>
-    <string name="known_words_import_description">A Migaku known-words export (.json), or known.csv from the Migaku Exporter’s word lists.</string>
+    <string name="known_words_import_title">Import Word List</string>
+    <string name="known_words_import_description">A file of known words: JSON with a words list, or CSV with the word in a dictForm column and its reading in a secondary column.</string>
     <plurals name="known_words_total">
         <item quantity="one">%1$d known word</item>
         <item quantity="other">%1$d known words</item>

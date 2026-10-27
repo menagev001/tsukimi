@@ -440,7 +440,7 @@
     <string name="action_recalculate">重新计算</string>
     <string name="reader_furigana_scan_progress" comment="Shown under the loading spinner while furigana is being generated for the chapter, e.g. '1,314 / 3,000 characters scanned'. %1$d is characters processed so far, %2$d is the total for this pass.">已扫描 %1$d / %2$d 字</string>
     <string name="known_words_import_result" comment="Shown after importing a known-words file. %1$d is how many were newly added by this import, %2$d is the total known-word count afterward.">新增 %1$d 个词（共 %2$d 个已掌握）</string>
-    <string name="known_words_import_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid Migaku export.">无法导入该文件</string>
+    <string name="known_words_import_error" comment="Shown when a known-words import fails, e.g. the file couldn't be read or wasn't a valid known-words file.">无法导入该文件</string>
     <string name="reader_appearance_mode" comment="Reader appearance setting label, intentionally matching dictionary mode.">模式</string>
     <string name="reader_appearance_paginated">分页</string>
     <string name="reader_appearance_continuous">连续</string>
@@ -698,15 +698,15 @@
     <string name="ai_long_sentence_limit_hint">字符数。为更长的句子制卡时，会询问是否改用 AI 例句。</string>
     <string name="settings_watch" comment="Settings row label, intentionally matching the Watch main tab label.">观看</string>
     <string name="settings_known_words">已掌握词汇</string>
-    <string name="known_words_description">已掌握的词在书中不显示振假名。列表包括 Migaku 导入的词、在查词弹窗中标记为已掌握的词，以及 Anki 中已熟练卡片的词。</string>
-    <string name="known_words_breakdown">Migaku 导入：%1$d · 已标记：%2$d · Anki：%3$d</string>
+    <string name="known_words_description">已掌握的词在书中不显示振假名。列表包括导入的词表、在查词弹窗中标记为已掌握的词，以及 Anki 中已熟练卡片的词。</string>
+    <string name="known_words_breakdown">已导入：%1$d · 已标记：%2$d · Anki：%3$d</string>
     <string name="known_words_anki_sync">加入 Anki 已熟练词汇</string>
     <string name="known_words_anki_sync_description">间隔达到 21 天或以上的卡片中的词视为已掌握。每次打开 Tsukimi 时检查 Anki。</string>
     <string name="known_words_sync_now">立即同步</string>
     <string name="known_words_syncing">正在同步…</string>
     <string name="known_words_last_sync">上次同步：%1$s</string>
-    <string name="known_words_import_title">从 Migaku 导入</string>
-    <string name="known_words_import_description">Migaku 已掌握词汇导出文件（.json），或 Migaku Exporter 词表中的 known.csv。</string>
+    <string name="known_words_import_title">导入词表</string>
+    <string name="known_words_import_description">已掌握词汇文件：含 words 列表的 JSON，或在 dictForm 列写词、secondary 列写读音的 CSV。</string>
     <plurals name="known_words_total">
         <item quantity="one">%1$d 个已掌握的词</item>
         <item quantity="other">%1$d 个已掌握的词</item>

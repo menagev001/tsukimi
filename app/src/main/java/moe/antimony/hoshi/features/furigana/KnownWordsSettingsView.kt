@@ -56,7 +56,7 @@ fun KnownWordsSettingsView(
                     context.contentResolver.openInputStream(uri)?.bufferedReader(Charsets.UTF_8)?.use { it.readText() }
                 }
             }.getOrNull()
-            viewModel.importMigaku(text)
+            viewModel.importWordList(text)
         }
     }
     // Reading AnkiDroid needs the same permission as adding cards; ask for it the first time.
