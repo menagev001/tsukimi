@@ -54,6 +54,7 @@ import moe.antimony.hoshi.features.settings.AdvancedSettingsView
 import moe.antimony.hoshi.features.statistics.StatisticsView
 import moe.antimony.hoshi.features.update.AboutScreen
 import moe.antimony.hoshi.features.watch.WatchHomeView
+import moe.antimony.hoshi.features.manga.MangaShelfView
 import moe.antimony.hoshi.features.watch.WatchItem
 import moe.antimony.hoshi.features.watch.WatchItemKind
 import moe.antimony.hoshi.features.watch.WatchLibrary
@@ -95,6 +96,7 @@ fun AppShell(
     val pendingImportRouteCoordinator = remember { PendingImportRouteCoordinator() }
     var selectedTab by rememberSaveable { mutableStateOf(MainTab.Books) }
     val booksBackStack = rememberNavBackStack(AppRoute.BooksRoute)
+    val mangaBackStack = rememberNavBackStack(AppRoute.MangaRoute)
     val watchBackStack = rememberNavBackStack(AppRoute.WatchRoute)
     val dictionaryBackStack = rememberNavBackStack(AppRoute.DictionaryRoute)
     val statisticsBackStack = rememberNavBackStack(AppRoute.StatisticsRoute)
@@ -151,6 +153,7 @@ fun AppShell(
 
     fun selectedBackStack(): MutableList<NavKey> = when (effectiveSelectedTab) {
         MainTab.Books -> booksBackStack
+        MainTab.Manga -> mangaBackStack
         MainTab.Watch -> watchBackStack
         MainTab.Dictionary -> dictionaryBackStack
         MainTab.Statistics -> statisticsBackStack
@@ -276,9 +279,8 @@ fun AppShell(
     }
 
     fun openMangaReader(volumeId: String) {
-        clearReaderRoutesOutsideBooks()
-        selectedTab = MainTab.Books
-        booksBackStack.openMangaReaderRoute(volumeId)
+        selectedTab = MainTab.Manga
+        mangaBackStack.openMangaReaderRoute(volumeId)
     }
 
     fun returnToSasayakiReader(bookId: String) {
@@ -323,6 +325,17 @@ fun AppShell(
             when (route) {
                 AppRoute.BooksRoute -> TopLevelRouteContent(
                     selectedTab = MainTab.Books,
+                    pendingImportUri = currentPendingImportUri,
+                    onPendingImportConsumed = currentOnPendingImportConsumed,
+                    readerSettings = currentReaderSettings,
+                    onReaderSettingsChange = currentOnReaderSettingsChange,
+                    onOpenReader = ::openReader,
+                    onOpenMangaReader = ::openMangaReader,
+                    bookshelfRefreshKey = bookshelfRefreshKey,
+                    dictionaryFocusRequestKey = dictionaryFocusRequestKey,
+                )
+                AppRoute.MangaRoute -> TopLevelRouteContent(
+                    selectedTab = MainTab.Manga,
                     pendingImportUri = currentPendingImportUri,
                     onPendingImportConsumed = currentOnPendingImportConsumed,
                     readerSettings = currentReaderSettings,
@@ -485,6 +498,11 @@ fun AppShell(
         entryDecorators = rememberAppNavEntryDecorators(),
         entryProvider = entryProvider,
     )
+    val mangaEntries = rememberDecoratedNavEntries(
+        backStack = mangaBackStack,
+        entryDecorators = rememberAppNavEntryDecorators(),
+        entryProvider = entryProvider,
+    )
     val watchEntries = rememberDecoratedNavEntries(
         backStack = watchBackStack,
         entryDecorators = rememberAppNavEntryDecorators(),
@@ -507,6 +525,7 @@ fun AppShell(
     )
     val currentEntries = when (effectiveSelectedTab) {
         MainTab.Books -> booksEntries
+        MainTab.Manga -> mangaEntries
         MainTab.Watch -> watchEntries
         MainTab.Dictionary -> dictionaryEntries
         MainTab.Statistics -> statisticsEntries
@@ -568,9 +587,13 @@ private fun TopLevelRouteContent(
             pendingImportUri = pendingImportUri,
             onPendingImportConsumed = onPendingImportConsumed,
             onOpenReader = onOpenReader,
-            onOpenMangaReader = onOpenMangaReader,
             refreshKey = bookshelfRefreshKey,
             layoutSpec = layoutSpec,
+            modifier = Modifier.fillMaxSize(),
+        )
+        MainTab.Manga -> MangaShelfView(
+            layoutSpec = layoutSpec,
+            onOpenReader = onOpenMangaReader,
             modifier = Modifier.fillMaxSize(),
         )
         MainTab.Watch -> WatchHomeView(
@@ -675,6 +698,7 @@ private fun SettingsDetailDestination(
 
 private fun MainTab.toRoute(): AppRoute = when (this) {
     MainTab.Books -> AppRoute.BooksRoute
+    MainTab.Manga -> AppRoute.MangaRoute
     MainTab.Watch -> AppRoute.WatchRoute
     MainTab.Dictionary -> AppRoute.DictionaryRoute
     MainTab.Statistics -> AppRoute.StatisticsRoute
@@ -724,7 +748,7 @@ private fun AppRoute.toMainTab(): MainTab = when (this) {
     AppRoute.StatisticsRoute -> MainTab.Statistics
     AppRoute.SettingsRoute -> MainTab.Settings
     is AppRoute.ReaderRoute -> MainTab.Books
-    is AppRoute.MangaReaderRoute -> MainTab.Books
+    AppRoute.MangaRoute, is AppRoute.MangaReaderRoute -> MainTab.Manga
     is AppRoute.SettingsDetailRoute -> MainTab.Settings
     is AppRoute.AnkiCardFormatRoute, AppRoute.AnkiAdvancedRoute -> MainTab.Settings
 }

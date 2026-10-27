@@ -26,7 +26,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
@@ -47,6 +46,7 @@ import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.ArrowDownward
 import androidx.compose.material.icons.rounded.ArrowUpward
 import androidx.compose.material.icons.rounded.AutoAwesome
+import androidx.compose.material.icons.rounded.AutoStories
 import androidx.compose.material.icons.rounded.Spellcheck
 import androidx.compose.material.icons.rounded.BugReport
 import androidx.compose.material.icons.rounded.CheckCircle
@@ -135,7 +135,6 @@ import moe.antimony.hoshi.epub.BookEntry
 import moe.antimony.hoshi.epub.BookRepository
 import moe.antimony.hoshi.epub.BookShelf
 import moe.antimony.hoshi.epub.BookSortOption
-import moe.antimony.hoshi.features.manga.MangaShelfView
 import moe.antimony.hoshi.features.reader.ReaderSettings
 import moe.antimony.hoshi.features.sync.DriveAuthStatus
 import moe.antimony.hoshi.features.sync.SyncDirection
@@ -163,12 +162,10 @@ fun BookshelfView(
     pendingImportUri: Uri? = null,
     onPendingImportConsumed: () -> Unit = {},
     onOpenReader: (String) -> Unit,
-    onOpenMangaReader: (String) -> Unit = {},
     refreshKey: Int = 0,
     layoutSpec: MainShellLayoutSpec,
     modifier: Modifier = Modifier,
 ) {
-    var libraryMode by rememberSaveable { mutableStateOf(LibraryMode.Novels) }
     val context = LocalContext.current
     val appContainer = LocalHoshiUiDependencies.current
     val syncSettings by appContainer.syncSettingsRepository.settings.collectAsStateWithLifecycle(
@@ -292,20 +289,7 @@ fun BookshelfView(
         }
     }
 
-    Column(modifier = modifier.fillMaxSize()) {
-    LibraryModeSegmentedToggle(
-        mode = libraryMode,
-        onModeChange = { libraryMode = it },
-    )
-    Box(Modifier.weight(1f).fillMaxWidth()) {
-    if (libraryMode == LibraryMode.Manga) {
-        MangaShelfView(
-            layoutSpec = layoutSpec,
-            onOpenReader = onOpenMangaReader,
-            modifier = Modifier.fillMaxSize(),
-        )
-    } else {
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = modifier.fillMaxSize()) {
     BooksTab(
         modifier = Modifier.fillMaxSize(),
         layoutSpec = layoutSpec,
@@ -394,11 +378,7 @@ fun BookshelfView(
                 .padding(16.dp),
         )
     }
-    }
-    }
-    }
 
-    if (libraryMode == LibraryMode.Novels) {
     uiState.statusMessage?.let { message ->
         AlertDialog(
             onDismissRequest = booksViewModel::consumeStatusMessage,
@@ -579,42 +559,6 @@ fun BookshelfView(
             onConfirm = booksViewModel::confirmShelfCreationMove,
             onDismiss = booksViewModel::dismissShelfCreationMoveDialog,
         )
-    }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun LibraryModeSegmentedToggle(
-    mode: LibraryMode,
-    onModeChange: (LibraryMode) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val colorScheme = MaterialTheme.colorScheme
-    SingleChoiceSegmentedButtonRow(
-        modifier = modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
-    ) {
-        LibraryMode.entries.forEachIndexed { index, entry ->
-            SegmentedButton(
-                selected = mode == entry,
-                onClick = { onModeChange(entry) },
-                shape = SegmentedButtonDefaults.itemShape(index = index, count = LibraryMode.entries.size),
-                colors = SegmentedButtonDefaults.colors(
-                    activeContainerColor = colorScheme.secondaryContainer,
-                    activeContentColor = colorScheme.onSecondaryContainer,
-                    activeBorderColor = colorScheme.outline,
-                    inactiveContainerColor = Color.Transparent,
-                    inactiveContentColor = colorScheme.onSurface,
-                    inactiveBorderColor = colorScheme.outline,
-                ),
-                icon = {},
-            ) {
-                Text(stringResource(entry.labelRes))
-            }
-        }
     }
 }
 
@@ -1233,10 +1177,6 @@ private fun BooksTopAppBar(
     var moveMenuExpanded by remember { mutableStateOf(false) }
     var importMenuExpanded by remember { mutableStateOf(false) }
     CenterAlignedTopAppBar(
-        // The Novels/Manga toggle above this bar already claims the status bar inset via its own
-        // statusBarsPadding() -- the top bar's own default windowInsets would otherwise reserve
-        // that space a second time, showing up as a large gap between the toggle and this bar.
-        windowInsets = WindowInsets(0, 0, 0, 0),
         title = {
             Text(
                 text = if (isSelecting) {
@@ -2355,6 +2295,7 @@ private fun EmptyBooksView(
 private fun BottomTabGlyph(tab: MainTab, modifier: Modifier = Modifier) {
     val icon = when (tab) {
         MainTab.Books -> Icons.AutoMirrored.Rounded.MenuBook
+        MainTab.Manga -> Icons.Rounded.AutoStories
         MainTab.Watch -> Icons.Rounded.OndemandVideo
         MainTab.Dictionary -> Icons.Rounded.Translate
         MainTab.Statistics -> Icons.AutoMirrored.Rounded.ShowChart

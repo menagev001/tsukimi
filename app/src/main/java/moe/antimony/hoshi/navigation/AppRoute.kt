@@ -13,6 +13,9 @@ sealed interface AppRoute : NavKey {
     data object BooksRoute : AppRoute
 
     @Serializable
+    data object MangaRoute : AppRoute
+
+    @Serializable
     data object WatchRoute : AppRoute
 
     @Serializable

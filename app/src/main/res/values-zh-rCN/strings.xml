@@ -50,12 +50,10 @@
     <string name="import_select_mokuro_sidecar">请选择 .mokuro 附属文件。</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">书库</string>
     <string name="main_tab_watch" comment="Main navigation tab label, intentionally matching the Watch settings title.">观看</string>
-    <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">漫画</string>
+    <string name="main_tab_manga" comment="Main navigation tab label.">漫画</string>
     <string name="main_tab_dictionary">查词</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">统计</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">设置</string>
-    <string name="library_mode_novels">小说</string>
-    <string name="library_mode_manga" comment="Library mode toggle label, intentionally matching the main tab label.">漫画</string>
     <string name="manga_shelf_open_failed">无法打开此漫画卷。</string>
     <string name="manga_shelf_import_failed">无法导入此漫画卷。</string>
     <string name="manga_shelf_import_folder_empty">在该文件夹中未找到 .cbz 或 .mokuro 文件。</string>

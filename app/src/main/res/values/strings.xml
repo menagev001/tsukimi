@@ -50,12 +50,10 @@
     <string name="import_select_mokuro_sidecar">Select a .mokuro sidecar file.</string>
     <string name="main_tab_books" comment="Main navigation tab label, intentionally matching the backup Books section.">Books</string>
     <string name="main_tab_watch" comment="Main navigation tab label, intentionally matching the Watch settings title.">Watch</string>
-    <string name="main_tab_manga" comment="Main navigation tab label, intentionally matching the Novels/Manga library mode toggle label.">Manga</string>
+    <string name="main_tab_manga" comment="Main navigation tab label.">Manga</string>
     <string name="main_tab_dictionary">Dictionary</string>
     <string name="main_tab_statistics" comment="Main navigation tab label, intentionally matching statistics page titles.">Statistics</string>
     <string name="main_tab_settings" comment="Main navigation tab label, intentionally matching settings page titles.">Settings</string>
-    <string name="library_mode_novels">Novels</string>
-    <string name="library_mode_manga" comment="Library mode toggle label, intentionally matching the main tab label.">Manga</string>
     <string name="manga_shelf_open_failed">Unable to open this manga volume.</string>
     <string name="manga_shelf_import_failed">Unable to import this manga volume.</string>
     <string name="manga_shelf_import_folder_empty">No .cbz or .mokuro files were found in that folder.</string>

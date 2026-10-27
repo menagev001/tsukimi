@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -125,11 +124,6 @@ internal fun MangaShelfView(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text(stringResource(R.string.main_tab_manga)) },
-                // The Novels/Manga toggle above this bar already claims the status bar inset via
-                // its own statusBarsPadding() -- the top bar's own default windowInsets would
-                // otherwise reserve that space a second time, showing up as a large gap between
-                // the toggle and this bar.
-                windowInsets = WindowInsets(0, 0, 0, 0),
                 actions = {
                     IconButton(
                         onClick = { cbzPicker.launch(ImportFileType.MangaCbz.mimeTypes) },

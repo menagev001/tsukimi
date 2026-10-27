@@ -63,6 +63,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
 
 ### Changed
 
+- Manga has its own tab in the side bar next to Books and Watch, in place
+  of the Novels/Manga switch at the top of Books. Closing a manga volume
+  returns to the Manga tab.
 - Known words for "Add Furigana to Unknown Words" now have their own
   Settings → Known Words section, which replaces the import button in the
   book reader's Appearance settings. It shows how many words come from

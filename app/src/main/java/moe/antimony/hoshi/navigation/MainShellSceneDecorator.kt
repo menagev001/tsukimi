@@ -26,6 +26,7 @@ internal fun appShellNavEntryMetadata(route: AppRoute): Map<String, Any> =
 internal fun appRouteUsesMainShell(route: AppRoute): Boolean = when (route) {
     AppRoute.MainRoute,
     AppRoute.BooksRoute,
+    AppRoute.MangaRoute,
     AppRoute.WatchRoute,
     AppRoute.DictionaryRoute,
     AppRoute.StatisticsRoute,

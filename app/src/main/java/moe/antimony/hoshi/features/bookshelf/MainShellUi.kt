@@ -8,15 +8,11 @@ import moe.antimony.hoshi.epub.BookSortOption
 
 enum class MainTab(@param:StringRes val labelRes: Int) {
     Books(R.string.main_tab_books),
+    Manga(R.string.main_tab_manga),
     Watch(R.string.main_tab_watch),
     Dictionary(R.string.main_tab_dictionary),
     Statistics(R.string.main_tab_statistics),
     Settings(R.string.main_tab_settings),
-}
-
-internal enum class LibraryMode(@param:StringRes val labelRes: Int) {
-    Novels(R.string.library_mode_novels),
-    Manga(R.string.library_mode_manga),
 }
 
 enum class MainShellNavigationLayout {

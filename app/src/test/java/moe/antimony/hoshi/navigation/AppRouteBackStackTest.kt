@@ -25,6 +25,16 @@ class AppRouteBackStackTest {
     }
 
     @Test
+    fun mangaReaderOpensOnTopOfTheMangaShelf() {
+        val backStack = mutableListOf<NavKey>(AppRoute.MangaRoute, AppRoute.MangaReaderRoute("old"))
+
+        backStack.openMangaReaderRoute("volume")
+        backStack.popAppRoute()
+
+        assertEquals(listOf<NavKey>(AppRoute.MangaRoute), backStack)
+    }
+
+    @Test
     fun externalBookImportReturnsToBooksBeforeTheBookshelfConsumesTheUri() {
         val backStack = mutableListOf<NavKey>(
             AppRoute.BooksRoute,

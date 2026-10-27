@@ -37,7 +37,7 @@ internal fun MutableList<NavKey>.openReaderRoute(bookId: String) {
 }
 
 internal fun MutableList<NavKey>.openMangaReaderRoute(volumeId: String) {
-    replaceWithTopLevelRoute(AppRoute.BooksRoute)
+    replaceWithTopLevelRoute(AppRoute.MangaRoute)
     add(AppRoute.MangaReaderRoute(volumeId))
 }
 
