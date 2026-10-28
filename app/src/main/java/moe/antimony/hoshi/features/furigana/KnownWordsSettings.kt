@@ -17,7 +17,7 @@ data class KnownWordsSettings(
     val lastAnkiSyncMillis: Long? = null,
 )
 
-private val Context.knownWordsSettingsDataStore by preferencesDataStore(name = "known-words-settings")
+internal val Context.knownWordsSettingsDataStore by preferencesDataStore(name = "known-words-settings")
 
 fun Context.knownWordsSettingsRepository(): KnownWordsSettingsRepository =
     KnownWordsSettingsRepository(knownWordsSettingsDataStore)

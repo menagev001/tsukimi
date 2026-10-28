@@ -56,14 +56,24 @@ Settings → Advanced → Backup:
 
 When everything is there, uninstall Hoshi Reader.
 
-## Several devices
+## Moving Tsukimi to another device
 
-Tsukimi keeps its library on each device. Anki is what ties devices
-together: with AnkiDroid signed in to the same AnkiWeb account on every
-device, cards mined anywhere reach all of them, and each device's Known Words
-follow its own AnkiDroid. Turn on **Settings → Anki → Sync AnkiDroid after
-adding card** so new cards go to AnkiWeb right away.
+Tsukimi's own backups carry everything, so a second device (or a new one)
+needs no setup by hand beyond the sign-ins. On the first device, Settings →
+Advanced → Backup → **Back Up** each of:
 
-Books can also follow you between devices through Google Drive sync
-(Settings → Advanced → Sync); manga volumes and words marked known by hand
-stay on the device where they are.
+- **Books**: books with reading positions, bookmarks and statistics.
+- **Manga**: all volumes with their reading positions.
+- **Dictionaries**.
+- **Settings**: every settings screen, profiles, fonts and known words.
+
+On the other device, **Restore** the same files. Restoring Books, Manga or
+Dictionaries replaces what that device had; restoring Settings keeps the
+device's own E-ink Mode and volume-key options and merges the known words.
+The AI API key and the Jellyfin, Google Drive and Anki connections are not in
+any backup: enter the key, sign in, and tap **Fetch** under Settings → Anki
+on the new device.
+
+AnkiDroid keeps your cards in step on its own through AnkiWeb; sign in to the
+same AnkiWeb account on every device and turn on **Settings → Anki → Sync
+AnkiDroid after adding card**.

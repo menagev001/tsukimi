@@ -66,6 +66,11 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   the reading of every word in Anki's furigana format, the mined word still
   in bold. Lapis maps it to `SentenceFurigana` after Fetch, so card
   sentences show their readings, AI example sentences included.
+- Add Manga and Settings to Settings → Advanced → Backup. The Manga backup
+  holds every volume with its reading position; the Settings backup holds
+  every settings screen, the profiles, imported fonts and the known words,
+  without the AI API key or sign-ins. Restoring Settings keeps the device's
+  own E-ink Mode and volume-key options and merges the known words.
 - Add Decks by Source to Settings → Anki: cards from books, manga and Watch
   can each go to their own deck instead of the card format's deck. A deck
   name that does not exist yet is created with its first card.

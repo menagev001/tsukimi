@@ -75,6 +75,22 @@ class HoshiBackupRepository @Inject constructor(
         restoreFolder(BackupTarget.Books, input)
     }
 
+    suspend fun exportManga(contentResolver: ContentResolver, uri: Uri) {
+        exportFolder(contentResolver, uri, BackupTarget.Manga)
+    }
+
+    suspend fun exportManga(output: OutputStream) {
+        exportFolder(BackupTarget.Manga, output)
+    }
+
+    suspend fun restoreManga(contentResolver: ContentResolver, uri: Uri) {
+        restoreFolder(contentResolver, uri, BackupTarget.Manga)
+    }
+
+    suspend fun restoreManga(input: InputStream) {
+        restoreFolder(BackupTarget.Manga, input)
+    }
+
     suspend fun exportDictionaries(contentResolver: ContentResolver, uri: Uri) {
         exportFolder(contentResolver, uri, BackupTarget.Dictionaries)
     }
@@ -460,6 +476,7 @@ class HoshiBackupRepository @Inject constructor(
 
     private enum class BackupTarget(val folderName: String) {
         Books("Books"),
+        Manga("Manga"),
         Dictionaries("Dictionaries"),
     }
 
@@ -507,6 +524,28 @@ fun booksBackupFileName(
         .withZone(zoneId)
         .format(now)
     return "Books_$timestamp.hoshi"
+}
+
+fun mangaBackupFileName(
+    now: Instant = Instant.now(),
+    zoneId: ZoneId = ZoneId.systemDefault(),
+): String {
+    val timestamp = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd_HH-mm-ss")
+        .withZone(zoneId)
+        .format(now)
+    return "Manga_$timestamp.hoshi"
+}
+
+fun settingsBackupFileName(
+    now: Instant = Instant.now(),
+    zoneId: ZoneId = ZoneId.systemDefault(),
+): String {
+    val timestamp = DateTimeFormatter
+        .ofPattern("yyyy-MM-dd_HH-mm-ss")
+        .withZone(zoneId)
+        .format(now)
+    return "Settings_$timestamp.hoshi"
 }
 
 fun dictionariesBackupFileName(

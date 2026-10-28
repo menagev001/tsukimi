@@ -181,7 +181,7 @@ class DictionarySettingsStore(context: Context) : DictionarySettingsLegacySource
     }
 }
 
-private val Context.dictionarySettingsDataStore by preferencesDataStore(name = DictionarySettingsRepository.DataStoreName)
+internal val Context.dictionarySettingsDataStore by preferencesDataStore(name = DictionarySettingsRepository.DataStoreName)
 
 fun Context.dictionarySettingsRepository(
     profileRepository: ProfileRepository? = null,

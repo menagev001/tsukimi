@@ -56,7 +56,7 @@ data class WatchPreferences(
 
 internal const val OriginalQualityBitrate = 120_000_000
 
-private val Context.watchPreferencesDataStore by preferencesDataStore(name = "watch-preferences")
+internal val Context.watchPreferencesDataStore by preferencesDataStore(name = "watch-preferences")
 
 fun Context.watchPreferencesRepository(): WatchPreferencesRepository =
     WatchPreferencesRepository(watchPreferencesDataStore)

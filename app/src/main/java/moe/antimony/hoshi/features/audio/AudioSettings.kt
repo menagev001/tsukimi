@@ -158,7 +158,7 @@ class AudioSettingsStore(context: Context) : AudioSettingsLegacySource {
     }
 }
 
-private val Context.audioSettingsDataStore by preferencesDataStore(name = AudioSettingsRepository.DataStoreName)
+internal val Context.audioSettingsDataStore by preferencesDataStore(name = AudioSettingsRepository.DataStoreName)
 
 fun Context.audioSettingsRepository(): AudioSettingsRepository =
     AudioSettingsRepository(

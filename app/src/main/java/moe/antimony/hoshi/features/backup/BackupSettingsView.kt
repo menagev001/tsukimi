@@ -64,6 +64,16 @@ fun BackupSettingsView(
     var operation by remember { mutableStateOf<BackupOperation?>(null) }
     val booksBackupSaved = stringResource(R.string.backup_books_saved)
     val booksBackupSaveFailed = stringResource(R.string.backup_books_save_failed)
+    val settingsRepository = appContainer.settingsBackupRepository
+    val mangaBackupSaved = stringResource(R.string.backup_manga_saved)
+    val mangaBackupSaveFailed = stringResource(R.string.backup_manga_save_failed)
+    val mangaRestored = stringResource(R.string.backup_manga_restored)
+    val mangaRestoreFailed = stringResource(R.string.backup_manga_restore_failed)
+    val settingsBackupSaved = stringResource(R.string.backup_settings_saved)
+    val settingsBackupSaveFailed = stringResource(R.string.backup_settings_save_failed)
+    val settingsRestored = stringResource(R.string.backup_settings_restored)
+    val settingsRestoreFailed = stringResource(R.string.backup_settings_restore_failed)
+    val settingsBackupUnsupported = stringResource(R.string.backup_settings_unsupported)
     val dictionariesBackupSaved = stringResource(R.string.backup_dictionaries_saved)
     val dictionariesBackupSaveFailed = stringResource(R.string.backup_dictionaries_save_failed)
     val booksRestored = stringResource(R.string.backup_books_restored)
@@ -91,6 +101,51 @@ fun BackupSettingsView(
                     result.exceptionOrNull()?.message ?: booksBackupSaveFailed
                 },
             )
+        }
+    }
+    // Saves or restores one backup through the blocking progress overlay and a snackbar.
+    fun runBackup(operationKind: BackupOperation, success: String, failure: (Throwable?) -> String, block: suspend () -> Unit) {
+        operation = operationKind
+        scope.launch {
+            val result = runCatching { block() }
+            operation = null
+            snackbarHostState.showSnackbar(if (result.isSuccess) success else failure(result.exceptionOrNull()))
+        }
+    }
+    val mangaExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        if (uri == null || operation != null) return@rememberLauncherForActivityResult
+        runBackup(BackupOperation.Exporting, mangaBackupSaved, { it.stableBackupFailureMessage(mangaBackupSaveFailed) }) {
+            repository.exportManga(context.contentResolver, uri)
+        }
+    }
+    val mangaImporter = rememberLauncherForActivityResult(FileImportContent()) { uri ->
+        if (uri == null || operation != null) return@rememberLauncherForActivityResult
+        runBackup(BackupOperation.Restoring, mangaRestored, { it.stableBackupFailureMessage(mangaRestoreFailed, hoshiBackupUnsupported) }) {
+            context.contentResolver.validateImportFile(uri, ImportFileType.HoshiBackup)
+            repository.restoreManga(context.contentResolver, uri)
+        }
+    }
+    val settingsExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
+        if (uri == null || operation != null) return@rememberLauncherForActivityResult
+        runBackup(BackupOperation.Exporting, settingsBackupSaved, { it.stableBackupFailureMessage(settingsBackupSaveFailed) }) {
+            settingsRepository.export(context.contentResolver, uri)
+        }
+    }
+    val settingsImporter = rememberLauncherForActivityResult(FileImportContent()) { uri ->
+        if (uri == null || operation != null) return@rememberLauncherForActivityResult
+        runBackup(
+            BackupOperation.Restoring,
+            settingsRestored,
+            { error ->
+                if (error is UnsupportedSettingsBackupException) {
+                    settingsBackupUnsupported
+                } else {
+                    error.stableBackupFailureMessage(settingsRestoreFailed, hoshiBackupUnsupported)
+                }
+            },
+        ) {
+            context.contentResolver.validateImportFile(uri, ImportFileType.HoshiBackup)
+            settingsRepository.restore(context.contentResolver, uri)
         }
     }
     val dictionariesExporter = rememberLauncherForActivityResult(ActivityResultContracts.CreateDocument("application/octet-stream")) { uri ->
@@ -221,10 +276,28 @@ fun BackupSettingsView(
                 }
                 item {
                     BackupSection(
+                        title = stringResource(R.string.main_tab_manga),
+                        footer = stringResource(R.string.backup_manga_description),
+                        onBackup = { mangaExporter.launch(mangaBackupFileName()) },
+                        onRestore = { mangaImporter.launch(ImportFileType.HoshiBackup.mimeTypes) },
+                        enabled = operation == null,
+                    )
+                }
+                item {
+                    BackupSection(
                         title = stringResource(R.string.backup_dictionaries),
                         footer = stringResource(R.string.backup_restore_overwrites),
                         onBackup = { dictionariesExporter.launch(dictionariesBackupFileName()) },
                         onRestore = { dictionariesImporter.launch(ImportFileType.HoshiBackup.mimeTypes) },
+                        enabled = operation == null,
+                    )
+                }
+                item {
+                    BackupSection(
+                        title = stringResource(R.string.main_tab_settings),
+                        footer = stringResource(R.string.backup_settings_description),
+                        onBackup = { settingsExporter.launch(settingsBackupFileName()) },
+                        onRestore = { settingsImporter.launch(ImportFileType.HoshiBackup.mimeTypes) },
                         enabled = operation == null,
                     )
                 }

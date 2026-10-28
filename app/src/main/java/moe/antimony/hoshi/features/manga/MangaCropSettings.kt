@@ -30,7 +30,7 @@ data class MangaCropSetting(
     val manual: MangaPageCrop? = null,
 )
 
-private val Context.mangaCropSettingsDataStore by preferencesDataStore(name = "manga-crop-settings")
+internal val Context.mangaCropSettingsDataStore by preferencesDataStore(name = "manga-crop-settings")
 
 fun Context.mangaCropSettingsRepository(): MangaCropSettingsRepository =
     MangaCropSettingsRepository(mangaCropSettingsDataStore)

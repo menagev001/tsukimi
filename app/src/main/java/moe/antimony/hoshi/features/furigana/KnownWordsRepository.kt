@@ -151,6 +151,11 @@ class KnownWordsRepository @Inject constructor(
         }
     }
 
+    /** Reads the lists again, e.g. after a Settings backup was restored. */
+    suspend fun reloadFromDisk() = withContext(ioDispatcher) {
+        mutex.withLock { refreshCacheLocked() }
+    }
+
     private fun knownWordsLocked(): Set<KnownWordEntry> = cachedKnownWords ?: refreshCacheLocked()
 
     private fun refreshCacheLocked(): Set<KnownWordEntry> =

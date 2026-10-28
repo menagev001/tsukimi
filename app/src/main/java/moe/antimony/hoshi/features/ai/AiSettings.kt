@@ -27,7 +27,7 @@ data class AiSettings(
     }
 }
 
-private val Context.aiSettingsDataStore by preferencesDataStore(name = "ai-settings")
+internal val Context.aiSettingsDataStore by preferencesDataStore(name = "ai-settings")
 
 fun Context.aiSettingsRepository(): AiSettingsRepository =
     AiSettingsRepository(aiSettingsDataStore)

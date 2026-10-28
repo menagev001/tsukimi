@@ -70,7 +70,7 @@ class BookCoverWallpaperSettingsRepository(
     }
 }
 
-private val Context.bookCoverWallpaperSettingsDataStore by preferencesDataStore(
+internal val Context.bookCoverWallpaperSettingsDataStore by preferencesDataStore(
     name = BookCoverWallpaperSettingsRepository.DataStoreName,
 )
 

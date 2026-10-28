@@ -136,7 +136,7 @@ class SasayakiSettingsStore(context: Context) : SasayakiSettingsLegacySource {
     }
 }
 
-private val Context.sasayakiSettingsDataStore by preferencesDataStore(name = SasayakiSettingsRepository.DataStoreName)
+internal val Context.sasayakiSettingsDataStore by preferencesDataStore(name = SasayakiSettingsRepository.DataStoreName)
 
 fun Context.sasayakiSettingsRepository(): SasayakiSettingsRepository =
     SasayakiSettingsRepository(

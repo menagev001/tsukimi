@@ -547,6 +547,17 @@
     <string name="backup_dictionaries" comment="Backup section label, intentionally matching the Dictionaries settings label.">Dictionaries</string>
     <string name="backup_ttu_bookdata">ッツ Backup</string>
     <string name="backup_ttu_bookdata_description">Importing a backup adds new books and overwrites the statistics and reading progress of books already present.</string>
+    <string name="backup_manga_description">All volumes with their reading positions. Restoring replaces the manga on this device.</string>
+    <string name="backup_manga_saved">Manga backup saved.</string>
+    <string name="backup_manga_save_failed">Unable to save Manga backup.</string>
+    <string name="backup_manga_restored">Manga restored.</string>
+    <string name="backup_manga_restore_failed">Unable to restore Manga.</string>
+    <string name="backup_settings_description">All settings, profiles, fonts and known words. The AI API key and sign-ins are not included, and E-ink Mode and the volume-key options keep this device\'s values when restoring.</string>
+    <string name="backup_settings_saved">Settings backup saved.</string>
+    <string name="backup_settings_save_failed">Unable to save Settings backup.</string>
+    <string name="backup_settings_restored">Settings restored.</string>
+    <string name="backup_settings_restore_failed">Unable to restore Settings.</string>
+    <string name="backup_settings_unsupported">This file is not a Settings backup.</string>
     <string name="backup_books_saved">Books backup saved.</string>
     <string name="backup_books_save_failed">Unable to save Books backup.</string>
     <string name="backup_dictionaries_saved">Dictionaries backup saved.</string>

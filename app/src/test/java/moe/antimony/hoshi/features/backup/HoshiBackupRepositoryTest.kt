@@ -62,6 +62,23 @@ class HoshiBackupRepositoryTest {
     }
 
     @Test
+    fun mangaBackupRoundTripsVolumesWithTheirPositions() = runBlocking {
+        val source = Files.createTempDirectory("hoshi-manga-backup").toFile()
+        source.resolve("Manga/vol1/pages").mkdirs()
+        source.resolve("Manga/vol1/mokuro.json").writeText("{}")
+        source.resolve("Manga/vol1/bookmark.json").writeText("""{"pageIndex":19}""")
+        val archive = ByteArrayOutputStream().also { HoshiBackupRepository(source).exportManga(it) }.toByteArray()
+        val target = Files.createTempDirectory("hoshi-manga-restore").toFile()
+        target.resolve("Manga/old").mkdirs()
+
+        HoshiBackupRepository(target).restoreManga(ByteArrayInputStream(archive))
+
+        assertFalse(target.resolve("Manga/old").exists())
+        assertEquals("""{"pageIndex":19}""", target.resolve("Manga/vol1/bookmark.json").readText())
+        assertTrue(target.resolve("Manga/vol1/mokuro.json").isFile)
+    }
+
+    @Test
     fun restoreBooksReplacesCurrentBooksDirectoryWithArchiveContents() = runBlocking {
         val filesDir = Files.createTempDirectory("hoshi-books-backup-restore").toFile()
         val booksDir = filesDir.resolve("Books")

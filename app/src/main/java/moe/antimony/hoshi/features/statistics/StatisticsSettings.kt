@@ -72,7 +72,7 @@ private fun Int.snapToStep(min: Int, max: Int, step: Int): Int {
     return if (clamped - lower < upper - clamped) lower else upper
 }
 
-private val Context.statisticsSettingsDataStore by preferencesDataStore(name = "statistics-settings")
+internal val Context.statisticsSettingsDataStore by preferencesDataStore(name = "statistics-settings")
 
 internal fun Context.statisticsSettingsRepository(): StatisticsSettingsRepository =
     StatisticsSettingsRepository(statisticsSettingsDataStore)

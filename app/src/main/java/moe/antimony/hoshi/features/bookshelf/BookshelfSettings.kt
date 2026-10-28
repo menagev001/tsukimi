@@ -46,7 +46,7 @@ class BookshelfSettingsRepository(
     }
 }
 
-private val Context.bookshelfDataStore by preferencesDataStore(name = "bookshelf-settings")
+internal val Context.bookshelfDataStore by preferencesDataStore(name = "bookshelf-settings")
 
 fun Context.bookshelfSettingsRepository(): BookshelfSettingsRepository =
     BookshelfSettingsRepository(bookshelfDataStore)

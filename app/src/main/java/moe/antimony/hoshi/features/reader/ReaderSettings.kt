@@ -484,7 +484,7 @@ class ReaderSettingsStore(context: Context) : ReaderSettingsLegacySource {
     }
 }
 
-private val Context.readerSettingsDataStore by preferencesDataStore(name = ReaderSettingsRepository.DataStoreName)
+internal val Context.readerSettingsDataStore by preferencesDataStore(name = ReaderSettingsRepository.DataStoreName)
 
 fun Context.readerSettingsRepository(
     profileRepository: ProfileRepository? = null,

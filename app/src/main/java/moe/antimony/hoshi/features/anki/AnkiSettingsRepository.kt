@@ -149,7 +149,7 @@ private fun AnkiSettings.ensureAnkiCardFormat(): AnkiSettings =
         cardFormats = listOf(defaultAnkiCardFormat(UUID.randomUUID().toString())),
     )
 
-private val Context.ankiDataStore by preferencesDataStore(name = "anki_settings")
+internal val Context.ankiDataStore by preferencesDataStore(name = "anki_settings")
 
 fun Context.ankiSettingsRepository(
     profileRepository: ProfileRepository? = null,
