@@ -380,6 +380,16 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         player.seekTo((cue.startMs + _uiState.value.subtitles.offsetMs).coerceAtLeast(0))
     }
 
+    /** Sets the offset so [cueIndex] starts at the current video time; every line moves with it. */
+    fun syncCueToCurrentTime(cueIndex: Int) {
+        val cue = primaryCues.getOrNull(cueIndex) ?: return
+        val offsetMs = (player.currentPosition - cue.startMs).coerceIn(-MaxSubtitleOffsetMs, MaxSubtitleOffsetMs)
+        viewModelScope.launch { preferencesRepository.updateSubtitleOffsetMs(itemId, offsetMs) }
+    }
+
+    /** The current video time, for the line sync dialog. */
+    fun currentPositionMs(): Long = player.currentPosition
+
     fun seekBy(deltaMs: Long) {
         player.seekTo((player.currentPosition + deltaMs).coerceAtLeast(0))
     }
@@ -550,7 +560,7 @@ internal class WatchPlayerViewModel @AssistedInject constructor(
         const val SeekIncrementMs = 10_000L
         const val ProgressReportIntervalMs = 10_000L
         const val CueTickMs = 100L
-        const val MaxSubtitleOffsetMs = 30_000L
+        const val MaxSubtitleOffsetMs = 600_000L
         const val SentenceAudioPaddingMs = 250L
         const val AudioClipTimeoutMs = 60_000L
         const val AudioMissingTag = "tsukimi::audio-missing"

@@ -180,3 +180,19 @@ test('line list renders every cue, marks the active one and maps taps to tokens'
     hit = second.children[1];
     assert.equal(watch.hoshiWatch.selectTextAt(1, 1, 16, false), '言葉');
 });
+
+test('cueIndexAt finds the list row under a long press', () => {
+    let hit = null;
+    const watch = watchContext({ hitAt: () => hit });
+    watch.hoshiWatch.setCueList([
+        { start: 1_000, text: '一つ目' },
+        { start: 2_000, text: '二つ目' },
+    ]);
+    const [, second] = watch.body.children[1].children;
+
+    hit = second.children[1];
+    assert.equal(watch.hoshiWatch.cueIndexAt(1, 1), 1);
+
+    hit = watch.body;
+    assert.equal(watch.hoshiWatch.cueIndexAt(1, 1), -1);
+});

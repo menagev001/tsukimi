@@ -91,6 +91,7 @@
             for (var i = 0; i < cues.length; i++) {
                 var itemEl = document.createElement('div');
                 itemEl.className = 'hoshi-watch-list-item';
+                itemEl.dataset.cueIndex = String(i);
                 var timeEl = document.createElement('span');
                 timeEl.className = 'hoshi-watch-list-time';
                 timeEl.dataset.cueIndex = String(i);
@@ -138,6 +139,13 @@
             } else {
                 listEl.scrollTop += dy;
             }
+        },
+
+        // The index of the line-list row at (x, y), or -1 outside the list.
+        cueIndexAt: function(x, y) {
+            var hit = document.elementFromPoint(x, y);
+            var item = hit && hit.closest('.hoshi-watch-list-item');
+            return item ? Number(item.dataset.cueIndex) : -1;
         },
 
         // Returns the selected text, a 'seek:'/'list' token (see above), or null when the tap hit

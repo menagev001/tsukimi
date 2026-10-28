@@ -782,6 +782,9 @@
     <string name="watch_quality_2_mbps">2 Mbit/s</string>
     <string name="watch_player_subtitles">字幕</string>
     <string name="watch_subtitles_off" comment="Subtitle track menu value; intentionally matches other off labels.">关闭</string>
+    <string name="watch_sync_line_title">同步字幕</string>
+    <string name="watch_sync_line_message">在 %1$s 显示这一行吗？其他所有行会移动相同的时间。</string>
+    <string name="watch_sync_line_action">同步此行</string>
     <string name="watch_subtitle_timing">时间轴</string>
     <string name="watch_subtitle_offset_format">%1$s 秒</string>
     <string name="watch_subtitle_earlier">字幕提前</string>

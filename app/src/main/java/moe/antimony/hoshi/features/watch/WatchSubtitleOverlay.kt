@@ -58,7 +58,8 @@ private enum class ListGesture { Open, Close, Scroll, None }
  * - touches on an open popup go to the WebView itself,
  * - a tap on a word (in a line or in the line list) opens the popup, a double tap on a line asks
  *   for its sentence breakdown,
- * - a tap on a timestamp in the line list calls [onSeekToCue]; vertical drags in the list scroll
+ * - a tap on a timestamp in the line list calls [onSeekToCue], a long press on a line calls
+ *   [onListLineLongPress]; vertical drags in the list scroll
  *   it, a swipe to the right closes it, and a swipe from the right edge inward opens it,
  * - a double tap elsewhere seeks back (left half) or forward (right half),
  * - any other tap closes an open popup, or else (outside the list) calls [onBlankTap].
@@ -78,6 +79,7 @@ internal fun WatchSubtitleOverlay(
     onBlankTap: () -> Unit,
     onSideDoubleTap: (forward: Boolean) -> Unit,
     onSeekToCue: (cueIndex: Int) -> Unit,
+    onListLineLongPress: (cueIndex: Int) -> Unit,
     onListVisibleChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -88,6 +90,7 @@ internal fun WatchSubtitleOverlay(
     val currentOnBlankTap by rememberUpdatedState(onBlankTap)
     val currentOnSideDoubleTap by rememberUpdatedState(onSideDoubleTap)
     val currentOnSeekToCue by rememberUpdatedState(onSeekToCue)
+    val currentOnListLineLongPress by rememberUpdatedState(onListLineLongPress)
     val currentListVisible by rememberUpdatedState(listVisible)
     val currentListAvailable by rememberUpdatedState(listAvailable)
     val currentOnListVisibleChange by rememberUpdatedState(onListVisibleChange)
@@ -189,6 +192,24 @@ internal fun WatchSubtitleOverlay(
                                 removeCallback = { runnable -> view.removeCallbacks(runnable) },
                             )
                             return true
+                        }
+
+                        override fun onLongPress(event: MotionEvent) {
+                            if (!inList(event.x)) return
+                            val density = resources.displayMetrics.density
+                            evaluateJavascript(
+                                watchCueIndexAtScript(
+                                    androidPixelsToCssPixels(event.x, density),
+                                    androidPixelsToCssPixels(event.y, density),
+                                ),
+                            ) { result ->
+                                val cueIndex = result?.trim()?.toDoubleOrNull()?.toInt() ?: -1
+                                if (cueIndex >= 0) {
+                                    taps.cancelPending { view.removeCallbacks(it) }
+                                    popupHost.dismiss()
+                                    currentOnListLineLongPress(cueIndex)
+                                }
+                            }
                         }
 
                         override fun onScroll(start: MotionEvent?, event: MotionEvent, distanceX: Float, distanceY: Float): Boolean {

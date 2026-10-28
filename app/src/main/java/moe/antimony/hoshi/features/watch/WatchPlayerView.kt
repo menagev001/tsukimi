@@ -9,6 +9,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
+import androidx.compose.material3.AlertDialog
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -133,6 +136,7 @@ internal fun WatchPlayerView(
     var interactionCount by remember { mutableIntStateOf(0) }
     var seekFlash by remember { mutableStateOf<WatchSeekFlash?>(null) }
     var listVisible by rememberSaveable { mutableStateOf(false) }
+    var syncCue by remember { mutableStateOf<WatchLineSync?>(null) }
     val currentLines by rememberUpdatedState(uiState.subtitles.primaryLines)
     val cueTexts = remember(uiState.subtitles.cues) { uiState.subtitles.cues.map { it.text } }
     val currentCueTexts by rememberUpdatedState(cueTexts)
@@ -214,6 +218,32 @@ internal fun WatchPlayerView(
             // the controls hiding would otherwise slide the line away from it.
             val lookupSubtitleInsetDp = remember(lookupActive) { liveSubtitleInsetDp }
             val hasLines = uiState.subtitles.selectedTrackIndex != null
+            syncCue?.let { sync ->
+                uiState.subtitles.cues.getOrNull(sync.cueIndex)?.let { cue ->
+                    AlertDialog(
+                        onDismissRequest = { syncCue = null },
+                        title = { Text(stringResource(R.string.watch_sync_line_title)) },
+                        text = {
+                            Column {
+                                Text(cue.text, style = MaterialTheme.typography.bodyLarge)
+                                Text(
+                                    stringResource(R.string.watch_sync_line_message, formatPlaybackTime(sync.positionMs)),
+                                    modifier = Modifier.padding(top = 12.dp),
+                                )
+                            }
+                        },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                viewModel.syncCueToCurrentTime(sync.cueIndex)
+                                syncCue = null
+                            }) { Text(stringResource(R.string.watch_sync_line_action)) }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { syncCue = null }) { Text(stringResource(R.string.action_cancel)) }
+                        },
+                    )
+                }
+            }
             WatchSubtitleOverlay(
                 popupHost = popupHost,
                 primaryLines = uiState.subtitles.primaryLines,
@@ -223,6 +253,9 @@ internal fun WatchPlayerView(
                 listAvailable = hasLines,
                 listWidth = minOf(ListMaxWidthDp, maxWidth.value * ListWidthFraction).dp,
                 onSeekToCue = viewModel::seekToCue,
+                onListLineLongPress = { cueIndex ->
+                    syncCue = WatchLineSync(cueIndex, viewModel.currentPositionMs())
+                },
                 onListVisibleChange = { listVisible = it },
                 fontSizePx = uiState.subtitles.fontSizePx,
                 bottomInset = (if (lookupActive) lookupSubtitleInsetDp else liveSubtitleInsetDp).dp,
@@ -606,14 +639,14 @@ private fun WatchSubtitleButton(
                     modifier = Modifier.padding(horizontal = 12.dp),
                 ) {
                     Text(stringResource(R.string.watch_subtitle_timing), modifier = Modifier.weight(1f, fill = false))
-                    IconButton(onClick = { onAdjustOffset(-SubtitleOffsetStepMs) }) {
+                    RepeatingIconButton(onStep = { fast -> onAdjustOffset(-offsetStep(fast)) }) {
                         Icon(Icons.Rounded.Remove, stringResource(R.string.watch_subtitle_earlier))
                     }
                     Text(
                         stringResource(R.string.watch_subtitle_offset_format, formatSubtitleOffset(subtitles.offsetMs)),
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    IconButton(onClick = { onAdjustOffset(SubtitleOffsetStepMs) }) {
+                    RepeatingIconButton(onStep = { fast -> onAdjustOffset(offsetStep(fast)) }) {
                         Icon(Icons.Rounded.Add, stringResource(R.string.watch_subtitle_later))
                     }
                 }
@@ -710,6 +743,47 @@ internal fun subtitleBottomInsetDp(
     val insetDp = letterboxDp + videoHeightDp * SubtitleVideoMarginFraction
     return if (controlsVisible) maxOf(insetDp, SubtitleInsetWithControlsDp) else insetDp
 }
+
+/** A line-list row long-pressed at [positionMs] of the video, waiting for the sync confirmation. */
+private data class WatchLineSync(val cueIndex: Int, val positionMs: Long)
+
+private fun offsetStep(fast: Boolean): Long = if (fast) SubtitleOffsetFastStepMs else SubtitleOffsetStepMs
+
+/**
+ * An icon button that steps once per tap and keeps stepping while held: after [HoldDelayMs],
+ * every [RepeatIntervalMs], with `fast` steps once the hold has lasted [FastAfterMs].
+ */
+@Composable
+private fun RepeatingIconButton(onStep: (fast: Boolean) -> Unit, content: @Composable () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val pressed by interactionSource.collectIsPressedAsState()
+    val currentOnStep by rememberUpdatedState(onStep)
+    var repeated by remember { mutableStateOf(false) }
+    LaunchedEffect(pressed) {
+        if (!pressed) return@LaunchedEffect
+        delay(HoldDelayMs)
+        repeated = true
+        var heldMs = HoldDelayMs
+        while (true) {
+            currentOnStep(heldMs >= FastAfterMs)
+            delay(RepeatIntervalMs)
+            heldMs += RepeatIntervalMs
+        }
+    }
+    IconButton(
+        onClick = {
+            // The release after a hold also counts as a click; the hold already stepped.
+            if (repeated) repeated = false else currentOnStep(false)
+        },
+        interactionSource = interactionSource,
+        content = content,
+    )
+}
+
+private const val SubtitleOffsetFastStepMs = 1_000L
+private const val HoldDelayMs = 400L
+private const val RepeatIntervalMs = 80L
+private const val FastAfterMs = 2_400L
 
 /** "+0.3", "-1.2", "0.0": signed seconds with one decimal. */
 internal fun formatSubtitleOffset(offsetMs: Long): String {

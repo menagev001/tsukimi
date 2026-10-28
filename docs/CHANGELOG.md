@@ -21,7 +21,9 @@ Historical release notes before v1.3.0 live in [CHANGELOG_ARCHIVE.md](CHANGELOG_
   audio track button switches tracks during playback, and a lower streaming
   quality can be set for mobile data and phone hotspots. Japanese subtitles
   are shown by Tsukimi itself (white text with a soft outline, four sizes),
-  with a subtitle track menu, per-episode timing correction in 0.1 s steps,
+  with a subtitle track menu, per-episode timing correction in 0.1 s steps (hold the button to go
+  faster, up to ±10 minutes; or long-press a line in the line list and sync it
+  to the current video time, which moves every line by the same amount),
   and buttons to jump to the previous or next line. Tap a word in a subtitle
   to pause and open the dictionary popup (Anki, Explain Word, Export and Mark
   Known included); playback resumes when it closes (Settings → Watch → Resume

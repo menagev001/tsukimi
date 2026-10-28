@@ -784,6 +784,9 @@
     <string name="watch_quality_2_mbps">2 Mbit/s</string>
     <string name="watch_player_subtitles">Subtitles</string>
     <string name="watch_subtitles_off" comment="Subtitle track menu value; intentionally matches other off labels.">Off</string>
+    <string name="watch_sync_line_title">Sync Subtitles</string>
+    <string name="watch_sync_line_message">Show this line now, at %1$s? All other lines move by the same amount.</string>
+    <string name="watch_sync_line_action">Sync Line</string>
     <string name="watch_subtitle_timing">Timing</string>
     <string name="watch_subtitle_offset_format">%1$s s</string>
     <string name="watch_subtitle_earlier">Show subtitles earlier</string>

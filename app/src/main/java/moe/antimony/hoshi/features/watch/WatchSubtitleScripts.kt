@@ -130,6 +130,9 @@ internal fun watchSetActiveCueScript(index: Int?): String =
 internal fun watchShowListScript(visible: Boolean, widthPx: Float): String =
     "window.hoshiWatch && (window.hoshiWatch.setListWidth($widthPx), window.hoshiWatch.showList($visible));"
 
+internal fun watchCueIndexAtScript(x: Float, y: Float): String =
+    "window.hoshiWatch ? window.hoshiWatch.cueIndexAt($x, $y) : -1"
+
 internal fun watchScrollListScript(dy: Float): String =
     "window.hoshiWatch && window.hoshiWatch.scrollList($dy);"
 
